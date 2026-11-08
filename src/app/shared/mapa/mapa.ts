@@ -38,7 +38,9 @@ const CENTRO_PREDETERMINADO: L.LatLngTuple = [4.6, -74.1];
 @Component({
   selector: 'app-mapa',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block relative' },
+  // `isolate`: los paneles y controles de Leaflet (z-index 400–1000) quedan dentro del mapa y no tapan el menú,
+  // las barras ni los desplegables del shell.
+  host: { class: 'block relative isolate' },
   template: `
     <div #contenedor class="size-full rounded-box overflow-hidden border border-base-300 bg-base-300" role="region" [attr.aria-label]="titulo()"></div>
     @if (fallo()) {

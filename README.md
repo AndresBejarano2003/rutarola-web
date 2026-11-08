@@ -331,7 +331,8 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   colegio" a todos los que van a bordo; entrega = abordaje en el colegio y luego cada casa. Cada parada
   ofrece "Cómo llegar" (Google Maps), llamar y avisar por WhatsApp al acudiente.
 - **Orden de visita (monitora):** durante el recorrido, la monitora arrastra a un estudiante que falta
-  (manija ⠿, o ↑/↓ con botones o teclado) a otra posición: si el 2 pasa al 6, los del 3 al 6 suben una.
+  (manija ⠿ de inmediato, o manteniendo presionada la fila 350 ms; también ↑/↓ con botones o teclado; la página se
+  desplaza sola cerca del borde, vibra al levantar y Esc cancela) a otra posición: si el 2 pasa al 6, los del 3 al 6 suben una.
   Solo se reordenan los que faltan por visitar (recogida: PENDIENTES; entrega: PENDIENTES y A BORDO); los
   ya resueltos quedan arriba. Solo la monitora de la asignación (el conductor si la ruta no tiene
   monitora) — `puedeReordenar`; la lista enviada debe ser EXACTAMENTE la de los que faltan
@@ -356,7 +357,9 @@ App para el celular del conductor y la monitora, dentro del vehículo.
 - **Mapas** (`shared/mapa/mapa.ts`, `<app-mapa>`: Leaflet + OpenStreetMap con atribución, cargado solo al
   mostrarse; marcadores Font Awesome con `divIcon`): Operación › **Monitoreo en vivo** (`operacion/monitoreo`,
   recorridos en curso con su posición en vivo, "sin señal" a los 3 min, lista seleccionable), el **trayecto** en
-  el detalle del historial (en vivo si sigue en curso) y "**Ver en el mapa**" del portal.
+  el detalle del historial (en vivo si sigue en curso) y "**Ver en el mapa**" del portal. El mapa va aislado (`isolate`
+  en el host y en `.leaflet-container`) para que las capas de Leaflet (z-index 400–1000) nunca tapen el menú
+  lateral, las barras ni los desplegables; lo que flote sobre un mapa va en un contenedor `relative isolate` con `z-10`.
 - **Finalizar** solo con todos ENTREGADOS o AUSENTES: **ningún estudiante puede quedar a bordo**.
   Un recorrido finalizado no se modifica. Si se cierra la app, el recorrido en curso se retoma desde "Mis rutas".
 - **Historial** (Operación › Recorridos, solo lectura, administrador): todos los recorridos del más

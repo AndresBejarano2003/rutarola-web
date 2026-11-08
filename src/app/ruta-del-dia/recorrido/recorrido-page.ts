@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -42,6 +42,12 @@ interface Arrastre {
 
 /** Margen (px) del borde de la pantalla en el que el arrastre desplaza la página. */
 const MARGEN_DESPLAZAMIENTO = 72;
+/** Desplazamiento máximo por cuadro (px) al arrastrar cerca del borde. */
+const VELOCIDAD_DESPLAZAMIENTO = 14;
+/** Mantener presionada una fila este tiempo (ms) la levanta para arrastrarla. */
+const PRESION_LARGA_MS = 350;
+/** Si el dedo se mueve más que esto (px) antes de la presión larga, es desplazamiento de la página. */
+const TOLERANCIA_PRESION = 8;
 
 /**
  * Recorrido en curso: muestra SIEMPRE el siguiente paso (a quién recoger o entregar),
@@ -92,6 +98,9 @@ export default class RecorridoPage implements OnInit {
     return !!r && puedeReordenar(r, this.sesion()?.empleadoId);
   });
   protected readonly arrastre = signal<Arrastre | null>(null);
+  private readonly listaOrden = viewChild<ElementRef<HTMLOListElement>>('listaOrden');
+  /** Quita los oyentes globales del arrastre o de la presión larga en curso. */
+  private terminarGesto: (() => void) | null = null;
   /** Lista en pantalla: visitadas y luego las que faltan (con la vista previa del arrastre). */
   protected readonly lista = computed(() => {
     const r = this.recorrido();
@@ -124,6 +133,7 @@ export default class RecorridoPage implements OnInit {
       const reporta = r.estado === 'EN_CURSO' && this.reportaUbicacion();
       untracked(() => (reporta ? this.gps.iniciar(r.id) : void this.gps.detenerYEnviar()));
     });
+    this.destroyRef.onDestroy(() => this.terminarGesto?.());
   }
 
   ngOnInit(): void {
@@ -181,41 +191,127 @@ export default class RecorridoPage implements OnInit {
 
   // --- Orden de visita -------------------------------------------------------------------------
 
-  /** Arrastre con puntero (dedo o mouse) desde la manija ⠿ de un estudiante por visitar. */
+  /**
+   * Arrastre con puntero (dedo o mouse) desde la manija ⠿: empieza de inmediato. Los oyentes van en la ventana
+   * (no en la manija), porque al reordenar la vista previa Angular mueve la fila en el DOM y el navegador
+   * suelta la captura del puntero: así el arrastre sigue hasta soltar aunque la fila cambie de lugar.
+   */
   protected iniciarArrastre(evento: PointerEvent, indice: number, p: Parada): void {
-    if (this.procesando() || evento.button > 0) return;
+    if (this.procesando() || evento.button > 0 || evento.isPrimary === false) return;
     evento.preventDefault();
-    (evento.currentTarget as HTMLElement).setPointerCapture?.(evento.pointerId);
-    this.arrastre.set({ estudianteId: p.estudianteId, desde: indice, hasta: indice });
+    evento.stopPropagation();
+    this.empezarArrastre(indice, p, evento.clientY);
   }
 
-  protected moverArrastre(evento: PointerEvent): void {
+  /**
+   * Presión larga sobre la fila (fuera de sus botones): la levanta para arrastrarla. Si el dedo se mueve antes,
+   * es desplazamiento normal de la página y no se hace nada.
+   */
+  protected presionarFila(evento: PointerEvent, indice: number, p: Parada): void {
+    if (this.procesando() || this.arrastre() || evento.button > 0 || evento.isPrimary === false) return;
+    if ((evento.target as HTMLElement).closest('button, a, input, textarea')) return;
+    this.terminarGesto?.();
+    const inicioY = evento.clientY;
+    const inicioX = evento.clientX;
+    const temporizador = setTimeout(() => {
+      limpiar();
+      this.empezarArrastre(indice, p, inicioY);
+    }, PRESION_LARGA_MS);
+    const mover = (e: PointerEvent) => {
+      if (Math.abs(e.clientY - inicioY) > TOLERANCIA_PRESION || Math.abs(e.clientX - inicioX) > TOLERANCIA_PRESION) limpiar();
+    };
+    const limpiar = () => {
+      clearTimeout(temporizador);
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', limpiar);
+      window.removeEventListener('pointercancel', limpiar);
+      if (this.terminarGesto === limpiar) this.terminarGesto = null;
+    };
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('pointerup', limpiar);
+    window.addEventListener('pointercancel', limpiar);
+    this.terminarGesto = limpiar;
+  }
+
+  private empezarArrastre(indice: number, p: Parada, y: number): void {
+    this.terminarGesto?.();
+    this.arrastre.set({ estudianteId: p.estudianteId, desde: indice, hasta: indice });
+    navigator.vibrate?.(25);
+    let ultimaY = y;
+    let cuadro = 0;
+    // Desplaza la página mientras el dedo esté cerca del borde (también sin moverlo) y recalcula la posición.
+    const desplazar = () => {
+      const alto = window.innerHeight;
+      const paso =
+        ultimaY < MARGEN_DESPLAZAMIENTO
+          ? -VELOCIDAD_DESPLAZAMIENTO * (1 - ultimaY / MARGEN_DESPLAZAMIENTO)
+          : ultimaY > alto - MARGEN_DESPLAZAMIENTO
+            ? VELOCIDAD_DESPLAZAMIENTO * (1 - (alto - ultimaY) / MARGEN_DESPLAZAMIENTO)
+            : 0;
+      if (paso) {
+        window.scrollBy(0, Math.round(paso));
+        this.ubicar(ultimaY);
+      }
+      cuadro = requestAnimationFrame(desplazar);
+    };
+    const mover = (e: PointerEvent) => {
+      if (e.isPrimary === false) return;
+      e.preventDefault();
+      ultimaY = e.clientY;
+      this.ubicar(ultimaY);
+    };
+    // Evita que el navegador desplace la página con el dedo mientras se arrastra (requiere passive: false).
+    const bloquearDesplazamiento = (e: TouchEvent) => e.cancelable && e.preventDefault();
+    const soltar = () => {
+      limpiar();
+      this.soltar();
+    };
+    const cancelar = () => {
+      limpiar();
+      this.arrastre.set(null);
+    };
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && cancelar();
+    const limpiar = () => {
+      cancelAnimationFrame(cuadro);
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', soltar);
+      window.removeEventListener('pointercancel', cancelar);
+      window.removeEventListener('touchmove', bloquearDesplazamiento);
+      window.removeEventListener('keydown', tecla);
+      if (this.terminarGesto === cancelar) this.terminarGesto = null;
+    };
+    window.addEventListener('pointermove', mover, { passive: false });
+    window.addEventListener('pointerup', soltar);
+    window.addEventListener('pointercancel', cancelar);
+    window.addEventListener('touchmove', bloquearDesplazamiento, { passive: false });
+    window.addEventListener('keydown', tecla);
+    this.terminarGesto = cancelar;
+    cuadro = requestAnimationFrame(desplazar);
+  }
+
+  /** Nueva posición = cuántos de los OTROS estudiantes por visitar quedan por encima del dedo. */
+  private ubicar(y: number): void {
     const a = this.arrastre();
-    if (!a) return;
-    const lista = (evento.currentTarget as HTMLElement).closest('ol');
-    if (!lista) return;
-    // Nueva posición = cuántos de los OTROS estudiantes quedan por encima del dedo.
+    const lista = this.listaOrden()?.nativeElement;
+    if (!a || !lista) return;
     let hasta = 0;
     for (const fila of Array.from(lista.querySelectorAll<HTMLElement>('[data-por-visitar]'))) {
       if (fila.dataset['porVisitar'] === a.estudianteId) continue;
       const caja = fila.getBoundingClientRect();
-      if (evento.clientY > caja.top + caja.height / 2) hasta++;
+      if (y > caja.top + caja.height / 2) hasta++;
     }
-    if (hasta !== a.hasta) this.arrastre.set({ ...a, hasta });
-    if (evento.clientY < MARGEN_DESPLAZAMIENTO) window.scrollBy(0, -12);
-    else if (evento.clientY > window.innerHeight - MARGEN_DESPLAZAMIENTO) window.scrollBy(0, 12);
+    if (hasta !== a.hasta) {
+      this.arrastre.set({ ...a, hasta });
+      navigator.vibrate?.(8);
+    }
   }
 
-  protected soltar(): void {
+  private soltar(): void {
     const a = this.arrastre();
     if (!a) return;
     const ids = this.lista().pendientes.map((p) => p.estudianteId);
     this.arrastre.set(null);
     if (a.desde !== a.hasta) void this.guardarOrden(ids, a.estudianteId, a.hasta);
-  }
-
-  protected cancelarArrastre(): void {
-    this.arrastre.set(null);
   }
 
   /** Alternativa sin arrastre (teclado y lectores de pantalla): subir o bajar una posición. */

@@ -30,10 +30,10 @@
     }
 
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem] gap-4">
-      <div class="relative">
+      <div class="relative isolate">
         <app-mapa class="h-[55dvh] min-h-72" titulo="Vehículos en ruta" [marcadores]="marcadores()" (seleccionar)="seleccionar($event)" />
         @if (!cargando() && recorridos().length > 0 && conPosicion() === 0) {
-          <p class="absolute inset-x-3 bottom-3 z-[1000] rounded-box bg-base-200/95 border border-base-300 p-3 text-sm">
+          <p class="absolute inset-x-3 bottom-3 z-10 rounded-box bg-base-200/95 border border-base-300 p-3 text-sm">
             Ningún vehículo ha compartido su ubicación todavía. Se verá cuando el teléfono de la ruta tenga señal GPS.
           </p>
         }

@@ -158,3 +158,17 @@ body {
 .grid > * {
   min-width: 0;
 }
+
+/* Leaflet: sus paneles usan z-index 400–1000; aislarlos evita que el mapa quede encima del menú lateral,
+   las barras superiores y los desplegables en cualquier pantalla donde se use. */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+}
+
+/* Ruta del día: filas que se reordenan con presión larga. Sin menú contextual ni lupa de iOS al mantener presionado. */
+.arrastrable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

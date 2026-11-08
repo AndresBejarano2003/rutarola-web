@@ -128,7 +128,7 @@ describe('Ruta del día (conductor)', () => {
     await estabilizar(harness.fixture, 4);
     const el = harness.routeNativeElement as HTMLElement;
     expect(el.querySelector(`[aria-label="Arrastrar a ${primero.estudiante}"]`)).not.toBeNull();
-    expect(el.textContent).toContain('Arrastra a un estudiante');
+    expect(el.textContent).toContain('Mantén presionado a un estudiante');
 
     (el.querySelector(`[aria-label="Bajar a ${primero.estudiante}"]`) as HTMLButtonElement).click();
     await estabilizar(harness.fixture, 4);
@@ -136,6 +136,35 @@ describe('Ruta del día (conductor)', () => {
     expect(orden).toEqual([segundo.estudianteId, primero.estudianteId]);
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain(segundo.estudiante);
     expect(el.textContent).toContain('Orden ajustado por Yolanda Charry');
+  });
+
+  it('la monitora arrastra un estudiante hasta el final aunque la fila cambie de lugar durante el gesto', async () => {
+    const repo = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(repo.iniciar(ruta.asignacionId, 'RECOGIDA'));
+    const [primero, ...resto] = r.paradas;
+    TestBed.inject(AuthService).abrirSesion({
+      usuario: 'ycharry', nombre: 'Yolanda Charry', correo: '', rol: 'MONITORA', empleadoId: 'emp-6', imagen: '', inicio: '',
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`/ruta-del-dia/recorrido/${r.id}`, RecorridoPage);
+    await estabilizar(harness.fixture, 4);
+    const el = harness.routeNativeElement as HTMLElement;
+
+    const manija = el.querySelector(`[aria-label="Arrastrar a ${primero.estudiante}"]`) as HTMLElement;
+    manija.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientY: 0, isPrimary: true }));
+    await estabilizar(harness.fixture);
+    // jsdom no tiene diseño: con el dedo abajo, todas las demás filas quedan "por encima".
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientY: 100, isPrimary: true }));
+    await estabilizar(harness.fixture);
+    window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientY: 120, isPrimary: true }));
+    window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true }));
+    await estabilizar(harness.fixture, 4);
+
+    const orden = Array.from(el.querySelectorAll('[data-por-visitar]')).map((x) => x.getAttribute('data-por-visitar'));
+    expect(orden).toEqual([...resto.map((p) => p.estudianteId), primero.estudianteId]);
+    const guardado = await firstValueFrom(repo.obtener(r.id));
+    expect(guardado.paradas.at(-1)?.estudianteId).toBe(primero.estudianteId);
   });
 
   it('la lista se actualiza cuando el compañero inicia y al tocar Iniciar se une a su recorrido', async () => {

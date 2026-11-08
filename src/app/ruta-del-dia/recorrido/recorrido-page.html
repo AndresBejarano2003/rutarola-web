@@ -209,23 +209,28 @@
           </h2>
           @if (ordenable() && lista().pendientes.length > 1) {
             <p class="text-sm text-base-content/70 mt-1">
-              <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
-              Arrastra a un estudiante para cambiar el orden de los que faltan; el conductor lo ve al instante.
+              <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
+              Mantén presionado a un estudiante (o arrástralo desde <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>)
+              para cambiar el orden de los que faltan; el conductor lo ve al instante.
             </p>
           }
           @if (r.ordenActualizado; as cambio) {
             <p class="text-xs text-base-content/70 mt-1">Orden ajustado por {{ cambio.nombre || 'la monitora' }} · {{ hora(cambio.hora) }}</p>
           }
         </div>
-        <ol class="divide-y divide-base-300">
+        <ol #listaOrden class="divide-y divide-base-300">
           @for (e of lista().visitadas; track e.estudianteId; let i = $index) {
             <li class="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
               <ng-container *ngTemplateOutlet="fila; context: { $implicit: e, numero: i + 1 }" />
             </li>
           }
           @for (e of lista().pendientes; track e.estudianteId; let j = $index, primero = $first, ultimo = $last) {
-            <li class="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 transition-colors" [attr.data-por-visitar]="e.estudianteId"
-              [class]="arrastre()?.estudianteId === e.estudianteId ? 'bg-primary/10 outline-2 outline-primary -outline-offset-2 relative z-10 shadow-xl' : ''">
+            <li class="px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 transition-[background-color,box-shadow,scale] duration-150"
+              [attr.data-por-visitar]="e.estudianteId"
+              [class.arrastrable]="ordenable() && lista().pendientes.length > 1"
+              [class]="arrastre()?.estudianteId === e.estudianteId ? 'bg-primary/10 outline-2 outline-primary -outline-offset-2 relative z-10 shadow-xl scale-[1.02]' : arrastre() ? 'opacity-80' : ''"
+              (pointerdown)="ordenable() && lista().pendientes.length > 1 && presionarFila($event, j, e)"
+              (contextmenu)="ordenable() && lista().pendientes.length > 1 && $event.preventDefault()">
               @if (ordenable() && lista().pendientes.length > 1) {
                 <!-- Subir / arrastrar / bajar: arrastre con el dedo y alternativa con botones o flechas del teclado -->
                 <div class="flex flex-col items-center -ml-2 shrink-0" role="group" [attr.aria-label]="'Orden de ' + e.estudiante">
@@ -233,10 +238,9 @@
                     [attr.aria-label]="'Subir a ' + e.estudiante" title="Subir">
                     <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
                   </button>
-                  <button type="button" class="btn btn-ghost btn-square btn-sm touch-none cursor-grab active:cursor-grabbing text-base-content/70"
+                  <button type="button" class="btn btn-ghost btn-square btn-md touch-none cursor-grab active:cursor-grabbing text-base-content/70"
                     [attr.aria-label]="'Arrastrar a ' + e.estudiante" title="Arrastrar para cambiar el orden" [disabled]="procesando()"
-                    (pointerdown)="iniciarArrastre($event, j, e)" (pointermove)="moverArrastre($event)" (pointerup)="soltar()"
-                    (pointercancel)="cancelarArrastre()" (keydown.arrowup)="$event.preventDefault(); mover(j, -1)"
+                    (pointerdown)="iniciarArrastre($event, j, e)" (keydown.arrowup)="$event.preventDefault(); mover(j, -1)"
                     (keydown.arrowdown)="$event.preventDefault(); mover(j, 1)">
                     <i class="fa-solid fa-grip-vertical text-lg" aria-hidden="true"></i>
                   </button>
