@@ -343,7 +343,10 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   `/hubs/recorridos`, se reconecta sola y vuelve a `Seguir`; el paquete se carga solo al conectar) y una
   consulta de respaldo cada 60 s; "Mis rutas" se refresca con los avisos que el servidor envía al personal. En
   modo local, el evento `storage` de otra pestaña y una consulta cada 10 s. Si la monitora cambió el orden, el
-  conductor ve el aviso "… cambió el orden · Ahora sigue: …" (con vibración) y el siguiente paso actualizado.
+  conductor ve el aviso "… cambió el orden · Ahora sigue: …" (con vibración y un sonido de dos tonos) y el
+  siguiente paso actualizado; quien cambió el orden oye una confirmación corta. Los sonidos (`ruta-del-dia/sonidos.ts`)
+  se generan con Web Audio, sin archivos; suenan desde el primer toque en la pantalla y se silencian con el botón
+  🔊 de la lista (preferencia de cada teléfono).
 - **GPS** (`ruta-del-dia/gps/`): mientras el recorrido está EN CURSO, los teléfonos del conductor **y** de la
   monitora (`reportaUbicacion`) comparten la ubicación, así sigue al día aunque uno cierre la app o se apague; el
   servidor guarda una lectura cada 4 s como mínimo por recorrido (descarta las casi simultáneas). Usa

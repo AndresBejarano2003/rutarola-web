@@ -204,9 +204,23 @@
     <section class="card bg-base-200 border border-base-300">
       <div class="card-body p-0 gap-0">
         <div class="px-4 pt-4 pb-2">
-          <h2 class="text-sm text-info font-semibold uppercase tracking-wide">
-            Estudiantes en orden de {{ esRecogida() ? 'recogida' : 'entrega' }}
-          </h2>
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm text-info font-semibold uppercase tracking-wide">
+              Estudiantes en orden de {{ esRecogida() ? 'recogida' : 'entrega' }}
+            </h2>
+            @if (enCurso()) {
+              <button type="button" class="btn btn-ghost btn-sm btn-square shrink-0" (click)="sonidos.alternar()"
+                [attr.aria-pressed]="!sonidos.silenciados()"
+                [attr.aria-label]="sonidos.silenciados() ? 'Activar sonido de los cambios de orden' : 'Silenciar los cambios de orden'"
+                [title]="sonidos.silenciados() ? 'Sonido silenciado' : 'Sonido activado'">
+                @if (sonidos.silenciados()) {
+                  <i class="fa-solid fa-volume-xmark text-base-content/70" aria-hidden="true"></i>
+                } @else {
+                  <i class="fa-solid fa-volume-high text-info" aria-hidden="true"></i>
+                }
+              </button>
+            }
+          </div>
           @if (ordenable() && lista().pendientes.length > 1) {
             <p class="text-sm text-base-content/70 mt-1">
               <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>

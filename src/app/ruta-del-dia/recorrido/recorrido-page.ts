@@ -29,6 +29,7 @@ import {
 import { RecorridosRepositorio } from '../recorridos-repositorio';
 import { EmisorGps } from '../gps/emisor-gps';
 import { haceCuanto } from '../gps/gps';
+import { Sonidos } from '../sonidos';
 
 /** Estado al que vuelve cada uno con "Deshacer". */
 const DESHACER: Partial<Record<EstadoParada, EstadoParada>> = { A_BORDO: 'PENDIENTE', ENTREGADO: 'A_BORDO', AUSENTE: 'PENDIENTE' };
@@ -72,6 +73,7 @@ export default class RecorridoPage implements OnInit {
   private readonly sesion = inject(AuthService).sesion;
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gps = inject(EmisorGps);
+  protected readonly sonidos = inject(Sonidos);
   protected readonly haceCuanto = haceCuanto;
 
   protected readonly estados = ESTADOS_PARADA;
@@ -154,6 +156,7 @@ export default class RecorridoPage implements OnInit {
         if (cambio && cambio.hora !== antes && cambio.empleadoId !== this.sesion()?.empleadoId) {
           this.avisoOrden.set(cambio);
           navigator.vibrate?.(200);
+          this.sonidos.cambioOrden();
         }
         this.recorrido.set(nuevo);
       });
@@ -335,6 +338,7 @@ export default class RecorridoPage implements OnInit {
     try {
       this.recorrido.set(await firstValueFrom(this.repositorio.reordenar(this.id, ids)));
       this.anuncio.set(`${movido?.estudiante ?? 'Estudiante'} quedó de ${hasta + 1} entre los que faltan.`);
+      this.sonidos.ordenGuardado();
     } catch (error) {
       this.avisos.error(mensajeDeError(error));
       this.procesando.set(false);
