@@ -1,5 +1,4 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -18,14 +17,11 @@ import {
   coincideBusqueda,
   modulosDelMenu,
 } from './contenido-ayuda';
-import {
-  DatosSolicitud,
-  PRIORIDADES_SOLICITUD,
-  PrioridadSolicitud,
-  SolicitudesSoporteService,
-  TIPOS_SOLICITUD,
-  TipoSolicitud,
-} from './solicitudes-soporte';
+import { firstValueFrom } from 'rxjs';
+import { mensajeDeError } from 'src/app/shared/crud/crud';
+import { MisSolicitudes } from './mis-solicitudes/mis-solicitudes';
+import { PRIORIDADES_SOLICITUD, PrioridadSolicitud, TIPOS_SOLICITUD, TipoSolicitud } from './solicitudes-soporte';
+import { TicketsRepositorio } from './tickets/tickets-repositorio';
 
 const WHATSAPP_SOPORTE = '573202871272';
 const CORREO_SOPORTE = 'soporte@rutarola.com';
@@ -37,14 +33,16 @@ type Seccion = 'tutoriales' | 'documentacion' | 'preguntas' | 'solicitud';
 @Component({
   selector: 'app-soporte-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, DatePipe, Modal, Campo, TituloSeccion, SelectorBusqueda, ArchivosAdjuntosCampo],
+  imports: [ReactiveFormsModule, Modal, Campo, TituloSeccion, SelectorBusqueda, ArchivosAdjuntosCampo, MisSolicitudes],
   templateUrl: './soporte-page.html',
 })
 export default class SoportePage {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly notificaciones = inject(NotificacionesService);
-  protected readonly solicitudes = inject(SolicitudesSoporteService);
+  private readonly tickets = inject(TicketsRepositorio);
+  private readonly misSolicitudes = viewChild.required(MisSolicitudes);
+  protected readonly enviando = signal(false);
 
   protected readonly correoSoporte = CORREO_SOPORTE;
   protected readonly asuntoMaximo = ASUNTO_MAXIMO;
@@ -134,12 +132,20 @@ export default class SoportePage {
       this.notificaciones.error('Revisa los campos marcados antes de enviar.');
       return;
     }
+    const { tipo, modulo, prioridad, asunto, descripcion, adjuntos } = this.form.getRawValue();
+    if (!tipo) return;
+    this.enviando.set(true);
     try {
-      const solicitud = await this.solicitudes.enviar(this.form.getRawValue() as DatosSolicitud);
-      this.notificaciones.exito(`Solicitud ${solicitud.numero} enviada. Te contactaremos pronto.`);
+      const ticket = await firstValueFrom(
+        this.tickets.crear({ tipo, modulo, prioridad, asunto: asunto.trim(), descripcion: descripcion.trim(), adjuntos }),
+      );
+      this.notificaciones.exito(`Solicitud ${ticket.numero} enviada. Te avisaremos en la campana en cada avance.`);
       this.limpiar();
-    } catch {
-      this.notificaciones.error('No se pudo enviar la solicitud. Intenta de nuevo o escríbenos por WhatsApp.');
+      await this.misSolicitudes().cargar();
+    } catch (e) {
+      this.notificaciones.error(`No se pudo enviar la solicitud: ${mensajeDeError(e)} Intenta de nuevo o escríbenos por WhatsApp.`);
+    } finally {
+      this.enviando.set(false);
     }
   }
 
@@ -159,9 +165,5 @@ export default class SoportePage {
       `Descripción: ${descripcion.trim()}`,
     ];
     window.open(`https://wa.me/${WHATSAPP_SOPORTE}?text=${encodeURIComponent(lineas.join('\n'))}`, '_blank', 'noopener');
-  }
-
-  protected nombreTipo(tipo: TipoSolicitud): string {
-    return TIPOS_SOLICITUD.find((t) => t.id === tipo)?.nombre ?? tipo;
   }
 }

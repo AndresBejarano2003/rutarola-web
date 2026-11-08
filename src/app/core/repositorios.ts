@@ -9,6 +9,12 @@ import { PortalRepositorio } from "../portal/portal-repositorio";
 import { EmpresasHttp } from "../plataforma/empresas/empresas-http";
 import { EmpresasLocal } from "../plataforma/empresas/empresas-local";
 import { EmpresasRepositorio } from "../plataforma/empresas/empresas-repositorio";
+import { TicketsHttp } from "../sistema/soporte/tickets/tickets-http";
+import { TicketsLocal } from "../sistema/soporte/tickets/tickets-local";
+import { TicketsRepositorio } from "../sistema/soporte/tickets/tickets-repositorio";
+import { SuscripcionHttp } from "../sistema/membresias/suscripcion-http";
+import { SuscripcionLocal } from "../sistema/membresias/suscripcion-local";
+import { SuscripcionRepositorio } from "../sistema/membresias/suscripcion-repositorio";
 import { GpsHttp } from "../ruta-del-dia/gps/gps-http";
 import { GpsLocal } from "../ruta-del-dia/gps/gps-local";
 import { GpsRepositorio } from "../ruta-del-dia/gps/gps-repositorio";
@@ -134,5 +140,9 @@ export function proveerRepositorios({
     api(PortalRepositorio, PortalLocal, PortalHttp),
     // Plataforma (SUPER_ADMIN, solo existe con el API)
     api(EmpresasRepositorio, EmpresasLocal, EmpresasHttp),
+    // Tickets de soporte (empresa y plataforma)
+    api(TicketsRepositorio, TicketsLocal, TicketsHttp),
+    // Plan de la empresa y pagos en línea (Wompi)
+    api(SuscripcionRepositorio, SuscripcionLocal, SuscripcionHttp),
   ];
 }

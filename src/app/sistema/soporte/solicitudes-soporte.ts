@@ -1,12 +1,9 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { siguienteConsecutivo } from 'src/app/shared/crud/crud';
-import { LATENCIA_LOCAL, responderLocal } from 'src/app/shared/crud/repositorio-local';
-import { ArchivoAdjunto } from 'src/app/shared/archivo-adjunto/archivo-adjunto';
+import { PrioridadTicket, TipoTicket } from './tickets/tickets';
 
-export type TipoSolicitud = 'ERROR' | 'CONSULTA' | 'MEJORA' | 'CAPACITACION';
-export type PrioridadSolicitud = 'BAJA' | 'MEDIA' | 'ALTA';
-export type EstadoSolicitud = 'ABIERTA' | 'RESUELTA';
+/** Opciones del formulario "Crear solicitud" (los tickets viven en `tickets/`). */
+export type TipoSolicitud = TipoTicket;
+/** La prioridad CRÍTICA solo la asigna el equipo de soporte. */
+export type PrioridadSolicitud = Exclude<PrioridadTicket, 'CRITICA'>;
 
 export interface OpcionTipoSolicitud {
   id: TipoSolicitud;
@@ -53,75 +50,3 @@ export const PRIORIDADES_SOLICITUD: { id: PrioridadSolicitud; nombre: string; de
   { id: 'MEDIA', nombre: 'Media', descripcion: 'Afecta mi trabajo' },
   { id: 'ALTA', nombre: 'Alta', descripcion: 'No puedo operar' },
 ];
-
-export interface DatosSolicitud {
-  tipo: TipoSolicitud;
-  modulo: string;
-  prioridad: PrioridadSolicitud;
-  asunto: string;
-  descripcion: string;
-  adjuntos: ArchivoAdjunto[];
-}
-
-export interface SolicitudSoporte extends Omit<DatosSolicitud, 'adjuntos'> {
-  /** Consecutivo `SOP-0001`, lo asigna el servidor. */
-  numero: string;
-  /** ISO 8601. */
-  fecha: string;
-  estado: EstadoSolicitud;
-  /** Localmente solo se guardan los nombres (los archivos los recibirá el API). */
-  adjuntos: string[];
-}
-
-const CLAVE = 'rutarola.soporte.solicitudes';
-
-/**
- * Solicitudes de soporte del usuario. TEMPORAL: se guardan en `localStorage`
- * hasta que exista el API de soporte (pendiente en el README).
- */
-@Injectable({ providedIn: 'root' })
-export class SolicitudesSoporteService {
-  readonly modoLocal = true;
-  private readonly latenciaMs = inject(LATENCIA_LOCAL);
-
-  private readonly _lista = signal<SolicitudSoporte[]>(this.leer());
-  /** Más recientes primero. */
-  readonly lista = this._lista.asReadonly();
-  readonly abiertas = computed(() => this._lista().filter((s) => s.estado === 'ABIERTA').length);
-  readonly enviando = signal(false);
-
-  async enviar(datos: DatosSolicitud): Promise<SolicitudSoporte> {
-    this.enviando.set(true);
-    try {
-      const solicitud = await firstValueFrom(
-        responderLocal(
-          (): SolicitudSoporte => ({
-            ...datos,
-            asunto: datos.asunto.trim(),
-            descripcion: datos.descripcion.trim(),
-            adjuntos: datos.adjuntos.map((a) => a.nombre),
-            numero: siguienteConsecutivo('SOP', this._lista().map((s) => s.numero)),
-            fecha: new Date().toISOString(),
-            estado: 'ABIERTA',
-          }),
-          this.latenciaMs,
-        ),
-      );
-      // Se guarda al "responder el servidor", no antes, para que la lista y el botón cambien a la vez.
-      const lista = [solicitud, ...this._lista()];
-      localStorage.setItem(CLAVE, JSON.stringify(lista));
-      this._lista.set(lista);
-      return solicitud;
-    } finally {
-      this.enviando.set(false);
-    }
-  }
-
-  private leer(): SolicitudSoporte[] {
-    try {
-      return JSON.parse(localStorage.getItem(CLAVE) ?? '[]') as SolicitudSoporte[];
-    } catch {
-      return [];
-    }
-  }
-}

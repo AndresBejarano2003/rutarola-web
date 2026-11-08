@@ -5,7 +5,7 @@ import { environment } from '@environments/environment';
 import { Empresa } from 'src/app/inicio/configuracion/configuracion';
 import { desdeApi } from 'src/app/inicio/configuracion/configuracion-http';
 import { Pagina, Paginacion } from 'src/app/shared/crud/crud';
-import { FiltrosEmpresa, SolicitudEmpresa } from './empresa';
+import { AdministradorEmpresa, FiltrosEmpresa, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
 import { EmpresasRepositorio } from './empresas-repositorio';
 
 /**
@@ -14,6 +14,11 @@ import { EmpresasRepositorio } from './empresas-repositorio';
  * - `POST /empresas` → 201 con la configuración por defecto y, si viene `administrador`, su primer
  *   usuario ADMINISTRADOR (409 NIT repetido o usuario/correo ya en uso);
  * - `PUT /empresas/{id}` (sin `administrador`). No hay DELETE: se inactiva.
+ * - Administradores: `GET /empresas/{id}/administradores` → `AdministradorEmpresa[]` (sin contraseña);
+ *   `POST` (201; contraseña obligatoria, 422 sin ella), `PUT /empresas/{id}/administradores/{usuarioId}`
+ *   (contraseña vacía = se conserva) y `PUT …/{usuarioId}/contrasena {nueva}` → 204. Cambiar la contraseña o
+ *   inactivar cierra sus sesiones. 409 si el usuario (único en todo el sistema) o el correo ya están en uso;
+ *   404 si el usuario no es administrador de ESA empresa.
  */
 @Injectable()
 export class EmpresasHttp extends EmpresasRepositorio {
@@ -30,6 +35,26 @@ export class EmpresasHttp extends EmpresasRepositorio {
 
   crear(solicitud: SolicitudEmpresa): Observable<Empresa> {
     return this.http.post<Parameters<typeof desdeApi>[0]>(this.url, solicitud).pipe(map(desdeApi));
+  }
+
+  administradores(empresaId: string): Observable<AdministradorEmpresa[]> {
+    return this.http.get<AdministradorEmpresa[]>(this.urlAdministradores(empresaId));
+  }
+
+  crearAdministrador(empresaId: string, solicitud: SolicitudAdministrador): Observable<AdministradorEmpresa> {
+    return this.http.post<AdministradorEmpresa>(this.urlAdministradores(empresaId), solicitud);
+  }
+
+  actualizarAdministrador(empresaId: string, id: string, solicitud: SolicitudAdministrador): Observable<AdministradorEmpresa> {
+    return this.http.put<AdministradorEmpresa>(`${this.urlAdministradores(empresaId)}/${encodeURIComponent(id)}`, solicitud);
+  }
+
+  cambiarContrasenaAdministrador(empresaId: string, id: string, nueva: string): Observable<void> {
+    return this.http.put<void>(`${this.urlAdministradores(empresaId)}/${encodeURIComponent(id)}/contrasena`, { nueva });
+  }
+
+  private urlAdministradores(empresaId: string): string {
+    return `${this.url}/${encodeURIComponent(empresaId)}/administradores`;
   }
 
   actualizar(id: string, solicitud: SolicitudEmpresa): Observable<Empresa> {

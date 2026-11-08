@@ -1,14 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { LATENCIA_LOCAL } from 'src/app/shared/crud/repositorio-local';
-import { estabilizar, pantalla, simularDialogos } from 'src/app/shared/pruebas/pruebas';
+import { estabilizar, pantalla, repositoriosDePrueba, simularDialogos } from 'src/app/shared/pruebas/pruebas';
 import { modulosDelMenu } from './contenido-ayuda';
 import SoportePage from './soporte-page';
 
 async function crear() {
   TestBed.configureTestingModule({
     imports: [SoportePage],
-    providers: [provideRouter([]), { provide: LATENCIA_LOCAL, useValue: 0 }],
+    providers: [provideRouter([]), ...repositoriosDePrueba()],
   });
   const fixture = TestBed.createComponent(SoportePage);
   await estabilizar(fixture);
@@ -27,7 +26,7 @@ describe('SoportePage', () => {
     expect(el.textContent).toContain('Tutoriales destacados');
     expect(el.textContent).toContain('Manual general');
     expect(el.querySelectorAll('details').length).toBeGreaterThan(0);
-    expect(el.textContent).toContain('Aún no has enviado solicitudes');
+    expect(el.textContent).toContain('No tienes solicitudes en curso');
   });
 
   it('la búsqueda filtra el contenido y avisa cuando no hay resultados', async () => {
@@ -75,5 +74,21 @@ describe('SoportePage', () => {
     expect(el.textContent).toContain('SOP-0001');
     expect(el.textContent).toContain('No carga el listado');
     expect(asunto.value).toBe('');
+
+    // El detalle muestra el historial y deja responder o cancelar.
+    ui.boton('No carga el listado').click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('Abrió la solicitud');
+    expect(el.textContent).toContain('Responder al equipo de soporte');
+    ui.boton('Cancelar solicitud').click();
+    await estabilizar(fixture);
+    ui.boton('Cancelar solicitud').click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Este campo es obligatorio');
+    (el.querySelector('#form-accion-ticket textarea') as HTMLTextAreaElement).value = 'Ya se solucionó solo';
+    el.querySelector('#form-accion-ticket textarea')!.dispatchEvent(new Event('input'));
+    ui.boton('Cancelar solicitud').click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('La solicitud se canceló');
   });
 });

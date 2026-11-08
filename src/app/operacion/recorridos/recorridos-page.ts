@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ESTADOS_PARADA, EstadoRecorrido, Recorrido, TRAYECTOS, Trayecto, contarParadas } from 'src/app/ruta-del-dia/recorrido';
+import { ESTADOS_PARADA, EstadoRecorrido, Recorrido, TRAYECTOS, Trayecto, contarParadas, nombreAusencia } from 'src/app/ruta-del-dia/recorrido';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
 import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-listado';
@@ -51,6 +51,7 @@ export default class RecorridosPage implements OnInit {
   protected readonly estadosRecorrido = ESTADOS_RECORRIDO;
   protected readonly novedades = NOVEDADES_RECORRIDO;
   protected readonly estadosParada = ESTADOS_PARADA;
+  protected readonly nombreAusencia = nombreAusencia;
   protected readonly fechaCorta = fechaCorta;
   protected readonly contar = contarParadas;
   protected readonly hoy = fechaIso();

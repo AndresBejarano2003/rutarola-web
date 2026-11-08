@@ -22,6 +22,20 @@ export const ESTADOS_PARADA: Record<EstadoParada, { nombre: string; badge: strin
   AUSENTE: { nombre: 'No asistió', badge: 'badge-soft badge-warning', icono: 'fa-solid fa-user-slash' },
 };
 
+/**
+ * Por qué no viaja (solo con estado AUSENTE; `''` = sin motivo):
+ * - `NO_ASISTE`: no va al colegio hoy. Se marca en la RECOGIDA y la ENTREGA de ese día ya lo trae ausente.
+ * - `POR_SU_CUENTA`: sí asiste, pero no viaja en la ruta en ese trayecto (lo lleva o lo recoge su acudiente).
+ */
+export type MotivoAusencia = 'NO_ASISTE' | 'POR_SU_CUENTA';
+
+/** Texto del estado AUSENTE según el motivo y el trayecto (igual a `NombreAusencia` del API). */
+export function nombreAusencia(motivo: MotivoAusencia | '', trayecto: Trayecto): string {
+  if (motivo === 'NO_ASISTE') return 'No asiste hoy al colegio';
+  if (trayecto === 'ENTREGA') return 'No viaja en la ruta';
+  return motivo === 'POR_SU_CUENTA' ? 'Va al colegio por su cuenta' : 'No asistió';
+}
+
 /** Cambios permitidos (incluye "deshacer" hacia el estado anterior). */
 const TRANSICIONES: Record<EstadoParada, EstadoParada[]> = {
   PENDIENTE: ['A_BORDO', 'AUSENTE'],
@@ -47,6 +61,8 @@ export interface Parada {
   horaAbordo: string | null;
   /** ISO de cuando se entregó (colegio en recogida, casa en entrega). */
   horaEntrega: string | null;
+  /** Solo si `estado` es AUSENTE. */
+  motivoAusencia: MotivoAusencia | '';
 }
 
 export type EstadoRecorrido = 'EN_CURSO' | 'FINALIZADO';
@@ -213,6 +229,15 @@ export function reordenarParadas(r: Pick<Recorrido, 'trayecto' | 'paradas'>, ord
 }
 
 /**
+ * Quién comparte la ubicación del vehículo: el conductor Y la monitora del recorrido mientras está EN CURSO,
+ * para que siga al día aunque uno de los dos cierre la app o apague el teléfono (el servidor descarta las
+ * lecturas casi simultáneas de los dos).
+ */
+export function reportaUbicacion(r: Pick<Recorrido, 'estado' | 'conductorId' | 'monitoraId'>, empleadoId: string | null | undefined): boolean {
+  return r.estado === 'EN_CURSO' && !!empleadoId && (empleadoId === r.conductorId || empleadoId === r.monitoraId);
+}
+
+/**
  * Quién puede cambiar el orden de visita: la monitora de la asignación (el conductor va manejando).
  * Si la asignación no tiene monitora, el conductor.
  */
@@ -233,19 +258,23 @@ export function motivoNoFinalizar(paradas: Parada[]): string | null {
   return null;
 }
 
-/** Aplica un cambio de estado con su hora. Lanza `Error` si la transición no está permitida. */
-export function cambiarEstado(parada: Parada, estado: EstadoParada, ahora: string): Parada {
-  if (parada.estado === estado) return parada;
+/**
+ * Aplica un cambio de estado con su hora (y el motivo si queda AUSENTE). Lanza `Error` si la transición no
+ * está permitida. Marcar AUSENTE a quien ya lo está solo corrige el motivo.
+ */
+export function cambiarEstado(parada: Parada, estado: EstadoParada, ahora: string, motivo: MotivoAusencia | '' = ''): Parada {
+  const motivoAusencia = estado === 'AUSENTE' ? motivo : '';
+  if (parada.estado === estado) return parada.motivoAusencia === motivoAusencia ? parada : { ...parada, motivoAusencia };
   if (!transicionPermitida(parada.estado, estado)) {
     throw new Error(`${parada.estudiante}: no se puede pasar de "${ESTADOS_PARADA[parada.estado].nombre}" a "${ESTADOS_PARADA[estado].nombre}".`);
   }
   switch (estado) {
     case 'A_BORDO':
-      return { ...parada, estado, horaAbordo: parada.estado === 'ENTREGADO' ? parada.horaAbordo : ahora, horaEntrega: null };
+      return { ...parada, estado, horaAbordo: parada.estado === 'ENTREGADO' ? parada.horaAbordo : ahora, horaEntrega: null, motivoAusencia };
     case 'ENTREGADO':
-      return { ...parada, estado, horaEntrega: ahora };
+      return { ...parada, estado, horaEntrega: ahora, motivoAusencia };
     default:
-      return { ...parada, estado, horaAbordo: null, horaEntrega: null };
+      return { ...parada, estado, horaAbordo: null, horaEntrega: null, motivoAusencia };
   }
 }
 

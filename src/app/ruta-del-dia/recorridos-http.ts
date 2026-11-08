@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, auditTime, catchError, distinctUntilChanged, interval, merge, switchMap } from 'rxjs';
 import { TiempoReal } from 'src/app/core/tiempo-real';
 import { environment } from '@environments/environment';
-import { EstadoParada, Recorrido, RutaAsignada, Trayecto } from './recorrido';
+import { EstadoParada, MotivoAusencia, Recorrido, RutaAsignada, Trayecto } from './recorrido';
 import { RecorridosRepositorio } from './recorridos-repositorio';
 
 /**
@@ -14,8 +14,8 @@ import { RecorridosRepositorio } from './recorridos-repositorio';
  * | rutasDelDia | `GET /recorridos/del-dia?fecha=YYYY-MM-DD` → `RutaAsignada[]` |
  * | obtener     | `GET /recorridos/{id}` (403 si no es de una asignación del empleado) |
  * | rutas (sync)| `observarRutasDelDia`: `GET /recorridos/del-dia` con cada `recorridoActualizado` del hub (le llegan al personal sin `Seguir`) y cada `INTERVALO_RESPALDO_MS` |
- * | iniciar     | `POST /recorridos` `{asignacionId, trayecto}` → 201 `Recorrido` con snapshot de ruta, colegio, vehículo y paradas; 200 con el EXISTENTE si ese trayecto ya se inició hoy (el compañero se une) |
- * | marcar      | `PATCH /recorridos/{id}/paradas` `{estudianteIds, estado}` → `Recorrido` |
+ * | iniciar     | `POST /recorridos` `{asignacionId, trayecto}` → 201 `Recorrido` con snapshot de ruta, colegio, vehículo y paradas (en la ENTREGA, AUSENTE + `NO_ASISTE` quien no asiste según la recogida de hoy); 200 con el EXISTENTE si ese trayecto ya se inició hoy (el compañero se une) |
+ * | marcar      | `PATCH /recorridos/{id}/paradas` `{estudianteIds, estado, motivoAusencia?}` → `Recorrido` (`motivoAusencia` `NO_ASISTE`/`POR_SU_CUENTA` solo con AUSENTE, si no 400; `NO_ASISTE` en la entrega → 422) |
  * | reordenar   | `PUT /recorridos/{id}/orden` `{estudianteIds}` → `Recorrido` (guarda `ordenActualizado`) |
  * | finalizar   | `POST /recorridos/{id}/finalizar` `{observaciones}` → `Recorrido` |
  * | observar    | hub `/hubs/recorridos` (`core/tiempo-real.ts`): `Seguir(id)` → con cada `recorridoActualizado {recorridoId, fechaActualizacion, estado}` (y al reconectar) `GET /recorridos/{id}`; respaldo cada `INTERVALO_RESPALDO_MS` |
@@ -62,8 +62,9 @@ export class RecorridosHttp extends RecorridosRepositorio {
     return this.http.post<Recorrido>(this.url, { asignacionId, trayecto });
   }
 
-  marcar(id: string, estudianteIds: string[], estado: EstadoParada): Observable<Recorrido> {
-    return this.http.patch<Recorrido>(`${this.url}/${encodeURIComponent(id)}/paradas`, { estudianteIds, estado });
+  marcar(id: string, estudianteIds: string[], estado: EstadoParada, motivo?: MotivoAusencia): Observable<Recorrido> {
+    const cuerpo = estado === 'AUSENTE' && motivo ? { estudianteIds, estado, motivoAusencia: motivo } : { estudianteIds, estado };
+    return this.http.patch<Recorrido>(`${this.url}/${encodeURIComponent(id)}/paradas`, cuerpo);
   }
 
   reordenar(id: string, estudianteIds: string[]): Observable<Recorrido> {

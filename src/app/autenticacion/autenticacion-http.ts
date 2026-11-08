@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Credenciales, ROLES_USUARIO, RolUsuario, Sesion, TokensSesion } from 'src/app/core/auth';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
-import { AutenticacionRepositorio } from './autenticacion-repositorio';
+import { AutenticacionRepositorio, SolicitudRegistro } from './autenticacion-repositorio';
 
 /** Respuesta de `POST /auth/login`. */
 export interface RespuestaLogin {
@@ -24,6 +24,10 @@ export interface RespuestaLogin {
  *
  * `PUT {apiUrl}/auth/contrasena {actual, nueva}` → 204 (422 `La contraseña actual no es correcta.`,
  * 400 nueva < 6) y revoca las demás sesiones del usuario.
+ *
+ * `POST {apiUrl}/auth/registro {empresa, administrador, aceptaTerminos}` (público, limitado por IP) → 201
+ * `{ sesion, tokens }`: crea la empresa con 3 meses de prueba del plan Profesional. 400 validación; 409 NIT,
+ * usuario o correo ya registrados.
  */
 @Injectable()
 export class AutenticacionHttp extends AutenticacionRepositorio {
@@ -32,17 +36,21 @@ export class AutenticacionHttp extends AutenticacionRepositorio {
   iniciarSesion({ usuario, contrasena }: Credenciales): Observable<Sesion> {
     return this.http
       .post<RespuestaLogin>(`${environment.apiUrl}/auth/login`, { usuario: usuario.trim(), contrasena })
-      .pipe(
-        map(({ sesion, tokens }) => {
-          if (!ROLES_USUARIO.some((r) => r.id === sesion.rol)) {
-            throw new ErrorCrud('Este usuario no tiene acceso a esta aplicación.', 'VALIDACION');
-          }
-          return { ...sesion, rol: sesion.rol as RolUsuario, tokens };
-        }),
-      );
+      .pipe(map(aSesion));
+  }
+
+  registrarEmpresa(solicitud: SolicitudRegistro): Observable<Sesion> {
+    return this.http.post<RespuestaLogin>(`${environment.apiUrl}/auth/registro`, solicitud).pipe(map(aSesion));
   }
 
   cambiarContrasena(actual: string, nueva: string): Observable<void> {
     return this.http.put<void>(`${environment.apiUrl}/auth/contrasena`, { actual, nueva });
   }
+}
+
+function aSesion({ sesion, tokens }: RespuestaLogin): Sesion {
+  if (!ROLES_USUARIO.some((r) => r.id === sesion.rol)) {
+    throw new ErrorCrud('Este usuario no tiene acceso a esta aplicación.', 'VALIDACION');
+  }
+  return { ...sesion, rol: sesion.rol as RolUsuario, tokens };
 }

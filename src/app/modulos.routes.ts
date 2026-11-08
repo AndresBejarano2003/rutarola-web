@@ -27,6 +27,8 @@ export default [
     providers: proveerRepositorios(),
     children: [
       { path: 'login', canActivate: [soloInvitados], loadComponent: () => import('./autenticacion/login/login-page') },
+      // Registro público de una empresa (crea su administrador y la prueba gratuita; necesita el API).
+      { path: 'registro', canActivate: [soloInvitados], loadComponent: () => import('./autenticacion/registro/registro-page') },
       { path: 'inicio', canActivate: administrador, loadComponent: shell, loadChildren: () => import('./inicio/inicio.routes') },
       { path: 'personas', canActivate: administrador, loadComponent: shell, loadChildren: () => import('./personas/personas.routes') },
       { path: 'finanzas', canActivate: administrador, loadComponent: shell, loadChildren: () => import('./finanzas/finanzas.routes') },

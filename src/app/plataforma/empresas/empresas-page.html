@@ -83,6 +83,7 @@
 
 <app-modal [(abierto)]="modalAbierto" [titulo]="titulo()" [subtitulo]="seleccionada()?.nombre ?? ''">
   @if (modalAbierto()) {
+    <div class="flex flex-col gap-6">
     <form id="form-empresa" [formGroup]="form" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-4" novalidate>
       <app-titulo-seccion>Empresa</app-titulo-seccion>
       <label app-campo etiqueta="Nombre" requerido [error]="error('nombre')">
@@ -135,6 +136,11 @@
         }
       }
     </form>
+    @if (modo() !== 'crear' && seleccionada(); as e) {
+      <app-administradores-empresa [empresaId]="e.id" />
+      <app-suscripcion-empresa [empresaId]="e.id" />
+    }
+    </div>
   }
   @if (modalAbierto()) {
     <app-acciones-formulario pie formulario="form-empresa" [modo]="modo()" [guardando]="guardando()" textoCrear="Registrar empresa"

@@ -1,0 +1,139 @@
+<section class="card bg-base-200 border border-base-300 shadow-xl">
+  <div class="card-body">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="card-title text-base-content">
+        <i class="fa-solid fa-inbox text-info" aria-hidden="true"></i>
+        Mis solicitudes
+      </h2>
+      @if (modoLocal) {
+        <div class="tooltip tooltip-left" data-tip="Se guardan en este navegador (modo local)">
+          <span class="badge badge-warning badge-soft badge-sm gap-1"><i class="fa-solid fa-database text-xs" aria-hidden="true"></i> Modo local</span>
+        </div>
+      }
+    </div>
+
+    <div role="tablist" class="tabs tabs-box tabs-sm bg-base-100 mt-2" aria-label="Filtrar solicitudes">
+      <button type="button" role="tab" class="tab" [class.tab-active]="vista() === 'ABIERTOS'" [attr.aria-selected]="vista() === 'ABIERTOS'"
+        (click)="cambiarVista('ABIERTOS')">En curso</button>
+      <button type="button" role="tab" class="tab" [class.tab-active]="vista() === ''" [attr.aria-selected]="vista() === ''"
+        (click)="cambiarVista('')">Todas</button>
+    </div>
+
+    @if (error()) {
+      <div role="alert" class="alert alert-soft alert-error mt-2 text-sm">
+        <span>{{ error() }}</span>
+        <button type="button" class="btn btn-sm btn-ghost" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (cargando() && !lista().length) {
+      <div class="flex flex-col gap-3 mt-3">
+        @for (n of [1, 2]; track n) {
+          <div class="skeleton bg-base-300 h-14 w-full"></div>
+        }
+      </div>
+    } @else if (lista().length) {
+      <ul class="divide-y divide-base-300 mt-1">
+        @for (s of lista(); track s.id) {
+          <li>
+            <button type="button" class="w-full text-left py-3 px-1 rounded-box hover:bg-base-300/50 transition-colors" (click)="abrir(s.id)">
+              <span class="flex items-center justify-between gap-2">
+                <span class="font-mono text-sm text-base-content/80">{{ s.numero }}</span>
+                <span class="badge badge-soft badge-sm {{ badge(s) }}">{{ estado(s) }}</span>
+              </span>
+              <span class="block font-medium text-base-content truncate mt-1">{{ s.asunto }}</span>
+              <span class="block text-xs text-base-content/70 mt-0.5">
+                {{ nombreTipo(s.tipo) }} · {{ s.fechaUltimaActividad | date: 'd MMM y, h:mm a' }}
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (hayMas()) {
+        <button type="button" class="btn btn-sm btn-ghost text-secondary self-center" [disabled]="cargando()" (click)="verMas()">
+          Ver más ({{ total() - lista().length }})
+        </button>
+      }
+    } @else {
+      <div class="text-center py-6">
+        <i class="fa-regular fa-envelope-open text-3xl text-base-content/50" aria-hidden="true"></i>
+        <p class="text-sm text-base-content/70 mt-2">
+          {{ vista() === 'ABIERTOS' ? 'No tienes solicitudes en curso.' : 'Aún no has enviado solicitudes.' }}
+        </p>
+      </div>
+    }
+  </div>
+</section>
+
+<app-modal [abierto]="modalAbierto()" (abiertoChange)="$event ? null : cerrar()" ancho="max-w-3xl"
+  [titulo]="ticket()?.asunto ?? 'Solicitud'" [subtitulo]="ticket()?.numero ?? ''">
+  @if (modalAbierto() && ticket(); as t) {
+    <div class="flex flex-col gap-6">
+      <app-detalle-ticket [ticket]="t" />
+
+      @if (t.acciones.validar) {
+        <div role="status" class="alert alert-soft alert-warning flex-col sm:flex-row items-start sm:items-center">
+          <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+          <span class="grow">El equipo terminó y probó la solución. ¿Funciona como esperabas?</span>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-success" [disabled]="guardando()" (click)="aprobar()">
+              <i class="fa-solid fa-check" aria-hidden="true"></i> Sí, funciona
+            </button>
+            <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" [disabled]="guardando()" (click)="elegir('rechazar')">
+              No, sigue fallando
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (textos(); as tx) {
+        <form id="form-accion-ticket" [formGroup]="form" (ngSubmit)="enviar()" novalidate
+          class="flex flex-col gap-3 rounded-box border border-base-300 bg-base-100 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-info text-xs font-semibold uppercase tracking-wide">{{ tx.titulo }}</h3>
+            @if (t.acciones.reabrir && accion() === 'confirmar') {
+              <button type="button" class="btn btn-xs btn-ghost text-secondary" (click)="elegir('reabrir')">No quedó resuelto: reabrir</button>
+            } @else if (accion() !== 'comentar' && t.acciones.comentar) {
+              <button type="button" class="btn btn-xs btn-ghost text-secondary" (click)="elegir(t.acciones.confirmar ? 'confirmar' : 'comentar')">Volver</button>
+            }
+          </div>
+          @if (accion() === 'confirmar') {
+            <fieldset>
+              <legend class="label-text text-base-content/90 mb-1">¿Cómo calificas la atención? <span class="text-error">*</span></legend>
+              <div class="flex gap-1">
+                @for (n of [1, 2, 3, 4, 5]; track n) {
+                  <label class="cursor-pointer text-2xl text-warning has-focus-visible:outline-2 has-focus-visible:outline-primary rounded">
+                    <input type="radio" class="sr-only" formControlName="calificacion" [value]="n" [attr.aria-label]="n + ' de 5'" />
+                    <i class="fa-star" [class.fa-solid]="n <= form.controls.calificacion.value" [class.fa-regular]="n > form.controls.calificacion.value" aria-hidden="true"></i>
+                  </label>
+                }
+              </div>
+            </fieldset>
+          }
+          <label app-campo [etiqueta]="tx.etiqueta" [requerido]="accion() !== 'confirmar'" [error]="error$()" [ayuda]="tx.ayuda">
+            <textarea formControlName="texto" rows="3" maxlength="2000"
+              class="textarea textarea-bordered bg-base-100 border-neutral w-full" [class.textarea-error]="!!error$()"></textarea>
+          </label>
+          @if (accion() === 'comentar') {
+            <app-archivos-adjuntos formControlName="adjuntos" aceptar=".pdf,image/*" [tamanoMaximoMb]="tamanoMaximoMb" [maximo]="maximoAdjuntos" />
+          }
+        </form>
+      }
+    </div>
+  }
+  @if (modalAbierto() && ticket(); as t) {
+    <div pie class="flex flex-wrap justify-end gap-2 w-full">
+      @if (t.acciones.cancelar && accion() !== 'cancelar') {
+        <button type="button" class="btn btn-ghost text-error mr-auto" (click)="elegir('cancelar')">Cancelar solicitud</button>
+      }
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="cerrar()">Cerrar</button>
+      @if (textos(); as tx) {
+        <button type="submit" form="form-accion-ticket" class="btn" [class.btn-primary]="accion() !== 'cancelar'"
+          [class.btn-error]="accion() === 'cancelar'" [disabled]="guardando()">
+          @if (guardando()) {
+            <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+          }
+          {{ tx.boton }}
+        </button>
+      }
+    </div>
+  }
+</app-modal>

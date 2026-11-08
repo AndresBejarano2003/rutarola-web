@@ -13,4 +13,15 @@ export abstract class AutenticacionRepositorio {
    * cierra sus demás sesiones (otros teléfonos o navegadores); la actual sigue abierta.
    */
   abstract cambiarContrasena(actual: string, nueva: string): Observable<void>;
+  /**
+   * Registra una empresa de transporte con su administrador (prueba gratuita del plan Profesional) y
+   * devuelve la sesión del administrador. Solo con el API.
+   */
+  abstract registrarEmpresa(solicitud: SolicitudRegistro): Observable<Sesion>;
+}
+
+export interface SolicitudRegistro {
+  empresa: { nombre: string; nit: string; ciudad: string; telefono: string };
+  administrador: { nombre: string; usuario: string; email: string; contrasena: string };
+  aceptaTerminos: boolean;
 }

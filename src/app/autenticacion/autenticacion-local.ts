@@ -8,7 +8,7 @@ import { FILTROS_EMPLEADO_VACIOS } from 'src/app/personas/empleados/empleado';
 import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repositorio';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
 import { FuenteLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
-import { AutenticacionRepositorio } from './autenticacion-repositorio';
+import { AutenticacionRepositorio, SolicitudRegistro } from './autenticacion-repositorio';
 import { ADMIN_LOCAL, contrasenaDe, guardarCredencial, normalizarUsuario } from './credenciales-local';
 
 export const MENSAJE_CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos.';
@@ -64,6 +64,10 @@ export class AutenticacionLocal extends AutenticacionRepositorio implements Fuen
   }
 
   /** Cambia la contraseña local del empleado o acudiente de la sesión (`rutarola.credenciales`). */
+  registrarEmpresa(_solicitud: SolicitudRegistro): Observable<Sesion> {
+    return throwError(() => new ErrorCrud('El registro de empresas necesita el servidor. En modo local entra con un usuario de ejemplo.', 'VALIDACION'));
+  }
+
   cambiarContrasena(actual: string, nueva: string): Observable<void> {
     return defer(() => {
       const sesion = this.auth.sesion();

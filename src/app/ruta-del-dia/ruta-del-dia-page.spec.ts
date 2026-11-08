@@ -69,9 +69,10 @@ describe('Ruta del día (conductor)', () => {
     ui.boton('Recogido').click();
     await estabilizar(harness.fixture, 3);
     expect(paso()).toContain(r.paradas[1].estudiante);
-    ui.boton('No asistió').click();
+    ui.boton('No asiste hoy').click();
     await estabilizar(harness.fixture, 3);
     expect(paso()).toContain('Llegada al colegio');
+    expect(el.textContent).toContain('No asiste hoy al colegio');
     ui.boton('en el colegio').click();
     await estabilizar(harness.fixture, 3);
     expect(paso()).toContain('Todos los estudiantes están resueltos');

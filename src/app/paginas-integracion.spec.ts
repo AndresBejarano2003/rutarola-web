@@ -12,6 +12,8 @@ import MonitoreoPage from 'src/app/operacion/monitoreo/monitoreo-page';
 import EmpresasPage from 'src/app/plataforma/empresas/empresas-page';
 import { EmpresasRepositorio } from 'src/app/plataforma/empresas/empresas-repositorio';
 import { FILTROS_EMPRESA_VACIOS } from 'src/app/plataforma/empresas/empresa';
+import SoportePlataformaPage from 'src/app/plataforma/soporte/soporte-plataforma-page';
+import { TicketsRepositorio } from 'src/app/sistema/soporte/tickets/tickets-repositorio';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import { estabilizar, pantalla, repositoriosDePrueba, simularDialogos } from 'src/app/shared/pruebas/pruebas';
 
@@ -114,5 +116,74 @@ describe('Pantallas de GPS, comunicación, configuración y plataforma', () => {
     const { items } = await firstValueFrom(TestBed.inject(EmpresasRepositorio).listar(FILTROS_EMPRESA_VACIOS, { pagina: 1, tamano: 10 }));
     expect(items.map((e) => e.nombre)).toEqual(['RutaRola Demo', 'Transportes del Huila']);
     expect(ui.filas('table').length).toBe(2);
+  });
+
+  it('Plataforma › Empresas muestra los administradores y les restablece la contraseña', async () => {
+    const repo = TestBed.inject(EmpresasRepositorio);
+    const empresa = await firstValueFrom(
+      repo.crear({ nombre: 'Rutas del Sur', nit: '901111111-1', direccion: '', ciudad: '', telefono: '', email: '', logoUrl: '', estado: 'ACTIVO',
+        administrador: { nombre: 'Laura Gómez', usuario: 'lgomez', email: '', contrasena: 'Clave-123' } }),
+    );
+    const fixture = TestBed.createComponent(EmpresasPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    const ui = pantalla(el);
+    ([...el.querySelectorAll('tbody tr')].find((f) => f.textContent?.includes('Rutas del Sur')) as HTMLElement).click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('Laura Gómez');
+    expect(el.textContent).toContain('Aún no ha ingresado');
+
+    ui.boton('Cambiar contraseña').click();
+    await estabilizar(fixture);
+    ui.boton('Guardar contraseña').click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Este campo es obligatorio');
+    ui.boton('Generar una').click();
+    await estabilizar(fixture);
+    const campo = el.querySelector('app-administradores-empresa input[formcontrolname="contrasena"]') as HTMLInputElement;
+    expect(campo.value).toHaveLength(12);
+    expect(campo.type).toBe('text');
+    ui.boton('Guardar contraseña').click();
+    await estabilizar(fixture, 4);
+    expect(TestBed.inject(NotificacionesService).lista().at(-1)?.mensaje).toContain('Contraseña de Laura Gómez actualizada');
+    expect((await firstValueFrom(repo.administradores(empresa.id))).map((a) => a.usuario)).toEqual(['lgomez']);
+  });
+
+  it('Plataforma › Soporte avanza un ticket por sus etapas y pide comentario al devolverlo', async () => {
+    const repo = TestBed.inject(TicketsRepositorio);
+    const ticket = await firstValueFrom(
+      repo.crear({ tipo: 'ERROR', modulo: 'Finanzas', prioridad: 'ALTA', asunto: 'Factura en blanco', descripcion: 'La factura no muestra los valores del mes.', adjuntos: [] }),
+    );
+    const fixture = TestBed.createComponent(SoportePlataformaPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    const ui = pantalla(el);
+    expect(el.textContent).toContain('Factura en blanco');
+    expect(el.textContent).toContain('Sin asignar');
+
+    ([...el.querySelectorAll('tbody tr')].find((f) => f.textContent?.includes('Factura en blanco')) as HTMLElement).click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).not.toContain('Marcar resuelto');
+    ui.boton('Tomar y revisar').click();
+    await estabilizar(fixture, 4);
+    expect((await firstValueFrom(repo.detallePlataforma(ticket.id))).estado).toBe('EN_REVISION');
+
+    // Rechazar exige explicar el motivo.
+    (el.querySelector('input[type="radio"][value="RECHAZADO"]') as HTMLInputElement).click();
+    await estabilizar(fixture);
+    ui.boton('Rechazar').click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Este campo es obligatorio');
+
+    // Nota interna: no la ve la empresa.
+    ui.boton('Responder').click();
+    await estabilizar(fixture);
+    (el.querySelector('#form-respuesta-ticket textarea') as HTMLTextAreaElement).value = 'Revisar el cálculo del mes';
+    el.querySelector('#form-respuesta-ticket textarea')!.dispatchEvent(new Event('input'));
+    (el.querySelector('#form-respuesta-ticket input[type="checkbox"]') as HTMLInputElement).click();
+    ui.boton('Enviar').click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('Nota interna (la empresa no la ve)');
+    expect((await firstValueFrom(repo.obtener(ticket.id))).eventos.some((e) => e.interno)).toBe(false);
   });
 });

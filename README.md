@@ -224,6 +224,31 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   de una lista fija), prioridad (Media por defecto), asunto de 5 a 120 caracteres y descripción de 20 a
   2000; admite hasta 3 adjuntos (PDF o imagen, 1 MB c/u). El consecutivo `SOP-0001` lo asigna el servidor.
   WhatsApp se abre con lo que el usuario ya escribió en el formulario.
+- **Tickets de soporte (`sistema/soporte/tickets/`):** cada solicitud es un ticket. Flujo NUEVO → En revisión →
+  En proceso → QA → Pruebas → Validación del cliente → Resuelto → Cerrado, más Esperando cliente (al responder la
+  empresa vuelve a En revisión), retrocesos, Rechazado y Cancelado. Un ERROR o MEJORA solo se resuelve desde
+  Validación del cliente; una CONSULTA o CAPACITACIÓN puede resolverse desde revisión o proceso. Rechazar, pedir
+  información, resolver o retroceder exige comentario. SLA desde la creación: crítica 8 h, alta 24 h, media 72 h,
+  baja 7 días (la empresa no elige crítica). La empresa ve "Mis solicitudes" (En curso/Todas), responde con
+  adjuntos, valida ("Sí funciona" / "No, sigue fallando"), confirma con calificación 1–5, reabre o cancela; un
+  Resuelto sin respuesta se cierra solo a los 7 días. La plataforma (`plataforma/soporte`) filtra, avanza estados,
+  responde (pública o nota interna, que la empresa nunca ve), asigna responsable y prioridad, y agenda reuniones
+  (virtual con enlace; realizada con acta). El servidor envía correo al equipo y al solicitante y una notificación
+  de campana por cada respuesta pública.
+- **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
+  (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,
+  soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
+  mensualidades. Toda empresa nueva (registro público `/registro` o la plataforma) recibe 3 meses de Profesional;
+  al terminar la prueba o el periodo pagado pasa a Gratis sin perder datos. Los límites solo bloquean crear o
+  activar vehículos o estudiantes por encima del plan; sin GPS el teléfono muestra "Ubicación en pausa". El pago es
+  Wompi Web Checkout y el plan lo activa SOLO la confirmación de Wompi al servidor (evento firmado o consulta), nunca
+  el navegador. Pagar durante la prueba suma los días restantes; renovar extiende; cambiar de plan empieza hoy.
+  **Hoy Wompi está pausado** (sin llaves en el servidor, `pagosEnLinea` = false): la página ofrece "Solicitar por
+  Soporte" y la plataforma activa el plan en Empresas › Plan; el correo también está simulado (avisos solo por
+  la campana). `suscripcion.ts` debe coincidir con `CatalogoPlanes.cs`. `/offline-membership` es la página pública de precios y
+  `<app-aviso-plan>` avisa en el shell 15 días antes del fin o en Gratis.
+- **Administradores de empresa (plataforma):** en Plataforma › Empresas el SuperAdmin ve los administradores de
+  cada empresa, los crea, edita, inactiva y les cambia la contraseña (revoca sus sesiones), y ajusta su plan.
 
 ### Tipos de usuario y acceso (`core/auth.ts`, `core/guardias.ts`, `autenticacion/`)
 Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar sesión.
@@ -296,8 +321,12 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   cuando el compañero inicia (`observarRutasDelDia`), mostrando "Continuar".
 - **Snapshot:** al iniciar se guardan ruta, colegio, vehículo, personal y, por estudiante activo de la
   ruta, nombre, grado, dirección y acudiente con teléfono.
-- **Estados por estudiante:** `PENDIENTE → A_BORDO → ENTREGADO` o `PENDIENTE → AUSENTE` ("No asistió"),
-  con hora; "Deshacer" vuelve al estado anterior. Otras transiciones → 422.
+- **Estados por estudiante:** `PENDIENTE → A_BORDO → ENTREGADO` o `PENDIENTE → AUSENTE`, con hora;
+  "Deshacer" vuelve al estado anterior. Otras transiciones → 422.
+- **Asistencia** (`motivoAusencia`, solo con AUSENTE): en la recogida hay dos botones, "**No asiste hoy**"
+  (`NO_ASISTE`: no va al colegio; la ENTREGA de ese día ya lo trae como AUSENTE y se puede deshacer si sí
+  llegó) y "**Va por su cuenta**" (`POR_SU_CUENTA`: sí asiste y regresa en la ruta). En la entrega, "No viaja"
+  (`POR_SU_CUENTA`); `NO_ASISTE` en la entrega → 422. Textos en `nombreAusencia` (iguales en el API).
 - **Siguiente paso** (`siguientePaso`): recogida = recoger al siguiente pendiente y luego "Entregar en el
   colegio" a todos los que van a bordo; entrega = abordaje en el colegio y luego cada casa. Cada parada
   ofrece "Cómo llegar" (Google Maps), llamar y avisar por WhatsApp al acudiente.
@@ -314,14 +343,15 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   consulta de respaldo cada 60 s; "Mis rutas" se refresca con los avisos que el servidor envía al personal. En
   modo local, el evento `storage` de otra pestaña y una consulta cada 10 s. Si la monitora cambió el orden, el
   conductor ve el aviso "… cambió el orden · Ahora sigue: …" (con vibración) y el siguiente paso actualizado.
-- **GPS** (`ruta-del-dia/gps/`): mientras el recorrido está EN CURSO, el teléfono de la monitora (o del conductor
-  si no hay monitora, el mismo criterio de `puedeReordenar`: uno solo por vehículo) comparte la ubicación con
+- **GPS** (`ruta-del-dia/gps/`): mientras el recorrido está EN CURSO, los teléfonos del conductor **y** de la
+  monitora (`reportaUbicacion`) comparten la ubicación, así sigue al día aunque uno cierre la app o se apague; el
+  servidor guarda una lectura cada 4 s como mínimo por recorrido (descarta las casi simultáneas). Usa
   `EmisorGps`: `watchPosition` → lecturas con precisión ≤ 100 m y una cada ≥ 5 s → cola en `localStorage`
   (`rutarola.gps.pendientes`, sobrevive a recargas y a la falta de señal, máx. 5000 por recorrido) → lotes de
   ≤ 500 cada 15 s y al volver la red; lo pendiente de recorridos anteriores se reenvía al abrir (el servidor
   acepta hasta 5 min después del fin y descarta repetidas; un 4xx descarta el lote). La pantalla muestra
-  "Compartiendo ubicación", "Buscando señal", sin permiso o cuántas lecturas faltan por enviar; el compañero ve
-  quién comparte. `GpsRepositorio` (`GpsLocal`, `rutarola.gps` → `GpsHttp`): enviar, última, trayecto, en curso
+  "Compartiendo ubicación", "Buscando señal", sin permiso o cuántas lecturas faltan por enviar, y que el
+  compañero también comparte. `GpsRepositorio` (`GpsLocal`, `rutarola.gps` → `GpsHttp`): enviar, última, trayecto, en curso
   y observar (hub). Las ubicaciones se conservan **30 días** (`DIAS_RETENCION_GPS`, `Gps:DiasRetencion` en el API).
 - **Mapas** (`shared/mapa/mapa.ts`, `<app-mapa>`: Leaflet + OpenStreetMap con atribución, cargado solo al
   mostrarse; marcadores Font Awesome con `divIcon`): Operación › **Monitoreo en vivo** (`operacion/monitoreo`,
@@ -683,7 +713,5 @@ Las pantallas que aún usan grises fijos se migran a estas clases cuando se modi
   `apiUrl`/`usarApi`): todo funciona con `localStorage`; Configuración guarda los parámetros pero los cálculos del
   navegador usan los valores por defecto (día 5, 30 días); el inicio (`TableroLocal`), las notificaciones
   (`NotificacionesLocal`) y el portal (`PortalLocal`) se calculan en el navegador con las mismas reglas del API.
-- **Datos fijos:** el perfil del administrador local (`USUARIO_DEMO`) y Planes y Membresías siguen
-  con datos de ejemplo. El registro público (`/registro`) no tiene endpoint: las empresas las crea la plataforma.
-- **Soporte:** las solicitudes del Centro de Ayuda se guardan en `localStorage`
-  (`SolicitudesSoporteService`) hasta que exista el API de soporte (envío, adjuntos, estado y respuesta).
+- **Datos fijos:** el perfil del administrador local (`USUARIO_DEMO`) es de ejemplo. En modo local los tickets y el
+  plan viven en el navegador; el pago en línea y el registro público (`/registro`) necesitan el API.

@@ -87,7 +87,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
               .flatMap((r): RecorridoHoy[] => {
                 const parada = r.paradas.find((p) => p.estudianteId === e.id);
                 return parada
-                  ? [{ recorridoId: r.id, trayecto: r.trayecto, enCurso: r.estado === 'EN_CURSO', estado: parada.estado, horaAbordo: parada.horaAbordo, horaEntrega: parada.horaEntrega }]
+                  ? [{ recorridoId: r.id, trayecto: r.trayecto, enCurso: r.estado === 'EN_CURSO', estado: parada.estado, horaAbordo: parada.horaAbordo, horaEntrega: parada.horaEntrega, motivoAusencia: parada.motivoAusencia ?? '' }]
                   : [];
               })
               .sort((a, b) => a.trayecto.localeCompare(b.trayecto)).reverse(); // RECOGIDA antes que ENTREGA

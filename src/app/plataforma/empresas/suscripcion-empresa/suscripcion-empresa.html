@@ -1,0 +1,87 @@
+<section class="flex flex-col gap-3" aria-labelledby="titulo-plan-empresa">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h3 id="titulo-plan-empresa" class="text-info text-xs font-semibold uppercase tracking-wide">Plan y pagos</h3>
+    @if (suscripcion() && !editando()) {
+      <button type="button" class="btn btn-sm btn-ghost text-secondary" (click)="editar()"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Ajustar plan</button>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="text-sm text-error">{{ error() }}</p>
+  } @else if (suscripcion(); as s) {
+    <div class="rounded-box border border-base-300 bg-base-100 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+      <div>
+        <span class="block text-base-content/70">Plan</span>
+        <span class="font-semibold">{{ s.nombrePlan }}</span>
+        <span class="badge badge-soft badge-sm ml-1" [class.badge-info]="s.estado === 'PRUEBA'" [class.badge-success]="s.estado === 'ACTIVA'"
+          [class.bg-base-300]="s.estado === 'GRATIS'">{{ s.estado === 'PRUEBA' ? 'Prueba' : s.estado === 'ACTIVA' ? 'Pagado' : 'Gratis' }}</span>
+      </div>
+      <div>
+        <span class="block text-base-content/70">Vigente hasta</span>
+        {{ s.fechaFin ? (s.fechaFin | date: 'd MMM y') + ' (' + s.diasRestantes + ' días)' : '—' }}
+      </div>
+      <div>
+        <span class="block text-base-content/70">Uso</span>
+        {{ s.uso.vehiculos }}/{{ s.limites.vehiculos ?? '∞' }} vehículos · {{ s.uso.estudiantes }}/{{ s.limites.estudiantes ?? '∞' }} estudiantes
+      </div>
+      @if (s.nota) {
+        <p class="sm:col-span-3 text-xs text-base-content/70"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i> {{ s.nota }}</p>
+      }
+    </div>
+
+    @if (editando()) {
+      <form id="form-suscripcion-empresa" [formGroup]="form" (ngSubmit)="guardar()" novalidate
+        class="rounded-box border border-base-300 bg-base-100 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex flex-col">
+          <span class="label-text text-base-content/90 mb-1">Estado <span class="text-error">*</span></span>
+          <app-selector-busqueda formControlName="estado" [opciones]="estados" etiqueta="Estado" />
+        </div>
+        <div class="flex flex-col">
+          <span class="label-text text-base-content/90 mb-1">Plan <span class="text-error">*</span></span>
+          <app-selector-busqueda formControlName="plan" [opciones]="planes" etiqueta="Plan" />
+        </div>
+        @if (conVigencia()) {
+          <label app-campo etiqueta="Vigente hasta" requerido [error]="errorDe('fechaFin')">
+            <input type="date" formControlName="fechaFin" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDe('fechaFin')" />
+          </label>
+          @if (estadoForm() === 'ACTIVA') {
+            <div class="flex flex-col">
+              <span class="label-text text-base-content/90 mb-1">Periodo</span>
+              <app-selector-busqueda formControlName="periodo" [opciones]="periodos" etiqueta="Periodo" />
+            </div>
+          }
+        }
+        <label app-campo class="md:col-span-2" etiqueta="Nota (la ve la empresa)" [error]="errorDe('nota')">
+          <input formControlName="nota" maxlength="500" placeholder="Pago por transferencia del 5 de noviembre" class="input input-bordered bg-base-100 border-neutral w-full" />
+        </label>
+        <div class="md:col-span-2 flex justify-end gap-2">
+          <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="editando.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-sm btn-secondary" [disabled]="guardando()">
+            @if (guardando()) {
+              <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+            }
+            Guardar plan
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (pagos().length) {
+      <ul class="flex flex-col divide-y divide-base-300 rounded-box border border-base-300 text-sm">
+        @for (p of pagos(); track p.id) {
+          <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+            <span>{{ p.fechaCreacion | date: 'd MMM y' }} · {{ nombrePlan(p.plan) }} {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</span>
+            <span class="flex items-center gap-2">
+              {{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+              <span class="badge badge-soft badge-sm {{ estadosPago[p.estado].badge }}">{{ estadosPago[p.estado].nombre }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="text-xs text-base-content/70">Sin pagos en línea.</p>
+    }
+  } @else {
+    <div class="skeleton bg-base-300 h-16 w-full"></div>
+  }
+</section>

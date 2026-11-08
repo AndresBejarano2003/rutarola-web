@@ -44,7 +44,7 @@
           <div class="rounded-box bg-base-100 p-2"><p class="text-lg font-bold">{{ conteo().pendientes }}</p><p class="text-xs text-base-content/70">Pendientes</p></div>
           <div class="rounded-box bg-base-100 p-2"><p class="text-lg font-bold text-info">{{ conteo().aBordo }}</p><p class="text-xs text-base-content/70">A bordo</p></div>
           <div class="rounded-box bg-base-100 p-2"><p class="text-lg font-bold text-success">{{ conteo().entregados }}</p><p class="text-xs text-base-content/70">Entregados</p></div>
-          <div class="rounded-box bg-base-100 p-2"><p class="text-lg font-bold text-warning">{{ conteo().ausentes }}</p><p class="text-xs text-base-content/70">No asistió</p></div>
+          <div class="rounded-box bg-base-100 p-2"><p class="text-lg font-bold text-warning">{{ conteo().ausentes }}</p><p class="text-xs text-base-content/70">No viajan</p></div>
         </div>
       </div>
     </header>
@@ -52,7 +52,9 @@
     <!-- Ubicación del vehículo -->
     @if (enCurso()) {
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-box border border-base-300 bg-base-200 px-4 py-2 text-sm" role="status">
-        @if (reportaUbicacion()) {
+        @if (reportaUbicacion() && gps.rechazo(); as motivo) {
+          <span class="flex items-center gap-2 text-warning"><i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i> Ubicación en pausa: {{ motivo }}</span>
+        } @else if (reportaUbicacion()) {
           @switch (gps.estado()) {
             @case ('ACTIVO') {
               <span class="flex items-center gap-2 text-success"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Compartiendo ubicación</span>
@@ -74,9 +76,12 @@
           @if (gps.pendientes() > 0 && gps.sinConexion()) {
             <span class="badge badge-soft badge-warning">{{ gps.pendientes() }} sin enviar · se enviarán al volver la señal</span>
           }
+          @if (companero()) {
+            <span class="text-base-content/70">{{ companero() }} también la comparte desde su teléfono.</span>
+          }
         } @else {
           <span class="flex items-center gap-2 text-base-content/80"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-            La ubicación la comparte el teléfono de {{ r.monitoraId ? r.monitora : r.conductor }}.</span>
+            La ubicación la comparten los teléfonos del conductor y la monitora.</span>
         }
       </div>
     }
@@ -103,13 +108,23 @@
             @case ('RECOGER') {
               <ng-container *ngTemplateOutlet="parada; context: { $implicit: p.parada, titulo: 'Próxima recogida' }" />
               <div class="grid grid-cols-2 gap-2">
-                <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight" [disabled]="procesando()"
+                <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight col-span-2" [disabled]="procesando()"
                   (click)="marcar([p.parada.estudianteId], 'A_BORDO')">
                   <i class="fa-solid fa-check" aria-hidden="true"></i> Recogido
                 </button>
-                <button type="button" class="btn btn-lg h-auto min-h-14 py-3 leading-tight bg-base-300 border-neutral hover:bg-neutral" [disabled]="procesando()"
-                  (click)="marcar([p.parada.estudianteId], 'AUSENTE')">
-                  <i class="fa-solid fa-user-slash" aria-hidden="true"></i> No asistió
+                <button type="button" class="btn h-auto min-h-12 py-2 leading-tight bg-base-300 border-neutral hover:bg-neutral" [disabled]="procesando()"
+                  (click)="marcar([p.parada.estudianteId], 'AUSENTE', 'NO_ASISTE')">
+                  <span class="flex flex-col items-center gap-0.5">
+                    <span><i class="fa-solid fa-user-slash" aria-hidden="true"></i> No asiste hoy</span>
+                    <span class="text-xs font-normal text-base-content/80">No va al colegio</span>
+                  </span>
+                </button>
+                <button type="button" class="btn h-auto min-h-12 py-2 leading-tight bg-base-300 border-neutral hover:bg-neutral" [disabled]="procesando()"
+                  (click)="marcar([p.parada.estudianteId], 'AUSENTE', 'POR_SU_CUENTA')">
+                  <span class="flex flex-col items-center gap-0.5">
+                    <span><i class="fa-solid fa-car-side" aria-hidden="true"></i> Va por su cuenta</span>
+                    <span class="text-xs font-normal text-base-content/80">Sí asiste, regresa en la ruta</span>
+                  </span>
                 </button>
               </div>
             }
@@ -141,7 +156,7 @@
                 <div class="min-w-0">
                   <p class="text-sm text-base-content/70 uppercase tracking-wide">Abordaje en el colegio</p>
                   <h2 class="text-xl font-bold">{{ p.pendientes.length === 1 ? 'Falta 1 estudiante' : 'Faltan ' + p.pendientes.length + ' estudiantes' }}</h2>
-                  <p class="text-base-content/70">Marca quién subió al vehículo y quién no asistió.</p>
+                  <p class="text-base-content/70">Marca quién subió al vehículo y quién no viaja hoy en la ruta.</p>
                 </div>
               </div>
               <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full" [disabled]="procesando()"
@@ -257,9 +272,18 @@
         <button type="button" class="btn btn-xs btn-soft btn-info" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'A_BORDO')">
           {{ esRecogida() ? 'Recogido' : 'Subió' }}
         </button>
-        <button type="button" class="btn btn-xs btn-soft btn-warning" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'AUSENTE')">
-          No asistió
-        </button>
+        @if (esRecogida()) {
+          <button type="button" class="btn btn-xs btn-soft btn-warning" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'AUSENTE', 'NO_ASISTE')">
+            No asiste hoy
+          </button>
+          <button type="button" class="btn btn-xs btn-soft btn-warning" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'AUSENTE', 'POR_SU_CUENTA')">
+            Por su cuenta
+          </button>
+        } @else {
+          <button type="button" class="btn btn-xs btn-soft btn-warning" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'AUSENTE', 'POR_SU_CUENTA')">
+            No viaja
+          </button>
+        }
       } @else if (e.estado === 'A_BORDO') {
         <button type="button" class="btn btn-xs btn-soft btn-success" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'ENTREGADO')">
           Entregado

@@ -1,0 +1,40 @@
+<div class="min-h-dvh bg-base-100 text-base-content px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
+  <div class="max-w-7xl mx-auto flex flex-col gap-8">
+    <nav class="flex items-center justify-between gap-4">
+      <a routerLink="/login" aria-label="RutaRola"><img src="logos/logo-oficial-sin-fondo-lb-pequeño.png" alt="RutaRola" class="h-10 w-auto" /></a>
+      <a routerLink="/login" class="btn btn-ghost btn-sm">Iniciar sesión</a>
+    </nav>
+
+    <header class="text-center max-w-3xl mx-auto">
+      <h1 class="text-3xl sm:text-5xl font-bold">Prueba RutaRola <span class="text-primary">{{ mesesPrueba }} meses gratis</span></h1>
+      <p class="text-base-content/70 mt-4 text-lg">
+        Todo el plan Profesional desde el primer día: ruta del día, asistencia, GPS en vivo para las familias, facturación y recordatorios de cobro.
+        Sin tarjeta y sin permanencia.
+      </p>
+      <button type="button" class="btn btn-primary btn-lg mt-6" (click)="registrarse()">
+        <i class="fa-solid fa-rocket" aria-hidden="true"></i> Registrar mi empresa gratis
+      </button>
+    </header>
+
+    <div class="flex justify-center">
+      <div role="radiogroup" aria-label="Periodo de pago" class="join">
+        <button type="button" role="radio" class="btn join-item" [attr.aria-checked]="periodo() === 'MENSUAL'"
+          [class.bg-base-300]="periodo() !== 'MENSUAL'" [class.btn-secondary]="periodo() === 'MENSUAL'" (click)="periodo.set('MENSUAL')">Mensual</button>
+        <button type="button" role="radio" class="btn join-item" [attr.aria-checked]="periodo() === 'ANUAL'"
+          [class.bg-base-300]="periodo() !== 'ANUAL'" [class.btn-secondary]="periodo() === 'ANUAL'" (click)="periodo.set('ANUAL')">
+          Anual <span class="badge badge-sm badge-success">{{ mesesGratisAnual }} meses gratis</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
+      @for (p of planes; track p.id) {
+        <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [textoBoton]="p.precioMensual === 0 ? 'Empezar gratis' : 'Probar ' + mesesPrueba + ' meses gratis'"
+          (elegir)="registrarse()" />
+      }
+    </div>
+    <p class="text-center text-sm text-base-content/70">
+      Precios en COP con IVA incluido. Al terminar la prueba eliges un plan o sigues en Gratis con todos tus datos.
+    </p>
+  </div>
+</div>

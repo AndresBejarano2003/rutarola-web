@@ -1,0 +1,143 @@
+@let t = ticket();
+<div class="flex flex-col gap-5">
+  <!-- Encabezado -->
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="font-mono text-sm text-base-content/80">{{ t.numero }}</span>
+    <span class="badge badge-soft {{ badgeEstado(t.estado) }}">{{ estado(t.estado) }}</span>
+    <span class="badge badge-soft {{ badgePrioridad(t.prioridad) }}">Prioridad {{ nombrePrioridad(t.prioridad).toLowerCase() }}</span>
+    <span class="badge bg-base-300 border-neutral">{{ nombreTipo(t.tipo) }}</span>
+    @if (t.vencido) {
+      <span class="badge badge-soft badge-error"><i class="fa-solid fa-clock" aria-hidden="true"></i> Fuera de tiempo</span>
+    }
+  </div>
+
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+    @if (plataforma()) {
+      <div><dt class="text-base-content/70">Empresa</dt><dd class="font-medium">{{ t.empresa }}</dd></div>
+    }
+    <div><dt class="text-base-content/70">Módulo</dt><dd>{{ t.modulo }}</dd></div>
+    <div>
+      <dt class="text-base-content/70">Solicitante</dt>
+      <dd>{{ t.solicitante }}@if (plataforma() && t.correoSolicitante) { <span class="text-base-content/70">· {{ t.correoSolicitante }}</span> }</dd>
+    </div>
+    <div><dt class="text-base-content/70">Responsable</dt><dd>{{ t.responsable || 'Sin asignar' }}</dd></div>
+    <div><dt class="text-base-content/70">Abierto</dt><dd>{{ t.fechaCreacion | date: 'd MMM y, h:mm a' }}</dd></div>
+    <div>
+      <dt class="text-base-content/70">Objetivo de solución</dt>
+      <dd [class.text-error]="t.vencido">{{ t.fechaObjetivo | date: 'd MMM y, h:mm a' }}</dd>
+    </div>
+    @if (t.calificacion) {
+      <div class="sm:col-span-2">
+        <dt class="text-base-content/70">Calificación</dt>
+        <dd class="flex items-center gap-1 text-warning" [attr.aria-label]="t.calificacion + ' de 5'">
+          @for (n of [1, 2, 3, 4, 5]; track n) {
+            <i class="fa-star" [class.fa-solid]="n <= t.calificacion" [class.fa-regular]="n > t.calificacion" aria-hidden="true"></i>
+          }
+          @if (t.comentarioCalificacion) {
+            <span class="ml-2 text-base-content">“{{ t.comentarioCalificacion }}”</span>
+          }
+        </dd>
+      </div>
+    }
+  </dl>
+
+  <!-- Avance -->
+  @if (terminadoSinResolver()) {
+    <div role="status" class="alert alert-soft {{ t.estado === 'RECHAZADO' ? 'alert-error' : '' }} bg-base-300">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <span>{{ t.estado === 'RECHAZADO' ? 'Esta solicitud no procede. El motivo está en el historial.' : 'La solicitud se canceló.' }}</span>
+    </div>
+  } @else {
+    <ol class="steps steps-horizontal w-full overflow-x-auto text-xs" aria-label="Avance del ticket">
+      @for (e of etapas; track e.estado; let i = $index) {
+        <li class="step" [class.step-primary]="i <= etapaActual()" [attr.aria-current]="i === etapaActual() ? 'step' : null">{{ e.nombre }}</li>
+      }
+    </ol>
+    @if (t.estado === 'ESPERANDO_CLIENTE') {
+      <div role="status" class="alert alert-soft alert-warning">
+        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+        <span>{{ plataforma() ? 'Se pidió información a la empresa.' : 'El equipo necesita información tuya: respóndele abajo.' }}</span>
+      </div>
+    }
+  }
+
+  <!-- Descripción -->
+  <section>
+    <h3 class="text-info text-xs font-semibold uppercase tracking-wide mb-2">{{ t.asunto }}</h3>
+    <p class="text-sm whitespace-pre-line">{{ t.descripcion }}</p>
+    @if (t.adjuntos.length) {
+      <ul class="mt-3 flex flex-wrap gap-2">
+        @for (a of t.adjuntos; track a.id) {
+          <li>
+            <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="descargar(a)">
+              <i class="fa-solid fa-paperclip" aria-hidden="true"></i> {{ a.nombre }} <span class="text-base-content/70">({{ tamano(a.tamano) }})</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <!-- Reuniones -->
+  @if (t.reuniones.length) {
+    <section>
+      <h3 class="text-info text-xs font-semibold uppercase tracking-wide mb-2">Reuniones</h3>
+      <ul class="flex flex-col gap-2">
+        @for (r of t.reuniones; track r.id) {
+          <li class="rounded-box border border-base-300 bg-base-100 p-3 text-sm">
+            <div class="flex flex-wrap items-center gap-2">
+              <i class="fa-solid fa-calendar-day text-info" aria-hidden="true"></i>
+              <span class="font-medium">{{ r.fecha | date: 'EEEE d MMM, h:mm a' }}</span>
+              <span class="text-base-content/70">· {{ r.duracionMinutos }} min · {{ nombreModalidad(r.modalidad) }}</span>
+              <span class="badge badge-sm badge-soft"
+                [class.badge-info]="r.estado === 'PROGRAMADA'" [class.badge-success]="r.estado === 'REALIZADA'"
+                [class.bg-base-300]="r.estado === 'CANCELADA'">{{ r.estado === 'PROGRAMADA' ? 'Programada' : r.estado === 'REALIZADA' ? 'Realizada' : 'Cancelada' }}</span>
+            </div>
+            <p class="mt-1">{{ r.motivo }}</p>
+            @if (r.enlace && r.estado === 'PROGRAMADA') {
+              <a [href]="r.enlace" target="_blank" rel="noopener" class="link link-secondary break-all">{{ r.enlace }}</a>
+            }
+            @if (r.notas) {
+              <p class="mt-1 text-base-content/80 whitespace-pre-line"><span class="font-medium">Notas:</span> {{ r.notas }}</p>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- Historial -->
+  <section>
+    <h3 class="text-info text-xs font-semibold uppercase tracking-wide mb-2">Historial</h3>
+    <ol class="flex flex-col gap-3">
+      @for (e of historial(); track e.id) {
+        <li class="flex gap-3 rounded-box p-3 border"
+          [class.border-warning]="e.interno" [class.bg-warning/5]="e.interno"
+          [class.border-base-300]="!e.interno" [class.bg-base-100]="!e.interno">
+          <span class="mt-0.5 size-8 shrink-0 rounded-full grid place-items-center"
+            [class.bg-secondary/20]="e.deLaPlataforma" [class.bg-base-300]="!e.deLaPlataforma">
+            <i [class]="icono(e) + ' text-sm'" aria-hidden="true"></i>
+          </span>
+          <div class="min-w-0 grow text-sm">
+            <div class="flex flex-wrap items-baseline gap-x-2">
+              <span class="font-medium">{{ titulo(e) }}</span>
+              <span class="text-base-content/70 text-xs">{{ e.usuario }} · {{ e.fecha | date: 'd MMM y, h:mm a' }}</span>
+            </div>
+            @if (e.texto) {
+              <p class="mt-1 whitespace-pre-line break-words">{{ e.texto }}</p>
+            }
+            @if (e.adjuntos.length) {
+              <div class="mt-2 flex flex-wrap gap-2">
+                @for (a of e.adjuntos; track a.id) {
+                  <button type="button" class="btn btn-xs bg-base-300 border-neutral hover:bg-neutral" (click)="descargar(a)">
+                    <i class="fa-solid fa-paperclip" aria-hidden="true"></i> {{ a.nombre }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+  </section>
+</div>

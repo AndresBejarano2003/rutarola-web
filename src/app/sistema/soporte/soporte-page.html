@@ -274,9 +274,9 @@
             y enviamos lo que ya escribiste.
           </p>
           <div class="flex shrink-0 justify-end gap-2">
-            <button type="button" class="btn btn-ghost" [disabled]="solicitudes.enviando()" (click)="limpiar()">Limpiar</button>
-            <button type="submit" form="form-solicitud-soporte" class="btn btn-primary" [disabled]="solicitudes.enviando()">
-              @if (solicitudes.enviando()) {
+            <button type="button" class="btn btn-ghost" [disabled]="enviando()" (click)="limpiar()">Limpiar</button>
+            <button type="submit" form="form-solicitud-soporte" class="btn btn-primary" [disabled]="enviando()">
+              @if (enviando()) {
                 <span class="loading loading-spinner loading-sm"></span>
                 Enviando...
               } @else {
@@ -319,51 +319,7 @@
       </section>
 
       <!-- MIS SOLICITUDES -->
-      <section class="card bg-base-200 border border-base-300 shadow-xl">
-        <div class="card-body">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="card-title text-base-content">
-              <i class="fa-solid fa-inbox text-info"></i>
-              Mis solicitudes
-            </h2>
-            <div class="flex items-center gap-2">
-              @if (solicitudes.modoLocal) {
-                <div class="tooltip tooltip-left" data-tip="Se guardan en este navegador hasta conectar el API">
-                  <span class="badge badge-warning badge-soft badge-sm gap-1">
-                    <i class="fa-solid fa-database text-xs"></i>
-                    Modo local
-                  </span>
-                </div>
-              }
-              <span class="badge badge-primary badge-sm">{{ solicitudes.abiertas() }} abiertas</span>
-            </div>
-          </div>
-
-          @if (solicitudes.lista().length) {
-            <ul class="divide-y divide-base-300 mt-2">
-              @for (s of solicitudes.lista().slice(0, 5); track s.numero) {
-                <li class="py-3">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-mono text-sm text-base-content/80">{{ s.numero }}</span>
-                    <span class="badge badge-soft badge-sm" [class]="s.estado === 'ABIERTA' ? 'badge-warning' : 'badge-success'">
-                      {{ s.estado === 'ABIERTA' ? 'Abierta' : 'Resuelta' }}
-                    </span>
-                  </div>
-                  <div class="font-medium text-base-content truncate mt-1">{{ s.asunto }}</div>
-                  <div class="text-xs text-base-content/70 mt-0.5">
-                    {{ nombreTipo(s.tipo) }} · {{ s.fecha | date: 'd MMM y, h:mm a' }}
-                  </div>
-                </li>
-              }
-            </ul>
-          } @else {
-            <div class="text-center py-6">
-              <i class="fa-regular fa-envelope-open text-3xl text-base-content/50"></i>
-              <p class="text-sm text-base-content/70 mt-2">Aún no has enviado solicitudes.</p>
-            </div>
-          }
-        </div>
-      </section>
+      <app-mis-solicitudes />
     </aside>
   </div>
 </div>

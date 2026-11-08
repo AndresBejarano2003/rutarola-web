@@ -1,0 +1,57 @@
+@let p = plan();
+<article class="card h-full bg-base-200 border shadow-xl relative" [class.border-primary]="p.destacado" [class.border-base-300]="!p.destacado"
+  [attr.aria-label]="'Plan ' + p.nombre">
+  @if (p.destacado) {
+    <span class="badge badge-primary absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">Más elegido</span>
+  }
+  <div class="card-body gap-4">
+    <div>
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="card-title">{{ p.nombre }}</h2>
+        @if (actual()) {
+          <span class="badge badge-soft badge-info badge-sm">Tu plan</span>
+        }
+      </div>
+      <p class="text-sm text-base-content/70 mt-1 min-h-10">{{ p.descripcion }}</p>
+    </div>
+
+    <div>
+      @if (p.precioMensual === 0) {
+        <span class="text-4xl font-bold">$0</span>
+        <span class="text-base-content/70"> / siempre</span>
+      } @else {
+        @if (p.precioDesde) {
+          <span class="block text-xs text-base-content/70">Desde</span>
+        }
+        <span class="text-4xl font-bold">{{ (periodo() === 'ANUAL' ? mensualEquivalente(p) : p.precioMensual) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+        <span class="text-base-content/70"> / mes</span>
+        @if (periodo() === 'ANUAL') {
+          <span class="block text-xs text-success mt-1">
+            {{ p.precioAnual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} al año · ahorras {{ ahorro(p) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </span>
+        } @else if (costoPorEstudiante(p); as porEstudiante) {
+          <span class="block text-xs text-base-content/70 mt-1">≈ {{ porEstudiante | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} por estudiante al mes</span>
+        } @else {
+          <span class="block text-xs text-base-content/70 mt-1">Flotas de más de 40 vehículos: precio a la medida</span>
+        }
+      }
+    </div>
+
+    <ul class="flex flex-col gap-1 text-sm">
+      <li class="flex gap-2"><i class="fa-solid fa-van-shuttle text-info mt-0.5 w-4" aria-hidden="true"></i>
+        {{ p.limites.vehiculos === null ? 'Vehículos sin límite' : p.limites.vehiculos === 1 ? '1 vehículo' : p.limites.vehiculos + ' vehículos' }}</li>
+      <li class="flex gap-2"><i class="fa-solid fa-children text-info mt-0.5 w-4" aria-hidden="true"></i>
+        {{ p.limites.estudiantes === null ? 'Estudiantes sin límite' : 'Hasta ' + p.limites.estudiantes + ' estudiantes' }}</li>
+    </ul>
+
+    <ul class="flex flex-col gap-2 text-sm grow border-t border-base-300 pt-4">
+      @for (i of p.incluye; track i) {
+        <li class="flex gap-2"><i class="fa-solid fa-check text-success mt-0.5 w-4" aria-hidden="true"></i><span>{{ i }}</span></li>
+      }
+    </ul>
+
+    <button type="button" class="btn" [class.btn-primary]="p.destacado"
+      [class.bg-base-300]="!p.destacado" [class.border-neutral]="!p.destacado" [class.hover:bg-neutral]="!p.destacado"
+      [disabled]="deshabilitado()" (click)="elegir.emit()">{{ textoBoton() }}</button>
+  </div>
+</article>

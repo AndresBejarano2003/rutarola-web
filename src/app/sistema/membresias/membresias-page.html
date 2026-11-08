@@ -1,516 +1,314 @@
-<div class="min-h-dvh bg-base-100 px-4 py-6 sm:p-8">
+<div class="flex flex-col gap-6">
+  <!-- Encabezado -->
+  <header class="text-center max-w-3xl mx-auto pt-2">
+    <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-crown" aria-hidden="true"></i> Planes y membresías</span>
+    <h1 class="text-2xl sm:text-4xl font-bold mt-3">Transporte escolar organizado, <span class="text-primary">cobros a tiempo</span> y familias tranquilas</h1>
+    <p class="text-base-content/70 mt-3">
+      Empieza con {{ mesesPrueba }} meses gratis del plan Profesional. Sin tarjeta, sin permanencia: si no eliges un plan, sigues en Gratis con todos tus datos.
+    </p>
+  </header>
 
-    <!-- HEADER -->
-    <div class="text-center max-w-4xl mx-auto mb-16">
-
-        <div
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 mb-6">
-
-            <i class="fa-solid fa-crown"></i>
-            Planes y membresías
-
-        </div>
-
-        <h1 class="text-5xl font-bold text-white mb-6">
-
-            Planes diseñados para
-            <span class="text-yellow-400">
-                crecer con tu operación
-            </span>
-
-        </h1>
-
-        <p class="text-gray-400 text-lg">
-
-            Empieza gratis y escala a medida que tu institución crece.
-            Gestiona estudiantes, rutas, conductores, vehículos y facturación desde una sola plataforma.
-
-        </p>
-
+  @if (confirmacion(); as c) {
+    <div role="status" class="alert alert-soft"
+      [class.alert-info]="c.estado === 'VERIFICANDO' || c.estado === 'PENDIENTE'" [class.alert-success]="c.estado === 'APROBADO'"
+      [class.alert-error]="c.estado === 'RECHAZADO' || c.estado === 'ERROR' || c.estado === 'ANULADO'">
+      @switch (c.estado) {
+        @case ('VERIFICANDO') {
+          <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+          <span>Estamos confirmando tu pago con Wompi…</span>
+        }
+        @case ('PENDIENTE') {
+          <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+          <span>Wompi aún no confirma el pago (puede tardar unos minutos con PSE). Activaremos tu plan apenas llegue la confirmación.</span>
+        }
+        @case ('APROBADO') {
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+          <span>¡Pago aprobado! Tu plan {{ nombrePlan(c.pago!.plan) }} está activo. Referencia {{ c.pago!.referencia }}.</span>
+        }
+        @default {
+          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+          <span>El pago no se completó ({{ estadosPago[c.estado].nombre.toLowerCase() }}). No se hizo ningún cobro; puedes intentarlo de nuevo.</span>
+        }
+      }
     </div>
-
-    <!-- PLANES -->
-    <div class="grid xl:grid-cols-4 lg:grid-cols-2 gap-8">
-        <!-- GRATIS -->
-        <div class="card bg-gray-800 border border-gray-700 shadow-xl">
-
-            <div class="card-body">
-
-                <div class="flex justify-between items-center">
-
-                    <h2 class="card-title text-white">
-                        🚀 Gratis
-                    </h2>
-
-                    <div class="badge badge-ghost">
-                        Demo
-                    </div>
-
-                </div>
-
-                <div class="text-4xl font-bold text-white mt-4">
-
-                    $0
-
-                    <span class="text-base text-gray-500 font-normal">
-                        / mes
-                    </span>
-
-                </div>
-
-                <p class="text-gray-400 mt-4">
-
-                    Conoce RutaRola y prueba las funciones principales.
-
-                </p>
-
-                <div class="divider"></div>
-
-                <ul class="space-y-3 text-sm">
-
-                    <li class="text-green-400">✓ Hasta 20 estudiantes</li>
-                    <li class="text-green-400">✓ Hasta 2 rutas</li>
-                    <li class="text-green-400">✓ Hasta 1 vehículo</li>
-                    <li class="text-green-400">✓ Gestión básica de acudientes</li>
-                    <li class="text-green-400">✓ Dashboard principal</li>
-
-                    <li class="text-red-400">✕ Reportes avanzados</li>
-                    <li class="text-red-400">✕ Facturación completa</li>
-                    <li class="text-red-400">✕ Personalización</li>
-
-                </ul>
-
-                <div class="card-actions mt-6">
-
-                    <button
-                        class="btn w-full bg-yellow-400 hover:bg-yellow-300 text-black shadow-lg shadow-yellow-500/20">
-                        Comenzar gratis
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- BASIC -->
-        <div class="card bg-gray-800 border border-blue-500/20 shadow-xl">
-
-            <div class="card-body">
-
-                <h2 class="card-title text-blue-400">
-                    📘 Basic
-                </h2>
-
-                <div class="text-4xl font-bold text-white mt-4">
-
-                    $39.900
-
-                    <span class="text-base text-gray-500 font-normal">
-                        / mes
-                    </span>
-
-                </div>
-
-                <p class="text-gray-400 mt-4">
-
-                    Ideal para colegios pequeños y operaciones con pocos vehículos.
-
-                </p>
-
-                <div class="divider"></div>
-
-                <ul class="space-y-3 text-sm">
-
-                    <li class="text-green-400">✓ Gestión de estudiantes</li>
-                    <li class="text-green-400">✓ Gestión de acudientes</li>
-                    <li class="text-green-400">✓ Gestión de empleados</li>
-                    <li class="text-green-400">✓ Gestión de rutas</li>
-                    <li class="text-green-400">✓ Gestión de vehículos</li>
-                    <li class="text-green-400">✓ Dashboard financiero</li>
-
-                    <li class="text-yellow-400">
-                        ⚠ Registros limitados
-                    </li>
-
-                </ul>
-
-                <div class="card-actions mt-6">
-
-                    <button class="btn btn-primary w-full">
-                        Elegir Basic
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- PRO -->
-        <div
-            class="card bg-gradient-to-b from-yellow-500/10 to-gray-800 border-2 border-yellow-400 shadow-2xl scale-105">
-
-            <div class="card-body">
-
-                <div class="flex justify-between items-center">
-
-                    <h2 class="card-title text-yellow-400">
-
-                        ⭐ Pro
-
-                    </h2>
-
-                    <div class="badge badge-warning animate-pulse">
-                        Más popular
-                    </div>
-
-                </div>
-
-                <div class="text-4xl font-bold text-white mt-4">
-
-                    $79.900
-
-                    <span class="text-base text-gray-500 font-normal">
-                        / mes
-                    </span>
-
-                </div>
-
-                <p class="text-gray-300 mt-4">
-
-                    La solución completa para empresas en crecimiento.
-
-                </p>
-
-                <div class="divider"></div>
-
-                <ul class="space-y-3 text-sm">
-
-                    <li class="text-green-400">✓ Todo lo de Basic</li>
-                    <li class="text-green-400">✓ Estudiantes ilimitados</li>
-                    <li class="text-green-400">✓ Acudientes ilimitados</li>
-                    <li class="text-green-400">✓ Vehículos ilimitados</li>
-                    <li class="text-green-400">✓ Rutas ilimitadas</li>
-                    <li class="text-green-400">✓ Reportes avanzados</li>
-                    <li class="text-green-400">✓ Exportar PDF y Excel</li>
-                    <li class="text-green-400">✓ Indicadores financieros</li>
-
-                </ul>
-
-                <div class="card-actions mt-6">
-
-
-                    <button
-                        class="btn w-full bg-yellow-400 hover:bg-yellow-300 text-black shadow-lg shadow-yellow-500/20">
-
-                        Actualizar a Pro
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- MASTER -->
-        <div class="card bg-gradient-to-br from-blue-900/50 to-purple-900/40 border border-purple-500/40 shadow-xl">
-
-            <div class="card-body">
-
-                <h2 class="card-title text-purple-300">
-
-                    👑 Master
-
-                </h2>
-
-                <div class="text-4xl font-bold text-white mt-4">
-
-                    $149.900
-
-                    <span class="text-base text-gray-500 font-normal">
-                        / mes
-                    </span>
-
-                </div>
-
-                <p class="text-gray-300 mt-4">
-
-                    Libertad total para personalizar RutaRola según tu operación.
-
-                </p>
-
-                <div class="divider"></div>
-
-                <ul class="space-y-3 text-sm">
-
-                    <li class="text-green-400">✓ Todo lo de Pro</li>
-                    <li class="text-green-400">✓ Módulos personalizados</li>
-                    <li class="text-green-400">✓ Submódulos personalizados</li>
-                    <li class="text-green-400">✓ Formularios personalizados</li>
-                    <li class="text-green-400">✓ Roles avanzados</li>
-                    <li class="text-green-400">✓ API empresarial</li>
-                    <li class="text-green-400">✓ Integraciones especiales</li>
-                    <li class="text-green-400">✓ Soporte preferencial</li>
-
-                </ul>
-
-                <div class="card-actions mt-6">
-
-                    <button class="btn bg-purple-500 hover:bg-purple-400 border-none text-white w-full">
-
-                        Elegir Master
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
+  }
+
+  @if (error()) {
+    <div role="alert" class="alert alert-soft alert-error">
+      <span>{{ error() }}</span>
+      <button type="button" class="btn btn-sm btn-ghost" (click)="cargar()">Reintentar</button>
     </div>
+  }
 
-    <!-- COMPARATIVO -->
-    <div class="card bg-gray-800 border border-gray-700 shadow-2xl mt-10">
-
-        <div class="card-body">
-
-            <!-- HEADER -->
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-
-                <div>
-                    <h2 class="text-2xl font-bold text-white">
-                        Comparativo de planes
-                    </h2>
-
-                    <p class="text-gray-400 text-sm mt-1">
-                        Encuentra el plan ideal para el tamaño y crecimiento de tu operación.
-                    </p>
-                </div>
-
-                <div class="badge badge-warning badge-lg">
-                    Comparación completa
-                </div>
-
+  <!-- Tu plan -->
+  <section class="card bg-base-200 border border-base-300 shadow-xl" aria-labelledby="titulo-mi-plan">
+    <div class="card-body">
+      @if (suscripcion(); as s) {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 flex flex-col gap-2">
+            <h2 id="titulo-mi-plan" class="text-info text-xs font-semibold uppercase tracking-wide">Tu plan</h2>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-2xl font-bold">{{ s.nombrePlan }}</span>
+              @switch (s.estado) {
+                @case ('PRUEBA') { <span class="badge badge-soft badge-info">Prueba gratuita</span> }
+                @case ('ACTIVA') { <span class="badge badge-soft badge-success">Activo · {{ s.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</span> }
+                @default { <span class="badge bg-base-300">Sin costo</span> }
+              }
+              @if (modoLocal) {
+                <span class="badge badge-soft badge-warning">Modo local</span>
+              }
             </div>
+            @if (s.estado === 'PRUEBA') {
+              <p class="text-sm">Te quedan <span class="font-semibold text-primary">{{ s.diasRestantes }} días</span> de prueba (hasta el {{ s.fechaFin | date: 'd MMM y' }}).</p>
+              <progress class="progress progress-info w-full" [value]="progresoPrueba()" max="100" aria-label="Avance de la prueba"></progress>
+              <p class="text-xs text-base-content/70">Al terminar pasas al plan Gratis si no eliges otro. No perderás ningún dato.</p>
+            } @else if (s.estado === 'ACTIVA') {
+              <p class="text-sm">Vigente hasta el <span class="font-semibold">{{ s.fechaFin | date: 'd MMM y' }}</span> ({{ s.diasRestantes }} días).</p>
+              <p class="text-xs text-base-content/70">Renueva antes de esa fecha para no bajar al plan Gratis; los días que te queden se conservan.</p>
+            } @else {
+              <p class="text-sm">Estás en el plan Gratis. Tus datos siguen guardados; solo se limita crear por encima de los límites.</p>
+            }
+            @if (s.nota) {
+              <p class="text-xs text-base-content/70"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i> {{ s.nota }}</p>
+            }
+          </div>
 
-            <div class="overflow-x-auto rounded-2xl border border-gray-700">
-
-                <table class="table">
-
-                    <!-- HEADER -->
-                    <thead class="bg-gray-900">
-
-                        <tr>
-
-                            <th class="text-gray-300">
-                                Característica
-                            </th>
-
-                            <th class="text-center text-white">
-                                🚀 Gratis
-                            </th>
-
-                            <th class="text-center text-blue-400">
-                                📘 Basic
-                            </th>
-
-                            <th class="text-center bg-yellow-500/10 text-yellow-400">
-                                ⭐ Pro
-                            </th>
-
-                            <th class="text-center text-purple-400">
-                                👑 Master
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Estudiantes
-                            </td>
-
-                            <td class="text-center text-white">
-                                20
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-info">
-                                    Limitado
-                                </span>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <span class="badge badge-primary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-secondary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Rutas
-                            </td>
-
-                            <td class="text-center text-white">
-                                2
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-info">
-                                    Limitado
-                                </span>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <span class="badge badge-primary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-secondary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Vehículos
-                            </td>
-
-                            <td class="text-center text-white">
-                                1
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-info">
-                                    Limitado
-                                </span>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <span class="badge badge-primary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge badge-secondary">
-                                    ♾️ Ilimitado
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Facturación
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Reportes avanzados
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Exportar PDF / Excel
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-900/40">
-                            <td class="font-medium text-white">
-                                Módulos personalizados
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center bg-yellow-500/5">
-                                <i class="fa-solid fa-circle-xmark text-red-400 text-lg"></i>
-                            </td>
-
-                            <td class="text-center">
-                                <i class="fa-solid fa-crown text-purple-400 text-lg"></i>
-                            </td>
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+          <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            @for (u of [{ titulo: 'Vehículos activos', icono: 'fa-solid fa-van-shuttle', dato: usoVehiculos() }, { titulo: 'Estudiantes activos', icono: 'fa-solid fa-children', dato: usoEstudiantes() }]; track u.titulo) {
+              <div class="rounded-box border border-base-300 bg-base-100 p-4 flex flex-col gap-2">
+                <span class="flex items-center justify-between text-sm">
+                  <span class="text-base-content/70"><i [class]="u.icono + ' text-info mr-1'" aria-hidden="true"></i>{{ u.titulo }}</span>
+                  <span class="font-semibold">{{ u.dato.usados }} / {{ u.dato.limite ?? '∞' }}</span>
+                </span>
+                @if (u.dato.limite) {
+                  <progress class="progress w-full {{ u.dato.clase }}" [value]="u.dato.porcentaje" max="100" [attr.aria-label]="u.titulo"></progress>
+                  @if (u.dato.porcentaje >= 100) {
+                    <span class="text-xs text-error">Llegaste al límite de tu plan.</span>
+                  } @else if (u.dato.porcentaje >= 80) {
+                    <span class="text-xs text-warning">Estás cerca del límite de tu plan.</span>
+                  }
+                } @else {
+                  <span class="text-xs text-base-content/70">Sin límite en tu plan.</span>
+                }
+              </div>
+            }
+          </div>
         </div>
-
+      } @else {
+        <div class="skeleton bg-base-300 h-28 w-full"></div>
+      }
     </div>
+  </section>
 
+  <!-- Periodo -->
+  <div class="flex flex-col items-center gap-2">
+    <div role="radiogroup" aria-label="Periodo de pago" class="join">
+      <button type="button" role="radio" class="btn join-item" [attr.aria-checked]="periodo() === 'MENSUAL'"
+        [class.bg-base-300]="periodo() !== 'MENSUAL'" [class.btn-secondary]="periodo() === 'MENSUAL'" (click)="periodo.set('MENSUAL')">Mensual</button>
+      <button type="button" role="radio" class="btn join-item" [attr.aria-checked]="periodo() === 'ANUAL'"
+        [class.bg-base-300]="periodo() !== 'ANUAL'" [class.btn-secondary]="periodo() === 'ANUAL'" (click)="periodo.set('ANUAL')">
+        Anual <span class="badge badge-sm badge-success">{{ mesesGratisAnual }} meses gratis</span>
+      </button>
+    </div>
+    <p class="text-xs text-base-content/70">Precios en pesos colombianos (COP), IVA incluido.</p>
+  </div>
+
+  <!-- Planes -->
+  <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
+    @for (p of planes(); track p.id) {
+      <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [actual]="esActual(p)" [textoBoton]="accion(p)"
+        [deshabilitado]="cargando() || p.precioMensual === 0" (elegir)="elegir(p)" />
+    }
+  </div>
+
+  <!-- Medios de pago (solo con el pago en línea habilitado en el servidor) -->
+  @if (pagoEnLinea()) {
+  <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-base-content/70">
+    <span><i class="fa-solid fa-lock text-success" aria-hidden="true"></i> Pago seguro con Wompi (Bancolombia)</span>
+    <span><i class="fa-solid fa-credit-card" aria-hidden="true"></i> Tarjeta</span>
+    <span><i class="fa-solid fa-building-columns" aria-hidden="true"></i> PSE</span>
+    <span><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> Nequi</span>
+    <span><i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i> Botón Bancolombia</span>
+  </div>
+  }
+
+  <!-- Comparativa -->
+  <section class="card bg-base-200 border border-base-300 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title"><i class="fa-solid fa-table-list text-info" aria-hidden="true"></i> Compara los planes</h2>
+      <div class="@container overflow-x-auto rounded-box border border-base-300">
+        <table class="table">
+          <thead>
+            <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+              <th>Incluye</th>
+              @for (p of planes(); track p.id) {
+                <th class="text-center" [class.text-primary]="p.destacado">{{ p.nombre }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of comparativa(); track f.nombre) {
+              <tr class="border-base-300">
+                <td class="whitespace-normal min-w-44">{{ f.nombre }}</td>
+                @for (v of f.valores; track $index) {
+                  <td class="text-center">
+                    @if (v === true) {
+                      <i class="fa-solid fa-check text-success" aria-label="Incluido"></i>
+                    } @else if (v === false) {
+                      <i class="fa-solid fa-minus text-base-content/50" aria-label="No incluido"></i>
+                    } @else {
+                      {{ v }}
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+    <!-- Historial -->
+    <section class="card bg-base-200 border border-base-300 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title"><i class="fa-solid fa-receipt text-info" aria-hidden="true"></i> Historial de pagos</h2>
+        @if (pagos().length) {
+          <div class="@container overflow-x-auto rounded-box border border-base-300">
+            <table class="table">
+              <thead>
+                <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+                  <th>Fecha</th>
+                  <th>Plan</th>
+                  <th class="hidden @3xl:table-cell">Medio</th>
+                  <th>Estado</th>
+                  <th class="text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of pagos(); track p.id) {
+                  <tr class="border-base-300">
+                    <td>
+                      <div>{{ p.fechaCreacion | date: 'd MMM y' }}</div>
+                      <div class="text-xs text-base-content/70 font-mono truncate max-w-40">{{ p.referencia }}</div>
+                    </td>
+                    <td>{{ nombrePlan(p.plan) }} · {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</td>
+                    <td class="hidden @3xl:table-cell">{{ p.metodoPago || '—' }}</td>
+                    <td><span class="badge badge-soft badge-sm {{ estadosPago[p.estado].badge }}">{{ estadosPago[p.estado].nombre }}</span></td>
+                    <td class="text-right">{{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="text-sm text-base-content/70">Aún no hay pagos. Durante la prueba no se cobra nada.</p>
+        }
+      </div>
+    </section>
+
+    <!-- Preguntas -->
+    <section class="card bg-base-200 border border-base-300 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title"><i class="fa-solid fa-circle-question text-info" aria-hidden="true"></i> Preguntas frecuentes</h2>
+        <div class="flex flex-col gap-2">
+          <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <summary class="collapse-title font-medium">¿Qué pasa cuando termina la prueba?</summary>
+            <div class="collapse-content text-sm text-base-content/80">
+              Pasas automáticamente al plan Gratis. No se borra nada: estudiantes, rutas, facturas y recibos siguen ahí. Solo no podrás
+              activar más vehículos o estudiantes que los del plan, y se pausan el GPS en vivo y los recordatorios automáticos hasta que elijas un plan.
+            </div>
+          </details>
+          <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <summary class="collapse-title font-medium">¿Si pago durante la prueba pierdo los días que me quedan?</summary>
+            <div class="collapse-content text-sm text-base-content/80">
+              No. Los días de prueba que te queden se suman a tu periodo pagado. Al renovar el mismo plan, el nuevo periodo empieza cuando termina el actual.
+            </div>
+          </details>
+          <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <summary class="collapse-title font-medium">¿Cómo pago y es seguro?</summary>
+            <div class="collapse-content text-sm text-base-content/80">
+              @if (pagoEnLinea()) {
+                El pago se hace en Wompi (de Bancolombia) con tarjeta, PSE, Nequi o Botón Bancolombia. RutaRola nunca ve los datos de tu tarjeta.
+                Tu plan se activa en cuanto Wompi confirma el pago.
+              } @else {
+                Por ahora el plan se solicita desde <a routerLink="/sistema/soporte" class="link link-secondary">Soporte</a>: te enviamos los datos
+                para pagar por transferencia y activamos tu plan apenas lo confirmemos. Muy pronto podrás pagar en línea.
+              }
+            </div>
+          </details>
+          <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <summary class="collapse-title font-medium">¿Hay permanencia? ¿Puedo cambiar de plan?</summary>
+            <div class="collapse-content text-sm text-base-content/80">
+              No hay permanencia. Puedes mejorar tu plan cuando quieras (empieza el mismo día) o dejar que termine el periodo y quedarte en Gratis.
+            </div>
+          </details>
+          <details class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <summary class="collapse-title font-medium">Tengo más de 40 vehículos o varias sedes</summary>
+            <div class="collapse-content text-sm text-base-content/80">
+              El plan Empresarial se ajusta al tamaño de tu flota. Escríbenos desde <a routerLink="/sistema/soporte" class="link link-secondary">Soporte</a>
+              y te preparamos una propuesta; también aceptamos transferencia bancaria.
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
+
+<app-modal [(abierto)]="modalPago" [titulo]="'Plan ' + (elegido()?.nombre ?? '')" [subtitulo]="pagoEnLinea() ? 'Confirma y paga con Wompi' : 'Solicita tu plan'">
+  @if (modalPago() && elegido(); as p) {
+    <div class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Periodo de pago">
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'MENSUAL'" (change)="periodo.set('MENSUAL')" />
+          <span class="block font-medium">Mensual</span>
+          <span class="block text-sm text-base-content/70">{{ p.precioMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} / mes</span>
+        </label>
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'ANUAL'" (change)="periodo.set('ANUAL')" />
+          <span class="block font-medium">Anual <span class="badge badge-sm badge-success">-{{ mesesGratisAnual }} meses</span></span>
+          <span class="block text-sm text-base-content/70">{{ p.precioAnual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} / año</span>
+        </label>
+      </div>
+      <dl class="rounded-box border border-base-300 bg-base-100 p-4 text-sm grid grid-cols-2 gap-y-2">
+        <dt class="text-base-content/70">Plan</dt><dd class="text-right font-medium">{{ p.nombre }}</dd>
+        <dt class="text-base-content/70">Periodo</dt><dd class="text-right">{{ periodo() === 'ANUAL' ? '12 meses' : '1 mes' }}</dd>
+        <dt class="text-base-content/70 font-semibold">Total a pagar</dt>
+        <dd class="text-right text-lg font-bold text-primary">{{ precio(p) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+      </dl>
+      @if (enPrueba()) {
+        <p class="text-xs text-base-content/70"><i class="fa-solid fa-gift text-success" aria-hidden="true"></i> Los {{ suscripcion()?.diasRestantes }} días de prueba que te quedan se suman.</p>
+      }
+      @if (pagoEnLinea()) {
+        <p class="text-xs text-base-content/70">Te llevaremos a Wompi para pagar con tarjeta, PSE, Nequi o Botón Bancolombia y luego volverás aquí.</p>
+      } @else {
+        <div role="status" class="alert alert-soft alert-info text-sm">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          <span>El pago en línea estará disponible muy pronto. Mientras tanto, solicita el plan desde Soporte: te enviamos los datos para pagar por transferencia y lo activamos por ti.</span>
+        </div>
+      }
+    </div>
+  }
+  @if (modalPago()) {
+    <div pie class="flex flex-wrap justify-end gap-2 w-full">
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="modalPago.set(false)">Cancelar</button>
+      @if (pagoEnLinea()) {
+        <button type="button" class="btn btn-primary" [disabled]="redirigiendo()" (click)="pagar()">
+          @if (redirigiendo()) {
+            <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+          } @else {
+            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+          }
+          Pagar con Wompi
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary" (click)="solicitarPorSoporte()">
+          <i class="fa-solid fa-headset" aria-hidden="true"></i>
+          Solicitar por Soporte
+        </button>
+      }
+    </div>
+  }
+</app-modal>

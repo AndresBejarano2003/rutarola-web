@@ -3,11 +3,11 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/core/auth';
 import { repositoriosDePrueba } from 'src/app/shared/pruebas/pruebas';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
-import { Parada, cambiarEstado, motivoNoFinalizar, moverEnLista, puedeReordenar, reordenarParadas, siguientePaso } from './recorrido';
+import { Parada, cambiarEstado, motivoNoFinalizar, moverEnLista, nombreAusencia, puedeReordenar, reordenarParadas, reportaUbicacion, siguientePaso } from './recorrido';
 import { RecorridosRepositorio } from './recorridos-repositorio';
 
 const parada = (id: string, estado: Parada['estado'] = 'PENDIENTE'): Parada => ({
-  estudianteId: id, estudiante: id, grado: '', direccion: '', acudiente: '', telefonoAcudiente: '', estado, horaAbordo: null, horaEntrega: null,
+  estudianteId: id, estudiante: id, grado: '', direccion: '', acudiente: '', telefonoAcudiente: '', estado, horaAbordo: null, horaEntrega: null, motivoAusencia: '',
 });
 
 describe('Reglas del recorrido', () => {
@@ -61,6 +61,23 @@ describe('Orden de visita', () => {
     expect(puedeReordenar(r, 'c')).toBe(false);
     expect(puedeReordenar({ ...r, monitoraId: '' }, 'c')).toBe(true);
     expect(puedeReordenar({ ...r, estado: 'FINALIZADO' }, 'm')).toBe(false);
+  });
+
+  it('el conductor y la monitora comparten la ubicación mientras está en curso', () => {
+    const r = { estado: 'EN_CURSO' as const, conductorId: 'c', monitoraId: 'm' };
+    expect([reportaUbicacion(r, 'c'), reportaUbicacion(r, 'm'), reportaUbicacion(r, 'x'), reportaUbicacion(r, null)]).toEqual([true, true, false, false]);
+    expect(reportaUbicacion({ ...r, estado: 'FINALIZADO' }, 'c')).toBe(false);
+  });
+
+  it('el motivo de ausencia se guarda solo con AUSENTE y se nombra según el trayecto', () => {
+    const ausente = cambiarEstado(parada('a'), 'AUSENTE', 'h', 'NO_ASISTE');
+    expect(ausente.motivoAusencia).toBe('NO_ASISTE');
+    expect(cambiarEstado(ausente, 'AUSENTE', 'h', 'POR_SU_CUENTA').motivoAusencia).toBe('POR_SU_CUENTA');
+    expect(cambiarEstado(ausente, 'PENDIENTE', 'h').motivoAusencia).toBe('');
+    expect(cambiarEstado(parada('a'), 'A_BORDO', 'h', 'NO_ASISTE').motivoAusencia).toBe('');
+    expect(nombreAusencia('NO_ASISTE', 'ENTREGA')).toBe('No asiste hoy al colegio');
+    expect(nombreAusencia('POR_SU_CUENTA', 'RECOGIDA')).toBe('Va al colegio por su cuenta');
+    expect(nombreAusencia('POR_SU_CUENTA', 'ENTREGA')).toBe('No viaja en la ruta');
   });
 });
 
@@ -117,6 +134,24 @@ describe('RecorridosLocal', () => {
     expect(entrega.paradas.map((p) => p.estudianteId)).toEqual(['est-2', 'est-1']);
     const [hoy] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
     expect(hoy.recorridos.map((x) => [x.trayecto, x.estado])).toEqual([['RECOGIDA', 'FINALIZADO'], ['ENTREGA', 'EN_CURSO']]);
+  });
+
+  it('quien no asiste hoy en la recogida llega ausente a la entrega; quien va por su cuenta, no', async () => {
+    entrar('emp-1');
+    const [ruta] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
+    let r = await firstValueFrom(repo.iniciar(ruta.asignacionId, 'RECOGIDA'));
+    r = await firstValueFrom(repo.marcar(r.id, ['est-1'], 'AUSENTE', 'NO_ASISTE'));
+    r = await firstValueFrom(repo.marcar(r.id, ['est-2'], 'AUSENTE', 'POR_SU_CUENTA'));
+    await firstValueFrom(repo.finalizar(r.id, ''));
+
+    const entrega = await firstValueFrom(repo.iniciar(ruta.asignacionId, 'ENTREGA'));
+    expect(entrega.paradas.map((p) => [p.estudianteId, p.estado, p.motivoAusencia])).toEqual([
+      ['est-2', 'PENDIENTE', ''],
+      ['est-1', 'AUSENTE', 'NO_ASISTE'],
+    ]);
+    await expect(firstValueFrom(repo.marcar(entrega.id, ['est-2'], 'AUSENTE', 'NO_ASISTE'))).rejects.toThrow('se marca en la recogida');
+    // Si sí llegó al colegio, se deshace.
+    expect((await firstValueFrom(repo.marcar(entrega.id, ['est-1'], 'PENDIENTE'))).paradas[1]).toMatchObject({ estado: 'PENDIENTE', motivoAusencia: '' });
   });
 
   it('un recorrido que quedó abierto otro día no bloquea el de hoy', async () => {

@@ -1,5 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { INTERVALO_ENVIO_MS, LecturaGps, MAXIMO_POR_LOTE, encolar, lecturaDe, lecturaUtil } from './gps';
 import { GpsRepositorio } from './gps-repositorio';
 
@@ -32,6 +33,8 @@ export class EmisorGps {
   readonly ultimaLectura = signal<string | null>(null);
   /** El último envío falló (sin red o el servidor no respondió). */
   readonly sinConexion = signal(false);
+  /** Motivo con el que el servidor rechazó el último lote (p. ej. el plan de la empresa no incluye GPS en vivo). */
+  readonly rechazo = signal<string | null>(null);
 
   private recorridoId: string | null = null;
   private vigilancia: number | null = null;
@@ -112,12 +115,14 @@ export class EmisorGps {
           try {
             await firstValueFrom(this.repositorio.enviar(id, lote));
             this.sinConexion.set(false);
+            this.rechazo.set(null);
           } catch (error) {
-            // 4xx (recorrido ajeno o inexistente): esas lecturas no se aceptarán nunca, se descartan.
+            // 4xx (recorrido ajeno o inexistente, plan sin GPS): esas lecturas no se aceptarán nunca, se descartan.
             if (!esRechazoDefinitivo(error)) {
               this.sinConexion.set(true);
               return;
             }
+            this.rechazo.set(mensajeDeError(error));
           }
           const enviadas = new Set(lote.map((l) => l.fecha));
           const cola = this.leer();

@@ -1,0 +1,139 @@
+<section class="flex flex-col gap-3" aria-labelledby="titulo-administradores">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-300 pb-1">
+    <h3 id="titulo-administradores" class="text-sm font-semibold uppercase tracking-wide text-info">Administradores</h3>
+    <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" [disabled]="guardando()" (click)="abrirAdmin()">
+      <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Agregar administrador
+    </button>
+  </div>
+
+  @if (cargando() && lista().length === 0) {
+    <div class="skeleton bg-base-300 h-14 w-full"></div>
+  } @else if (error(); as mensaje) {
+    <div role="alert" class="alert alert-error alert-soft">
+      <span>{{ mensaje }}</span>
+      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <ul class="flex flex-col gap-2">
+      @for (a of lista(); track a.id) {
+        <li class="rounded-box border border-base-300 bg-base-100 p-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div class="min-w-0 flex-1 basis-56">
+            <p class="font-medium flex flex-wrap items-center gap-2">
+              {{ a.nombre }}
+              <app-badge-estado [estado]="a.estado" />
+            </p>
+            <p class="text-sm text-base-content/80">
+              <i class="fa-solid fa-user text-base-content/60" aria-hidden="true"></i> <span class="font-mono">{{ a.usuario }}</span>
+              @if (a.email) { · {{ a.email }} }
+              @if (a.telefono) { · {{ a.telefono }} }
+            </p>
+            <p class="text-xs text-base-content/70">{{ ultimoIngreso(a) }}</p>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <button type="button" class="btn btn-sm btn-soft btn-warning" [disabled]="guardando()" (click)="abrirContrasena(a)"
+              [attr.aria-label]="'Cambiar la contraseña de ' + a.nombre">
+              <i class="fa-solid fa-key" aria-hidden="true"></i> Cambiar contraseña
+            </button>
+            <div class="tooltip tooltip-left" data-tip="Editar">
+              <button type="button" class="btn btn-sm btn-ghost btn-square text-primary hover:bg-primary/15" [disabled]="guardando()"
+                [attr.aria-label]="'Editar a ' + a.nombre" (click)="abrirAdmin(a)">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </li>
+      } @empty {
+        <li class="rounded-box border border-dashed border-base-300 p-4 text-center text-sm text-base-content/80">
+          Esta empresa aún no tiene administrador. Agrégalo para que pueda ingresar.
+        </li>
+      }
+    </ul>
+  }
+
+  @switch (panel()?.tipo) {
+    @case ('contrasena') {
+      @if (panel(); as p) {
+        @if (p.tipo === 'contrasena') {
+          <form [formGroup]="formContrasena" (ngSubmit)="guardarContrasena()" novalidate
+            class="rounded-box border border-warning/40 bg-base-100 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <p class="font-semibold">Nueva contraseña para {{ p.admin.nombre }}</p>
+              <p class="text-sm text-base-content/80">Se cerrarán todas sus sesiones abiertas. Compártela por un canal seguro y pídele que la cambie en "Mi cuenta".</p>
+            </div>
+            <label app-campo etiqueta="Nueva contraseña" requerido [error]="errorDe('contrasena', 'contrasena')">
+              <input formControlName="contrasena" [type]="verContrasena() ? 'text' : 'password'" autocomplete="new-password"
+                class="input input-bordered bg-base-100 border-neutral w-full font-mono" [class.input-error]="!!errorDe('contrasena', 'contrasena')" />
+            </label>
+            <label app-campo etiqueta="Confirmar contraseña" requerido [error]="errorDe('contrasena', 'confirmarContrasena')">
+              <input formControlName="confirmarContrasena" [type]="verContrasena() ? 'text' : 'password'" autocomplete="new-password"
+                class="input input-bordered bg-base-100 border-neutral w-full font-mono" [class.input-error]="!!errorDe('contrasena', 'confirmarContrasena')" />
+            </label>
+            <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="generar()">
+                  <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generar una
+                </button>
+                <button type="button" class="btn btn-sm btn-ghost" (click)="verContrasena.set(!verContrasena())" [attr.aria-pressed]="verContrasena()">
+                  <i class="fa-solid" [class.fa-eye]="!verContrasena()" [class.fa-eye-slash]="verContrasena()" aria-hidden="true"></i>
+                  {{ verContrasena() ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="cerrarPanel()">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-secondary" [disabled]="guardando()">
+                  @if (guardando()) { <span class="loading loading-spinner loading-xs" aria-hidden="true"></span> }
+                  Guardar contraseña
+                </button>
+              </div>
+            </div>
+          </form>
+        }
+      }
+    }
+    @case ('crear') {
+      <ng-container *ngTemplateOutlet="formularioAdmin" />
+    }
+    @case ('editar') {
+      <ng-container *ngTemplateOutlet="formularioAdmin" />
+    }
+  }
+</section>
+
+<ng-template #formularioAdmin>
+  <form [formGroup]="formAdmin" (ngSubmit)="guardarAdmin()" novalidate
+    class="rounded-box border border-base-300 bg-base-100 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <p class="md:col-span-2 font-semibold">{{ panel()?.tipo === 'crear' ? 'Nuevo administrador' : 'Editar administrador' }}</p>
+    <label app-campo etiqueta="Nombre" requerido [error]="errorDe('admin', 'nombre')">
+      <input formControlName="nombre" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDe('admin', 'nombre')" />
+    </label>
+    <label app-campo etiqueta="Usuario" requerido [error]="errorDe('admin', 'usuario')" ayuda="4 a 40 caracteres, sin espacios. Único en todo el sistema.">
+      <input formControlName="usuario" autocomplete="off" class="input input-bordered bg-base-100 border-neutral w-full font-mono" [class.input-error]="!!errorDe('admin', 'usuario')" />
+    </label>
+    <label app-campo etiqueta="Correo" [error]="errorDe('admin', 'email')">
+      <input formControlName="email" type="email" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDe('admin', 'email')" />
+    </label>
+    <label app-campo etiqueta="Teléfono" [error]="errorDe('admin', 'telefono')">
+      <input formControlName="telefono" type="tel" class="input input-bordered bg-base-100 border-neutral w-full" />
+    </label>
+    <div app-campo etiqueta="Estado" requerido>
+      <app-selector-busqueda formControlName="estado" [opciones]="estados" etiqueta="Estado" />
+    </div>
+    <span class="hidden md:block"></span>
+    <label app-campo etiqueta="Contraseña" [requerido]="panel()?.tipo === 'crear'" [error]="errorDe('admin', 'contrasena')"
+      [ayuda]="panel()?.tipo === 'crear' ? 'Mínimo 6 caracteres.' : 'Déjala vacía para conservar la actual.'">
+      <input formControlName="contrasena" type="password" autocomplete="new-password" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="!!errorDe('admin', 'contrasena')" />
+    </label>
+    <label app-campo etiqueta="Confirmar contraseña" [error]="errorDe('admin', 'confirmarContrasena')">
+      <input formControlName="confirmarContrasena" type="password" autocomplete="new-password" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="!!errorDe('admin', 'confirmarContrasena')" />
+    </label>
+    <div class="md:col-span-2 flex flex-wrap justify-end gap-2">
+      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="cerrarPanel()">Cancelar</button>
+      <button type="submit" class="btn btn-sm btn-secondary" [disabled]="guardando()">
+        @if (guardando()) { <span class="loading loading-spinner loading-xs" aria-hidden="true"></span> }
+        {{ panel()?.tipo === 'crear' ? 'Crear administrador' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </form>
+</ng-template>

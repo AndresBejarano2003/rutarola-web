@@ -78,8 +78,8 @@ export class Mapa {
 
   private async crear(): Promise<void> {
     try {
-      this.leaflet = await import('leaflet');
-      const Lf = this.leaflet;
+      const Lf = leafletDe(await import('leaflet'));
+      this.leaflet = Lf;
       this.mapa = Lf.map(this.contenedor().nativeElement, { zoomControl: true, attributionControl: true }).setView(CENTRO_PREDETERMINADO, 6);
       Lf.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -127,6 +127,17 @@ export class Mapa {
     }
     this.ultimoConjunto = conjunto;
   }
+}
+
+/**
+ * Leaflet es CommonJS/UMD: en la compilación de producción (esbuild) el chunk solo trae `export default`,
+ * así que `L.map` está en `modulo.default.map`; el servidor de desarrollo además expone los nombres sueltos.
+ * Acepta ambas formas.
+ */
+export function leafletDe(modulo: typeof L & { default?: typeof L }): typeof L {
+  const Lf = modulo.default ?? modulo;
+  if (typeof Lf.map !== 'function') throw new Error('Leaflet no se cargó correctamente');
+  return Lf;
 }
 
 function icono(Lf: typeof L, m: MarcadorMapa): L.DivIcon {

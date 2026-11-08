@@ -11,6 +11,7 @@ import {
   CambioOrden,
   ESTADOS_PARADA,
   EstadoParada,
+  MotivoAusencia,
   Parada,
   Recorrido,
   TRAYECTOS,
@@ -19,8 +20,10 @@ import {
   enlaceMapa,
   enlaceWhatsapp,
   moverEnLista,
+  nombreAusencia,
   paradasEnOrden,
   puedeReordenar,
+  reportaUbicacion,
   siguientePaso,
 } from '../recorrido';
 import { RecorridosRepositorio } from '../recorridos-repositorio';
@@ -45,8 +48,9 @@ const MARGEN_DESPLAZAMIENTO = 72;
  * con acceso a la dirección y al acudiente, y la lista completa para marcar fuera de orden o deshacer.
  * La monitora (o el conductor si la ruta no tiene monitora) cambia el orden de los que faltan
  * arrastrándolos; el compañero ve el cambio al instante (`observar`) con un aviso.
- * Mientras está EN CURSO, el teléfono de esa misma persona comparte la ubicación (`EmisorGps`):
- * uno solo por vehículo para que el mapa no salte entre dos señales.
+ * Mientras está EN CURSO, los teléfonos del conductor Y de la monitora comparten la ubicación (`EmisorGps`),
+ * así sigue al día aunque uno cierre la app o se quede sin batería; el servidor descarta las lecturas casi
+ * simultáneas de los dos para que el mapa no salte.
  */
 @Component({
   selector: 'app-recorrido-page',
@@ -100,8 +104,18 @@ export default class RecorridoPage implements OnInit {
   protected readonly avisoOrden = signal<CambioOrden | null>(null);
   protected readonly anuncio = signal('');
 
-  /** Este teléfono es el que comparte la ubicación del vehículo (monitora, o el conductor si no hay). */
-  protected readonly reportaUbicacion = this.ordenable;
+  /** Este teléfono comparte la ubicación del vehículo (conductor o monitora del recorrido). */
+  protected readonly reportaUbicacion = computed(() => {
+    const r = this.recorrido();
+    return !!r && reportaUbicacion(r, this.sesion()?.empleadoId);
+  });
+  /** Nombre del compañero que también comparte (para la línea de estado). */
+  protected readonly companero = computed(() => {
+    const r = this.recorrido();
+    if (!r) return '';
+    const yo = this.sesion()?.empleadoId;
+    return yo === r.conductorId ? r.monitora : r.conductor;
+  });
 
   constructor() {
     effect(() => {
@@ -148,8 +162,8 @@ export default class RecorridoPage implements OnInit {
   }
 
   /** Sin toast: el cambio se ve en el siguiente paso y en la lista (solo se avisan errores y el cierre). */
-  protected marcar(estudianteIds: string[], estado: EstadoParada): Promise<void> {
-    return this.ejecutar(this.repositorio.marcar(this.id, estudianteIds, estado));
+  protected marcar(estudianteIds: string[], estado: EstadoParada, motivo?: MotivoAusencia): Promise<void> {
+    return this.ejecutar(this.repositorio.marcar(this.id, estudianteIds, estado, motivo));
   }
 
   protected deshacer(p: Parada): Promise<void> {
@@ -280,6 +294,7 @@ export default class RecorridoPage implements OnInit {
   protected momento(p: Parada): string {
     if (p.estado === 'ENTREGADO') return `Entregado ${this.hora(p.horaEntrega)}`;
     if (p.estado === 'A_BORDO') return `A bordo desde ${this.hora(p.horaAbordo)}`;
+    if (p.estado === 'AUSENTE') return nombreAusencia(p.motivoAusencia, this.recorrido()?.trayecto ?? 'RECOGIDA');
     return this.estados[p.estado].nombre;
   }
 }

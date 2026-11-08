@@ -176,7 +176,8 @@
                 @if (p.horaEntrega) { <div>Entregado {{ hora(p.horaEntrega) }}</div> }
               </div>
               <span class="badge badge-sm gap-1" [class]="estadosParada[p.estado].badge">
-                <i [class]="estadosParada[p.estado].icono"></i> {{ estadosParada[p.estado].nombre }}
+                <i [class]="estadosParada[p.estado].icono" aria-hidden="true"></i>
+                {{ p.estado === 'AUSENTE' ? nombreAusencia(p.motivoAusencia, r.trayecto) : estadosParada[p.estado].nombre }}
               </span>
             </li>
           }

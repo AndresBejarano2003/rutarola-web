@@ -22,6 +22,7 @@ import { FuenteLocal, LATENCIA_LOCAL, SIN_PAGINAR, responderLocal } from 'src/ap
 import { fechaIso } from 'src/app/shared/fechas/fechas';
 import {
   EstadoParada,
+  MotivoAusencia,
   Parada,
   Recorrido,
   RutaAsignada,
@@ -168,8 +169,19 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                   estado: 'PENDIENTE',
                   horaAbordo: null,
                   horaEntrega: null,
+                  motivoAusencia: '',
                 };
               });
+              // Quien en la recogida de hoy quedó "No asiste hoy" no está en el colegio: la entrega lo trae ausente.
+              const recogida = this.leer().find((r) => r.asignacionId === asignacionId && r.fecha === fecha && r.trayecto === 'RECOGIDA');
+              const noAsisten = new Set(
+                trayecto === 'ENTREGA'
+                  ? (recogida?.paradas ?? []).filter((p) => p.estado === 'AUSENTE' && p.motivoAusencia === 'NO_ASISTE').map((p) => p.estudianteId)
+                  : [],
+              );
+              for (const p of paradas) {
+                if (noAsisten.has(p.estudianteId)) Object.assign(p, { estado: 'AUSENTE', motivoAusencia: 'NO_ASISTE' });
+              }
               const conductor = empleadoPorId.get(asignacion.conductorId);
               const monitora = empleadoPorId.get(asignacion.monitoraId);
               const ahora = new Date().toISOString();
@@ -208,15 +220,18 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
     });
   }
 
-  marcar(id: string, estudianteIds: string[], estado: EstadoParada): Observable<Recorrido> {
+  marcar(id: string, estudianteIds: string[], estado: EstadoParada, motivo?: MotivoAusencia): Observable<Recorrido> {
     return this.modificar(id, (r) => {
+      if (motivo === 'NO_ASISTE' && r.trayecto !== 'RECOGIDA') {
+        throw new ErrorCrud('"No asiste hoy" se marca en la recogida. En la entrega usa "No viaja".', 'VALIDACION');
+      }
       const ahora = new Date().toISOString();
       const ids = new Set(estudianteIds);
       if (!r.paradas.some((p) => ids.has(p.estudianteId))) {
         throw new ErrorCrud('El estudiante no hace parte de este recorrido.', 'NO_ENCONTRADO');
       }
       try {
-        return { ...r, paradas: r.paradas.map((p) => (ids.has(p.estudianteId) ? cambiarEstado(p, estado, ahora) : p)) };
+        return { ...r, paradas: r.paradas.map((p) => (ids.has(p.estudianteId) ? cambiarEstado(p, estado, ahora, motivo ?? '') : p)) };
       } catch (error) {
         throw new ErrorCrud((error as Error).message, 'VALIDACION');
       }

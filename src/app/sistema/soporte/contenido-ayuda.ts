@@ -125,7 +125,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Finanzas',
     pregunta: '¿Cómo funcionan los recordatorios automáticos de cobro?',
     respuesta:
-      'En Finanzas › Programación de facturación configura, por factura, el día límite de pago, cuántos días antes avisar y el mensaje "En uso" de cada canal (WhatsApp o correo). El envío lo hace el servidor y queda en el historial; los mensajes de WhatsApp se consultan en Finanzas › Mensajes de WhatsApp. Si una factura no tiene programación, la cuota vence el día límite de pago de Inicio › Configuración (por defecto el 5).',
+      'Están incluidos desde el plan Esencial. En Finanzas › Programación de facturación configura, por factura, el día límite de pago, cuántos días antes avisar y el mensaje "En uso" de cada canal (WhatsApp o correo). El envío lo hace el servidor y queda en el historial; los mensajes de WhatsApp se consultan en Finanzas › Mensajes de WhatsApp. Si una factura no tiene programación, la cuota vence el día límite de pago de Inicio › Configuración (por defecto el 5).',
   },
   {
     modulo: 'Operación',
@@ -137,13 +137,13 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo ven los conductores y monitoras su ruta del día?',
     respuesta:
-      'Ingresan con el usuario y la contraseña que se les asigna al crearlos en Personas › Empleados (sección "Acceso a la app") y el sistema los lleva a "Ruta del día" (no ven los módulos administrativos). Allí aparecen las rutas de sus asignaciones activas y vigentes; inician la recogida (casa → colegio) o la entrega (colegio → casa) y marcan a cada estudiante como recogido, entregado o "No asistió". Si hay que cambiar el orden (por ejemplo, un acudiente avisa que recojan a su hijo de último), la monitora arrastra al estudiante a su nueva posición y el conductor ve el nuevo orden al instante con un aviso. Un recorrido solo se finaliza cuando ningún estudiante queda a bordo. El administrador los consulta en Operación › Recorridos.',
+      'Ingresan con el usuario y la contraseña que se les asigna al crearlos en Personas › Empleados (sección "Acceso a la app") y el sistema los lleva a "Ruta del día" (no ven los módulos administrativos). Allí aparecen las rutas de sus asignaciones activas y vigentes; inician la recogida (casa → colegio) o la entrega (colegio → casa) y marcan a cada estudiante como recogido o entregado. En la recogida, "No asiste hoy" (no va al colegio: la entrega de ese día ya lo trae como ausente) o "Va por su cuenta" (sí asiste y regresa en la ruta); en la entrega, "No viaja". Si hay que cambiar el orden (por ejemplo, un acudiente avisa que recojan a su hijo de último), la monitora arrastra al estudiante a su nueva posición y el conductor ve el nuevo orden al instante con un aviso. Un recorrido solo se finaliza cuando ningún estudiante queda a bordo. El administrador los consulta en Operación › Recorridos.',
   },
   {
     modulo: 'Operación',
     pregunta: '¿Cómo veo dónde va un vehículo?',
     respuesta:
-      'Mientras un recorrido está en curso, el teléfono de la monitora (o del conductor si la ruta no tiene monitora) comparte su ubicación desde la Ruta del día: hay que permitir la ubicación en el navegador y mantener la pantalla encendida; sin señal, las ubicaciones se guardan y se envían al recuperarla. El administrador ve todos los vehículos en Operación › Monitoreo en vivo y el trayecto de cada recorrido en su detalle de Operación › Recorridos. El acudiente ve el vehículo en "Ver en el mapa" de su portal solo mientras la ruta de su estudiante está en curso. Las ubicaciones se conservan 30 días.',
+      'Mientras un recorrido está en curso, los teléfonos del conductor Y de la monitora comparten la ubicación desde la Ruta del día (si uno cierra la app o se apaga, el otro la mantiene al día): hay que permitir la ubicación en el navegador y mantener la pantalla encendida; sin señal, las ubicaciones se guardan y se envían al recuperarla. El administrador ve todos los vehículos en Operación › Monitoreo en vivo y el trayecto de cada recorrido en su detalle de Operación › Recorridos. El acudiente ve el vehículo en "Ver en el mapa" de su portal solo mientras la ruta de su estudiante está en curso. Las ubicaciones se conservan 30 días. El GPS en vivo está incluido en los planes Profesional y Empresarial (y en la prueba gratuita).',
   },
   {
     modulo: 'Personas',
@@ -156,6 +156,18 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     pregunta: '¿Cómo cambio mi contraseña?',
     respuesta:
       'Entra a Mi cuenta (en el menú de tu usuario o el ícono de la persona con engranaje), escribe tu contraseña actual y la nueva dos veces (mínimo 6 caracteres). Se cierra la sesión en tus otros dispositivos. Si la olvidaste, el administrador te asigna una nueva en Personas.',
+  },
+  {
+    modulo: 'Sistema',
+    pregunta: '¿Qué pasa con mi solicitud de soporte?',
+    respuesta:
+      'Cada solicitud es un ticket con número (SOP-0001) que sigues en "Mis solicitudes" de esta pantalla. Pasa por revisión, desarrollo, control de calidad (QA) y pruebas; los errores y mejoras además te piden validar la solución antes de resolverse. Te avisamos en la campana en cada avance; si te pedimos información, respóndela en el ticket. Cuando esté resuelto, confírmalo y califica la atención, o reábrelo si sigue fallando (si no respondes, se cierra solo a los 7 días). Puedes cancelarlo mientras no esté resuelto. También podemos agendarte una reunión: la verás en el ticket.',
+  },
+  {
+    modulo: 'Sistema',
+    pregunta: '¿Qué incluye mi plan y cómo lo pago?',
+    respuesta:
+      'Al registrarte tienes 3 meses gratis del plan Profesional. En Sistema › Planes y membresías ves cuántos días te quedan, cuántos vehículos y estudiantes activos usas y los planes Gratis, Esencial, Profesional y Empresarial (el anual tiene 2 meses gratis). Por ahora el plan se solicita desde Soporte: te enviamos los datos para pagar por transferencia y lo activamos apenas lo confirmemos (pronto podrás pagar en línea). Si la prueba o el plan vencen, pasas a Gratis sin perder datos: solo no podrás activar más vehículos o estudiantes que los del plan y se pausan el GPS en vivo y los recordatorios automáticos.',
   },
   {
     modulo: 'General',

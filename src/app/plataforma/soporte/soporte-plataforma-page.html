@@ -1,0 +1,272 @@
+<!-- Resumen: cada tarjeta filtra la bandeja -->
+<div class="grid grid-cols-2 sm:grid-cols-4 2xl:grid-cols-8 gap-3">
+  @for (i of indicadores(); track i.titulo) {
+    <button type="button" class="card bg-base-200 border border-base-300 hover:border-info text-left transition-colors" (click)="aplicar(i)">
+      <span class="card-body p-3 sm:p-4 gap-1">
+        <span class="flex items-center justify-between gap-2">
+          <span class="text-xs text-base-content/70 leading-tight">{{ i.titulo }}</span>
+          <i [class]="i.icono + ' ' + i.color" aria-hidden="true"></i>
+        </span>
+        <span class="text-2xl font-semibold">{{ i.valor }}</span>
+      </span>
+    </button>
+  } @empty {
+    @for (n of [1, 2, 3, 4]; track n) {
+      <div class="skeleton bg-base-300 h-20"></div>
+    }
+  }
+</div>
+
+<form [formGroup]="filtros" class="mt-6 card bg-base-200 border border-base-300 shadow-xl">
+  <app-panel-filtros (limpiar)="limpiarFiltros()">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2 md:col-span-2">
+        <i class="fa-solid fa-magnifying-glass text-base-content/60" aria-hidden="true"></i>
+        <input type="search" formControlName="texto" class="grow" placeholder="Número, asunto o solicitante..." aria-label="Buscar ticket" />
+      </label>
+      <app-selector-busqueda formControlName="estado" [opciones]="opcionesEstado" textoTodos="Todos los estados" etiqueta="Estado" />
+      <app-selector-busqueda formControlName="empresaId" [opciones]="opcionesEmpresa()" textoTodos="Todas las empresas" etiqueta="Empresa" />
+      <app-selector-busqueda formControlName="prioridad" [opciones]="prioridades" textoTodos="Todas las prioridades" etiqueta="Prioridad" />
+      <app-selector-busqueda formControlName="tipo" [opciones]="tipos" textoTodos="Todos los tipos" etiqueta="Tipo" />
+      <app-selector-busqueda formControlName="responsableId" [opciones]="opcionesResponsable()" textoTodos="Todos los responsables" etiqueta="Responsable" />
+      <label class="label cursor-pointer justify-start gap-2">
+        <input type="checkbox" formControlName="vencidos" class="checkbox checkbox-sm" />
+        <span class="text-sm">Solo fuera de tiempo</span>
+      </label>
+    </div>
+  </app-panel-filtros>
+</form>
+
+<section class="mt-6 card bg-base-200 border border-base-300 shadow-xl">
+  <div class="card-body">
+    <app-encabezado-listado titulo="Tickets de soporte" descripcion="Solicitudes de todas las empresas: los abiertos más urgentes primero."
+      [cargando]="store.cargando()" [total]="store.total()" [modoLocal]="store.modoLocal" [error]="store.error()"
+      (reintentar)="store.recargar()" />
+
+    <div class="@container overflow-x-auto rounded-box border border-base-300">
+      <table class="table">
+        <thead>
+          <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+            <th>Ticket</th>
+            <th class="hidden @3xl:table-cell">Empresa</th>
+            <th class="hidden @3xl:table-cell">Prioridad</th>
+            <th class="hidden @5xl:table-cell">Responsable</th>
+            <th class="hidden @6xl:table-cell">Objetivo</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="transition-opacity" [class.opacity-50]="store.cargando() && store.items().length > 0">
+          @if (store.cargando() && store.items().length === 0) {
+            @for (fila of [1, 2, 3]; track fila) {
+              <tr class="border-base-300">
+                @for (col of [1, 2, 3, 4, 5, 6, 7]; track col) {
+                  <td><div class="skeleton bg-base-300 h-4 w-full"></div></td>
+                }
+              </tr>
+            }
+          } @else {
+            @for (t of store.items(); track t.id) {
+              <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors" (click)="abrir(t.id)">
+                <td class="max-w-80">
+                  <div class="font-medium truncate">{{ t.asunto }}</div>
+                  <div class="text-xs text-base-content/70 truncate">
+                    <span class="font-mono">{{ t.numero }}</span> · {{ nombreTipo(t.tipo) }} · {{ t.modulo }}
+                    @if (t.proximaReunion) {
+                      · <i class="fa-solid fa-calendar-day text-info" aria-hidden="true"></i> {{ t.proximaReunion | date: 'd MMM, h:mm a' }}
+                    }
+                  </div>
+                </td>
+                <td class="hidden @3xl:table-cell text-sm">{{ t.empresa }}</td>
+                <td class="hidden @3xl:table-cell"><span class="badge badge-soft badge-sm {{ badgePrioridad(t.prioridad) }}">{{ nombrePrioridad(t.prioridad) }}</span></td>
+                <td class="hidden @5xl:table-cell text-sm">{{ t.responsable || 'Sin asignar' }}</td>
+                <td class="hidden @6xl:table-cell text-sm" [class]="fila(t)">
+                  @if (t.vencido) {
+                    <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                  }
+                  {{ t.fechaObjetivo | date: 'd MMM, h:mm a' }}
+                </td>
+                <td><span class="badge badge-soft badge-sm {{ badgeEstado(t.estado) }}">{{ nombreEstado(t.estado) }}</span></td>
+                <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+                  <div class="tooltip tooltip-left" data-tip="Atender">
+                    <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Atender"
+                      (click)="abrir(t.id)"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <app-estado-vacio icono="fa-solid fa-ticket" mensaje="No hay tickets con estos filtros." [hayFiltros]="store.hayFiltros()" />
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-paginacion [pagina]="store.paginacion().pagina" [tamano]="store.paginacion().tamano" [total]="store.total()"
+      [totalPaginas]="store.totalPaginas()" (cambiarPagina)="store.irAPagina($event)" (cambiarTamano)="store.cambiarTamano($event)" />
+  </div>
+</section>
+
+<app-modal [abierto]="modalAbierto()" (abiertoChange)="$event ? null : cerrar()" ancho="max-w-4xl"
+  [titulo]="ticket()?.asunto ?? 'Ticket'" [subtitulo]="ticket() ? ticket()!.numero + ' · ' + ticket()!.empresa : ''">
+  @if (modalAbierto() && ticket(); as t) {
+    <div class="flex flex-col gap-6">
+      <!-- Gestión -->
+      <section class="rounded-box border border-base-300 bg-base-100 p-4 flex flex-col gap-4">
+        <div role="tablist" class="tabs tabs-box tabs-sm bg-base-200" aria-label="Gestión del ticket">
+          <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'avanzar'" [attr.aria-selected]="pestana() === 'avanzar'"
+            (click)="cambiarPestana('avanzar')"><i class="fa-solid fa-forward-step mr-1" aria-hidden="true"></i>Avanzar</button>
+          <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'responder'" [attr.aria-selected]="pestana() === 'responder'"
+            (click)="cambiarPestana('responder')"><i class="fa-solid fa-reply mr-1" aria-hidden="true"></i>Responder</button>
+          <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'asignar'" [attr.aria-selected]="pestana() === 'asignar'"
+            (click)="cambiarPestana('asignar')"><i class="fa-solid fa-user-tag mr-1" aria-hidden="true"></i>Asignar</button>
+          <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'reunion'" [attr.aria-selected]="pestana() === 'reunion'"
+            (click)="cambiarPestana('reunion')"><i class="fa-solid fa-calendar-plus mr-1" aria-hidden="true"></i>Reuniones</button>
+        </div>
+
+        @switch (pestana()) {
+          @case ('avanzar') {
+            <form id="form-estado-ticket" [formGroup]="formEstado" (ngSubmit)="avanzar()" novalidate class="flex flex-col gap-3">
+              @if (t.siguientesEstados.length) {
+                <fieldset>
+                  <legend class="label-text text-base-content/90 mb-2">
+                    Ahora está en <span class="badge badge-soft badge-sm {{ badgeEstado(t.estado) }}">{{ nombreEstado(t.estado) }}</span>. Siguiente paso:
+                  </legend>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (e of t.siguientesEstados; track e) {
+                      <label class="flex items-center gap-3 rounded-box border border-neutral bg-base-100 p-3 cursor-pointer hover:border-primary/60 has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-focus-visible:outline-primary">
+                        <input type="radio" class="sr-only" name="destino" [value]="e" [checked]="destino() === e" (change)="elegirDestino(e)" />
+                        <i [class]="iconoDe(e) + ' text-info'" aria-hidden="true"></i>
+                        <span class="min-w-0">
+                          <span class="block font-medium text-sm">{{ accionDe(e) }}</span>
+                          <span class="block text-xs text-base-content/70">→ {{ nombreEstado(e) }}</span>
+                        </span>
+                      </label>
+                    }
+                  </div>
+                </fieldset>
+                <label app-campo etiqueta="Comentario para la empresa" [requerido]="comentarioObligatorio()" [error]="error(formEstado.controls.comentario)"
+                  [ayuda]="comentarioObligatorio() ? 'Obligatorio: la empresa verá el motivo en el historial y en el correo.' : 'Opcional: llega a la empresa con el aviso.'">
+                  <textarea formControlName="comentario" rows="3" maxlength="2000" class="textarea textarea-bordered bg-base-100 border-neutral w-full"
+                    [class.textarea-error]="!!error(formEstado.controls.comentario)"></textarea>
+                </label>
+                @if (t.tipo === 'ERROR' || t.tipo === 'MEJORA') {
+                  <p class="text-xs text-base-content/70">
+                    <i class="fa-solid fa-shield-halved text-info" aria-hidden="true"></i>
+                    Los errores y mejoras pasan por QA, pruebas y la validación de la empresa antes de resolverse.
+                  </p>
+                }
+              } @else {
+                <p class="text-sm text-base-content/70">
+                  Este ticket terminó ({{ nombreEstado(t.estado) }}). Un ticket resuelto se cierra cuando la empresa lo confirma o solo, a los 7 días.
+                </p>
+              }
+            </form>
+          }
+          @case ('responder') {
+            <form id="form-respuesta-ticket" [formGroup]="formRespuesta" (ngSubmit)="responder()" novalidate class="flex flex-col gap-3">
+              <label app-campo etiqueta="Mensaje" requerido [error]="error(formRespuesta.controls.texto)">
+                <textarea formControlName="texto" rows="4" maxlength="2000" class="textarea textarea-bordered bg-base-100 border-neutral w-full"
+                  [class.textarea-error]="!!error(formRespuesta.controls.texto)"></textarea>
+              </label>
+              <label class="label cursor-pointer justify-start gap-2">
+                <input type="checkbox" formControlName="interno" class="toggle toggle-sm toggle-warning" />
+                <span class="text-sm">Nota interna <span class="text-base-content/70">(solo la ve el equipo; no se avisa a la empresa)</span></span>
+              </label>
+              <app-archivos-adjuntos formControlName="adjuntos" aceptar=".pdf,image/*" [tamanoMaximoMb]="tamanoMaximoMb" [maximo]="maximoAdjuntos" />
+            </form>
+          }
+          @case ('asignar') {
+            <form id="form-asignacion-ticket" [formGroup]="formAsignacion" (ngSubmit)="asignar()" novalidate class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col">
+                <span class="label-text text-base-content/90 mb-1">Responsable</span>
+                <app-selector-busqueda formControlName="responsableId" [opciones]="opcionesAsignar()" etiqueta="Responsable" />
+              </div>
+              <div class="flex flex-col">
+                <span class="label-text text-base-content/90 mb-1">Prioridad <span class="text-error">*</span></span>
+                <app-selector-busqueda formControlName="prioridad" [opciones]="prioridades" etiqueta="Prioridad" />
+              </div>
+              <p class="md:col-span-2 text-xs text-base-content/70">
+                Tiempo objetivo desde la apertura: crítica 8 h · alta 24 h · media 72 h · baja 7 días. Cambiar la prioridad lo recalcula.
+              </p>
+            </form>
+          }
+          @case ('reunion') {
+            @if (registrando(); as r) {
+              <form id="form-registro-reunion" [formGroup]="formRegistro" (ngSubmit)="registrarReunion()" novalidate class="flex flex-col gap-3">
+                <p class="text-sm">Reunión del <span class="font-medium">{{ r.fecha | date: 'EEEE d MMM, h:mm a' }}</span>: {{ r.motivo }}</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center justify-center gap-2 rounded-box border border-neutral bg-base-100 p-2 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+                    <input type="radio" class="sr-only" formControlName="estado" value="REALIZADA" /> Se realizó
+                  </label>
+                  <label class="flex items-center justify-center gap-2 rounded-box border border-neutral bg-base-100 p-2 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+                    <input type="radio" class="sr-only" formControlName="estado" value="CANCELADA" /> Se canceló
+                  </label>
+                </div>
+                <label app-campo [etiqueta]="formRegistro.controls.estado.value === 'REALIZADA' ? 'Acta: qué se habló y qué se acordó' : 'Motivo'"
+                  requerido [error]="error(formRegistro.controls.notas)">
+                  <textarea formControlName="notas" rows="3" maxlength="2000" class="textarea textarea-bordered bg-base-100 border-neutral w-full"
+                    [class.textarea-error]="!!error(formRegistro.controls.notas)"></textarea>
+                </label>
+                <button type="button" class="btn btn-sm btn-ghost self-start" (click)="elegirRegistro(null)">Volver</button>
+              </form>
+            } @else {
+              @if (reunionesPendientes().length) {
+                <ul class="flex flex-col gap-2">
+                  @for (r of reunionesPendientes(); track r.id) {
+                    <li class="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 p-3 text-sm">
+                      <span><i class="fa-solid fa-calendar-day text-info" aria-hidden="true"></i> {{ r.fecha | date: 'EEEE d MMM, h:mm a' }} · {{ r.motivo }}</span>
+                      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="elegirRegistro(r)">Registrar resultado</button>
+                    </li>
+                  }
+                </ul>
+              }
+              <form id="form-reunion-ticket" [formGroup]="formReunion" (ngSubmit)="agendar()" novalidate class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label app-campo etiqueta="Fecha y hora" requerido [error]="error(formReunion.controls.fecha)">
+                  <input type="datetime-local" formControlName="fecha" class="input input-bordered bg-base-100 border-neutral w-full"
+                    [class.input-error]="!!error(formReunion.controls.fecha)" />
+                </label>
+                <label app-campo etiqueta="Duración (minutos)" requerido [error]="error(formReunion.controls.duracionMinutos)">
+                  <input type="number" formControlName="duracionMinutos" min="15" max="480" step="15" class="input input-bordered bg-base-100 border-neutral w-full"
+                    [class.input-error]="!!error(formReunion.controls.duracionMinutos)" />
+                </label>
+                <div class="flex flex-col">
+                  <span class="label-text text-base-content/90 mb-1">Modalidad <span class="text-error">*</span></span>
+                  <app-selector-busqueda formControlName="modalidad" [opciones]="modalidades" etiqueta="Modalidad" />
+                </div>
+                <label app-campo [etiqueta]="enlaceObligatorio() ? 'Enlace de la videollamada' : 'Enlace o lugar'" [requerido]="enlaceObligatorio()"
+                  [error]="error(formReunion.controls.enlace)">
+                  <input formControlName="enlace" placeholder="https://meet.google.com/…" class="input input-bordered bg-base-100 border-neutral w-full"
+                    [class.input-error]="!!error(formReunion.controls.enlace)" />
+                </label>
+                <label app-campo class="md:col-span-2" etiqueta="Motivo" requerido [error]="error(formReunion.controls.motivo)">
+                  <input formControlName="motivo" maxlength="300" placeholder="Revisar el error en pantalla con la empresa"
+                    class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!error(formReunion.controls.motivo)" />
+                </label>
+              </form>
+            }
+          }
+        }
+      </section>
+
+      <app-detalle-ticket [ticket]="t" [plataforma]="true" />
+    </div>
+  }
+  @if (modalAbierto()) {
+    <div pie class="flex flex-wrap justify-end gap-2 w-full">
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="cerrar()">Cerrar</button>
+      @if (pestana() !== 'avanzar' || ticket()?.siguientesEstados?.length) {
+        <button type="submit" [attr.form]="formularioActivo()" class="btn btn-primary" [disabled]="guardando()">
+          @if (guardando()) {
+            <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+          }
+          {{ textoGuardar() }}
+        </button>
+      }
+    </div>
+  }
+</app-modal>

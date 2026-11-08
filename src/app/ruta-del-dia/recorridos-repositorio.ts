@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { EstadoParada, Recorrido, RutaAsignada, Trayecto } from './recorrido';
+import { EstadoParada, MotivoAusencia, Recorrido, RutaAsignada, Trayecto } from './recorrido';
 
 /**
  * Recorridos de la ruta del día del empleado AUTENTICADO (conductor o monitora).
@@ -18,10 +18,14 @@ export abstract class RecorridosRepositorio {
   /**
    * Inicia el trayecto de una asignación; el servidor arma las paradas desde la ruta y los estudiantes.
    * Si el compañero YA lo inició hoy, devuelve ese mismo recorrido (conductor y monitora comparten uno).
+   * La ENTREGA trae como AUSENTE (`NO_ASISTE`) a quien en la recogida de hoy quedó "No asiste hoy".
    */
   abstract iniciar(asignacionId: string, trayecto: Trayecto): Observable<Recorrido>;
-  /** Cambia el estado de uno o varios estudiantes (p. ej. "entregar todos en el colegio"). */
-  abstract marcar(id: string, estudianteIds: string[], estado: EstadoParada): Observable<Recorrido>;
+  /**
+   * Cambia el estado de uno o varios estudiantes (p. ej. "entregar todos en el colegio"). `motivo` solo con
+   * AUSENTE; `NO_ASISTE` solo en la recogida (la entrega del día lo trae ausente).
+   */
+  abstract marcar(id: string, estudianteIds: string[], estado: EstadoParada, motivo?: MotivoAusencia): Observable<Recorrido>;
   /**
    * Cambia el orden de visita de los estudiantes que faltan (`estudianteIds` = todos los por visitar,
    * en el nuevo orden). Solo la monitora (o el conductor si la ruta no tiene monitora).

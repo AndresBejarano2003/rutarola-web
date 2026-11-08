@@ -1,0 +1,91 @@
+<div class="min-h-dvh bg-base-100 text-base-content px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
+  <div class="max-w-5xl mx-auto grid lg:grid-cols-5 gap-8 items-start">
+    <aside class="lg:col-span-2 flex flex-col gap-5">
+      <a routerLink="/login" aria-label="RutaRola"><img src="logos/logo-oficial-sin-fondo-lb-pequeño.png" alt="RutaRola" class="h-12 w-auto" /></a>
+      <h1 class="text-3xl font-bold leading-tight">Registra tu empresa y usa RutaRola <span class="text-primary">{{ mesesPrueba }} meses gratis</span></h1>
+      <ul class="flex flex-col gap-3 text-sm">
+        <li class="flex gap-3"><i class="fa-solid fa-check text-success mt-1" aria-hidden="true"></i> Todo el plan Profesional durante la prueba: GPS en vivo, mapa para las familias y recordatorios de cobro.</li>
+        <li class="flex gap-3"><i class="fa-solid fa-check text-success mt-1" aria-hidden="true"></i> Sin tarjeta de crédito y sin permanencia.</li>
+        <li class="flex gap-3"><i class="fa-solid fa-check text-success mt-1" aria-hidden="true"></i> Al terminar eliges un plan o sigues gratis con todos tus datos.</li>
+      </ul>
+      <a routerLink="/offline-membership" class="link link-secondary text-sm"><i class="fa-solid fa-crown" aria-hidden="true"></i> Ver planes y precios</a>
+    </aside>
+
+    <section class="lg:col-span-3 card bg-base-200 border border-base-300 shadow-xl">
+      <form class="card-body grid grid-cols-1 md:grid-cols-2 gap-4" [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+        @if (modoLocal) {
+          <div role="alert" class="md:col-span-2 alert alert-soft alert-warning text-sm">
+            <i class="fa-solid fa-flask" aria-hidden="true"></i>
+            <span>Modo local: el registro necesita el servidor. Entra con un usuario de ejemplo desde el inicio de sesión.</span>
+          </div>
+        }
+        <app-titulo-seccion>Tu empresa</app-titulo-seccion>
+        <ng-container formGroupName="empresa">
+          <label app-campo class="md:col-span-2" etiqueta="Nombre de la empresa" requerido [error]="campo('empresa.nombre')">
+            <input formControlName="nombre" autocomplete="organization" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('empresa.nombre')" />
+          </label>
+          <label app-campo etiqueta="NIT" requerido [error]="campo('empresa.nit')">
+            <input formControlName="nit" placeholder="900123456-7" class="input input-bordered bg-base-100 border-neutral w-full font-mono" [class.input-error]="!!campo('empresa.nit')" />
+          </label>
+          <label app-campo etiqueta="Ciudad" requerido [error]="campo('empresa.ciudad')">
+            <input formControlName="ciudad" autocomplete="address-level2" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('empresa.ciudad')" />
+          </label>
+          <label app-campo class="md:col-span-2" etiqueta="Teléfono de contacto" requerido [error]="campo('empresa.telefono')">
+            <input formControlName="telefono" type="tel" autocomplete="tel" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('empresa.telefono')" />
+          </label>
+        </ng-container>
+
+        <app-titulo-seccion>Tu usuario administrador</app-titulo-seccion>
+        <ng-container formGroupName="administrador">
+          <label app-campo class="md:col-span-2" etiqueta="Tu nombre" requerido [error]="campo('administrador.nombre')">
+            <input formControlName="nombre" autocomplete="name" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('administrador.nombre')" />
+          </label>
+          <label app-campo etiqueta="Correo" requerido [error]="campo('administrador.email')" ayuda="Aquí te avisamos de tu cuenta y tus solicitudes.">
+            <input formControlName="email" type="email" autocomplete="email" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('administrador.email')" />
+          </label>
+          <label app-campo etiqueta="Usuario para ingresar" requerido [error]="campo('administrador.usuario')" ayuda="4 a 40 caracteres, sin espacios.">
+            <input formControlName="usuario" autocomplete="username" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('administrador.usuario')" />
+          </label>
+        </ng-container>
+        <label app-campo etiqueta="Contraseña" requerido [error]="campo('contrasena')" ayuda="Mínimo 6 caracteres.">
+          <input formControlName="contrasena" [type]="verContrasena() ? 'text' : 'password'" autocomplete="new-password"
+            class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('contrasena')" />
+        </label>
+        <label app-campo etiqueta="Confirmar contraseña" requerido [error]="campo('confirmarContrasena')">
+          <input formControlName="confirmarContrasena" [type]="verContrasena() ? 'text' : 'password'" autocomplete="new-password"
+            class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!campo('confirmarContrasena')" />
+        </label>
+        <label class="md:col-span-2 label cursor-pointer justify-start gap-2">
+          <input type="checkbox" class="checkbox checkbox-sm" [checked]="verContrasena()" (change)="verContrasena.set(!verContrasena())" />
+          <span class="text-sm">Mostrar contraseña</span>
+        </label>
+
+        <div class="md:col-span-2 flex flex-col gap-1">
+          <label class="label cursor-pointer justify-start gap-2 whitespace-normal">
+            <input type="checkbox" formControlName="aceptaTerminos" class="checkbox checkbox-sm" [class.checkbox-error]="!!campo('aceptaTerminos')" />
+            <span class="text-sm">Acepto los términos del servicio y el tratamiento de datos personales (Ley 1581 de 2012), incluidos los de los estudiantes que registre.</span>
+          </label>
+          @if (campo('aceptaTerminos'); as e) {
+            <span class="text-xs text-error">{{ e }}</span>
+          }
+        </div>
+
+        @if (error()) {
+          <div role="alert" class="md:col-span-2 alert alert-error alert-soft text-sm">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>{{ error() }}</span>
+          </div>
+        }
+
+        <div class="md:col-span-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+          <a routerLink="/login" class="link link-secondary text-sm">Ya tengo cuenta: iniciar sesión</a>
+          <button type="submit" class="btn btn-primary" [disabled]="enviando()">
+            @if (enviando()) {
+              <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+            }
+            Crear mi cuenta gratis
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

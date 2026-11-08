@@ -19,10 +19,13 @@ import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busq
 import { FILTROS_EMPRESA_VACIOS, FiltrosEmpresa, SolicitudEmpresa } from './empresa';
 import { EmpresasRepositorio } from './empresas-repositorio';
 import { EmpresasStore } from './empresas-store';
+import { AdministradoresEmpresa } from './administradores-empresa/administradores-empresa';
+import { SuscripcionEmpresa } from './suscripcion-empresa/suscripcion-empresa';
 
 /**
  * Plataforma › Empresas (SUPER_ADMIN): alta de empresas de transporte con su primer administrador
- * opcional, edición e inactivación (no se eliminan). Cada empresa ve solo sus datos.
+ * opcional, edición e inactivación (no se eliminan). Cada empresa ve solo sus datos. En el detalle, sus
+ * administradores (`<app-administradores-empresa>`): restablecer la contraseña, editar, inactivar o agregar.
  */
 @Component({
   selector: 'app-empresas-page',
@@ -39,6 +42,8 @@ import { EmpresasStore } from './empresas-store';
     Campo,
     TituloSeccion,
     AccionesFormulario,
+    AdministradoresEmpresa,
+    SuscripcionEmpresa,
   ],
   providers: [EmpresasStore],
   templateUrl: './empresas-page.html',

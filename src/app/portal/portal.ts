@@ -1,6 +1,6 @@
 import { EstadoCotizacion } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { MedioPago } from 'src/app/finanzas/recibos/recibo';
-import { EstadoParada, Trayecto } from 'src/app/ruta-del-dia/recorrido';
+import { EstadoParada, MotivoAusencia, Trayecto, nombreAusencia } from 'src/app/ruta-del-dia/recorrido';
 import { EstadoRegistro } from 'src/app/shared/crud/crud';
 
 /**
@@ -75,6 +75,7 @@ export interface RecorridoHoy {
   estado: EstadoParada;
   horaAbordo: string | null;
   horaEntrega: string | null;
+  motivoAusencia: MotivoAusencia | '';
 }
 
 export interface TransporteEstudiante {
@@ -172,6 +173,6 @@ export function situacionRecorrido(
         icono: 'fa-solid fa-circle-check',
       };
     case 'AUSENTE':
-      return { texto: `${nombre}: no asistió`, clase: 'text-warning', icono: 'fa-solid fa-user-slash' };
+      return { texto: `${nombre}: ${nombreAusencia(r.motivoAusencia, trayecto).toLowerCase()}`, clase: 'text-warning', icono: 'fa-solid fa-user-slash' };
   }
 }
