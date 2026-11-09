@@ -16,6 +16,7 @@
   }
 </label>
 <h4 class="md:col-span-2 text-sm font-semibold uppercase tracking-wide text-info mt-2 border-b border-base-300 pb-1">Datos personales</h4>
+<app-campo-foto class="md:col-span-2" formControlName="foto" etiqueta="Foto de perfil" [iniciales]="iniciales()" />
 <label class="flex flex-col w-full">
   <span class="label-text text-base-content/90 mb-1">Primer nombre <span class="text-error">*</span></span>
   <input type="text" formControlName="primerNombre" class="input input-bordered bg-base-100 border-neutral w-full"

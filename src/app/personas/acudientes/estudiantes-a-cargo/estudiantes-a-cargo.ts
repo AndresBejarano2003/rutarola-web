@@ -41,7 +41,7 @@ type Estado =
           <ul class="divide-y divide-base-300 rounded-box border border-base-300">
             @for (estudiante of lista; track estudiante.id) {
               <li class="flex items-center justify-between gap-3 px-3 py-2">
-                <app-celda-persona [nombre]="nombreCompleto(estudiante)" [iniciales]="iniciales(estudiante)"
+                <app-celda-persona [nombre]="nombreCompleto(estudiante)" [iniciales]="iniciales(estudiante)" [foto]="estudiante.foto"
                   [activo]="estudiante.estado === 'ACTIVO'"
                   [detalle]="(nombresColegio().get(estudiante.colegioId) ?? '') + ' · ' + estudiante.grado + ' · ' + estudiante.jornada" />
                 <app-badge-estado [estado]="estudiante.estado" />

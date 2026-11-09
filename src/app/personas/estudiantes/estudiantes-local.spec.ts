@@ -12,6 +12,7 @@ const NUEVO: DatosRegistro<Estudiante> = {
   segundoNombre: '',
   primerApellido: 'Zúñiga',
   segundoApellido: '',
+  foto: '',
   fechaNacimiento: '2014-01-01',
   direccion: 'Calle 1',
   acudienteId: 'acu-1',

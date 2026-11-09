@@ -100,6 +100,7 @@ export class EmpleadosLocal
       segundoNombre,
       primerApellido,
       segundoApellido,
+      foto: '',
       tipoEmpleado,
       telefono,
       correo: '',

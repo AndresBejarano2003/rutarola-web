@@ -10,6 +10,8 @@ export interface ConductorOperacion {
   id: string;
   nombre: string;
   iniciales: string;
+  /** Foto de perfil del empleado (`''` = iniciales). */
+  foto: string;
   documento: string;
   telefono: string;
   correo: string;

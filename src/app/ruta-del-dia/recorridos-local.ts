@@ -93,7 +93,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                   vehiculo: vehiculos.get(a.vehiculoId)?.placa ?? '',
                   rol,
                   companero: otro
-                    ? { nombre: nombreCompleto(otro), telefono: otro.telefono, rol: otro.tipoEmpleado }
+                    ? { nombre: nombreCompleto(otro), telefono: otro.telefono, rol: otro.tipoEmpleado, foto: otro.foto ?? '' }
                     : null,
                   estudiantes: ruta.estudianteIds.length,
                   recorridos: recorridos
@@ -121,6 +121,19 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
       const empleadoId = this.empleadoId();
       return responderLocal(() => this.buscar(this.leer(), id, empleadoId), this.latenciaMs);
     });
+  }
+
+  fotos(id: string): Observable<Map<string, string>> {
+    return this.obtener(id).pipe(
+      switchMap((r) =>
+        this.estudiantes.listar(FILTROS_ESTUDIANTE_VACIOS, SIN_PAGINAR).pipe(
+          map(({ items }) => {
+            const ids = new Set(r.paradas.map((p) => p.estudianteId));
+            return new Map(items.filter((e) => ids.has(e.id) && e.foto).map((e) => [e.id, e.foto]));
+          }),
+        ),
+      ),
+    );
   }
 
   iniciar(asignacionId: string, trayecto: Trayecto): Observable<Recorrido> {

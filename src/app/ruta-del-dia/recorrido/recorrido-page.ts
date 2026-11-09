@@ -30,6 +30,8 @@ import { RecorridosRepositorio } from '../recorridos-repositorio';
 import { EmisorGps } from '../gps/emisor-gps';
 import { haceCuanto } from '../gps/gps';
 import { Sonidos } from '../sonidos';
+import { Avatar } from 'src/app/shared/foto/avatar';
+import { inicialesDe } from 'src/app/shared/foto/foto';
 
 /** Estado al que vuelve cada uno con "Deshacer". */
 const DESHACER: Partial<Record<EstadoParada, EstadoParada>> = { A_BORDO: 'PENDIENTE', ENTREGADO: 'A_BORDO', AUSENTE: 'PENDIENTE' };
@@ -62,7 +64,7 @@ const TOLERANCIA_PRESION = 8;
 @Component({
   selector: 'app-recorrido-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, NgTemplateOutlet],
+  imports: [RouterLink, FormsModule, NgTemplateOutlet, Avatar],
   providers: [EmisorGps],
   templateUrl: './recorrido-page.html',
 })
@@ -80,6 +82,9 @@ export default class RecorridoPage implements OnInit {
   protected readonly enlaceMapa = enlaceMapa;
 
   protected readonly recorrido = signal<Recorrido | null>(null);
+  /** Fotos de los estudiantes (`estudianteId → data URL`), una sola descarga por pantalla. */
+  protected readonly fotos = signal<Map<string, string>>(new Map());
+  protected readonly inicialesDe = inicialesDe;
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly procesando = signal(false);
@@ -140,6 +145,8 @@ export default class RecorridoPage implements OnInit {
 
   ngOnInit(): void {
     void this.cargar().then(() => this.sincronizar());
+    // Sin fotos el recorrido funciona igual (iniciales): un fallo aquí no se muestra.
+    this.repositorio.fotos(this.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (f) => this.fotos.set(f), error: () => undefined });
   }
 
   /** Recibe los cambios del compañero (marcas y orden) mientras el recorrido está en curso. */

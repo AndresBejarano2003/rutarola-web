@@ -277,6 +277,7 @@
 <!-- Fila de la lista: número, estudiante, estado y acciones -->
 <ng-template #fila let-e let-numero="numero">
   <span class="w-7 h-7 rounded-full bg-base-300 grid place-items-center text-sm font-semibold shrink-0">{{ numero }}</span>
+  <app-avatar [foto]="fotos().get(e.estudianteId)" [iniciales]="inicialesDe(e.estudiante)" tono="suave" />
   <div class="min-w-0 flex-1 basis-40">
     <p class="font-medium truncate">{{ e.estudiante }}</p>
     <p class="text-xs text-base-content/70 truncate">{{ e.grado }} · {{ e.direccion }}</p>
@@ -325,9 +326,14 @@
 <!-- Tarjeta del estudiante del siguiente paso: dirección, acudiente y contacto -->
 <ng-template #parada let-p let-titulo="titulo">
   <div class="flex items-start gap-3">
-    <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
-      <i class="fa-solid fa-child-reaching text-xl" aria-hidden="true"></i>
-    </div>
+    @if (fotos().get(p.estudianteId); as foto) {
+      <!-- Foto grande para reconocer al estudiante al recogerlo o entregarlo. -->
+      <app-avatar [foto]="foto" tamano="xl" [alt]="'Foto de ' + p.estudiante" class="ring-2 ring-primary rounded-full" />
+    } @else {
+      <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
+        <i class="fa-solid fa-child-reaching text-xl" aria-hidden="true"></i>
+      </div>
+    }
     <div class="min-w-0">
       <p class="text-sm text-base-content/70 uppercase tracking-wide">{{ titulo }}</p>
       <h2 class="text-xl font-bold">{{ p.estudiante }}</h2>

@@ -4,11 +4,14 @@
       <a routerLink="/portal" class="shrink-0" aria-label="Ir al inicio del portal">
         <img src="logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola" class="h-9 w-auto" />
       </a>
-      <div class="min-w-0 flex-1 border-l border-base-300 pl-3">
-        <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
-        <p class="text-xs text-base-content/70 flex items-center gap-1.5">
-          <i class="fa-solid fa-people-roof text-info" aria-hidden="true"></i> Portal del acudiente
-        </p>
+      <div class="min-w-0 flex-1 border-l border-base-300 pl-3 flex items-center gap-2.5">
+        <app-avatar class="max-[359px]:hidden" [foto]="sesion()?.imagen" [iniciales]="inicialesDe(sesion()?.nombre ?? '')" tono="suave" />
+        <div class="min-w-0">
+          <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
+          <p class="text-xs text-base-content/70 flex items-center gap-1.5">
+            <i class="fa-solid fa-people-roof text-info" aria-hidden="true"></i> Portal del acudiente
+          </p>
+        </div>
       </div>
       <button type="button" class="btn btn-ghost btn-sm btn-square" [disabled]="estado.cargando()" (click)="estado.cargar()"
         aria-label="Actualizar datos">

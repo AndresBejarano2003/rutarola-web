@@ -11,6 +11,11 @@ export abstract class RecorridosRepositorio {
   abstract rutasDelDia(fecha: string): Observable<RutaAsignada[]>;
   abstract obtener(id: string): Observable<Recorrido>;
   /**
+   * Fotos ACTUALES de los estudiantes del recorrido (`estudianteId → data URL`, solo los que tienen foto) para
+   * reconocerlos al recogerlos. Aparte del recorrido para descargarlas una vez por pantalla, no en cada marca.
+   */
+  abstract fotos(id: string): Observable<Map<string, string>>;
+  /**
    * Emite las rutas del día cada vez que cambian en otro dispositivo (p. ej. el compañero inició un
    * trayecto), para que conductor y monitora vean lo mismo sin recargar.
    */

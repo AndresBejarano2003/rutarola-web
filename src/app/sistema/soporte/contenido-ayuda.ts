@@ -143,7 +143,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo veo dónde va un vehículo?',
     respuesta:
-      'Mientras un recorrido está en curso, los teléfonos del conductor Y de la monitora comparten la ubicación desde la Ruta del día (si uno cierra la app o se apaga, el otro la mantiene al día): hay que permitir la ubicación en el navegador y mantener la pantalla encendida; sin señal, las ubicaciones se guardan y se envían al recuperarla. El administrador ve todos los vehículos en Operación › Monitoreo en vivo y el trayecto de cada recorrido en su detalle de Operación › Recorridos. El acudiente ve el vehículo en "Ver en el mapa" de su portal solo mientras la ruta de su estudiante está en curso. Las ubicaciones se conservan 30 días. El GPS en vivo está incluido en los planes Profesional y Empresarial (y en la prueba gratuita).',
+      'Mientras un recorrido está en curso, los teléfonos del conductor Y de la monitora comparten la ubicación desde la Ruta del día (si uno cierra la app o se apaga, el otro la mantiene al día): hay que permitir la ubicación en el navegador y mantener la pantalla encendida; sin señal, las ubicaciones se guardan y se envían al recuperarla. El administrador ve todos los vehículos en Operación › Monitoreo en vivo y el trayecto de cada recorrido en su detalle de Operación › Recorridos. El acudiente ve el vehículo en "Ver en el mapa" de su portal solo mientras la ruta de su estudiante está en curso y si la empresa lo permite: en Inicio › Configuración el administrador puede desactivar "Los acudientes ven la ubicación en vivo de la ruta"; entonces el acudiente solo ve el estado de su estudiante y la hora en que inició la ruta, y el administrador sigue viendo el monitoreo completo. Las ubicaciones se conservan 30 días. El GPS en vivo está incluido en los planes Profesional y Empresarial (y en la prueba gratuita).',
   },
   {
     modulo: 'Personas',
@@ -156,6 +156,12 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     pregunta: '¿Cómo cambio mi contraseña?',
     respuesta:
       'Entra a Mi cuenta (en el menú de tu usuario o el ícono de la persona con engranaje), escribe tu contraseña actual y la nueva dos veces (mínimo 6 caracteres). Se cierra la sesión en tus otros dispositivos. Si la olvidaste, el administrador te asigna una nueva en Personas.',
+  },
+  {
+    modulo: 'General',
+    pregunta: '¿Cómo pongo mi foto de perfil o cambio mi teléfono?',
+    respuesta:
+      'Entra a Mi cuenta y, en "Mis datos", toca "Subir foto" (desde el celular también puedes tomarla con la cámara), escribe tu teléfono de contacto y tu correo y guarda. La foto se recorta en un cuadrado y se ve en la barra superior y, para conductores, monitoras y acudientes, en las tablas de Personas, en el portal y en la Ruta del día del compañero. El administrador también puede cambiar su nombre; el nombre, el documento y el usuario de empleados y acudientes los corrige el administrador en Personas, donde además puede poner la foto de estudiantes, acudientes y empleados.',
   },
   {
     modulo: 'Sistema',

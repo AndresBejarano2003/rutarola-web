@@ -29,7 +29,7 @@
           <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors"
             (click)="consultar.emit(empleado)">
             <td>
-              <app-celda-persona [nombre]="nombreCompleto(empleado)" [iniciales]="iniciales(empleado)"
+              <app-celda-persona [nombre]="nombreCompleto(empleado)" [iniciales]="iniciales(empleado)" [foto]="empleado.foto"
                 [activo]="empleado.estado === 'ACTIVO'" [detalle]="empleado.telefono" />
             </td>
             <td class="hidden @3xl:table-cell whitespace-nowrap">

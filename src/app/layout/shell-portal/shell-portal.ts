@@ -3,6 +3,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from 'src/app/core/auth';
 import { PortalEstado } from 'src/app/portal/portal-estado';
 import { ContenedorNotificaciones } from 'src/app/shared/notificaciones/contenedor-notificaciones';
+import { Avatar } from 'src/app/shared/foto/avatar';
+import { inicialesDe } from 'src/app/shared/foto/foto';
 
 /** Secciones del portal (barra inferior en celular, pestañas en pantallas grandes). */
 export const SECCIONES_PORTAL = [
@@ -16,7 +18,7 @@ export const SECCIONES_PORTAL = [
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-shell-portal',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ContenedorNotificaciones],
+  imports: [Avatar, RouterOutlet, RouterLink, RouterLinkActive, ContenedorNotificaciones],
   templateUrl: './shell-portal.html',
 })
 export default class ShellPortal implements OnInit {
@@ -26,6 +28,7 @@ export default class ShellPortal implements OnInit {
   protected readonly estado = inject(PortalEstado);
 
   protected readonly sesion = this.auth.sesion;
+  protected readonly inicialesDe = inicialesDe;
   protected readonly secciones = SECCIONES_PORTAL;
 
   ngOnInit(): void {

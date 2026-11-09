@@ -76,6 +76,8 @@ export interface RecorridoHoy {
   horaAbordo: string | null;
   horaEntrega: string | null;
   motivoAusencia: MotivoAusencia | '';
+  /** ISO: cuándo inició el trayecto el conductor o la monitora (se muestra aunque no se comparta la ubicación). */
+  horaInicio: string | null;
 }
 
 export interface TransporteEstudiante {
@@ -87,12 +89,17 @@ export interface TransporteEstudiante {
   telefonoConductor: string;
   monitora: string;
   telefonoMonitora: string;
+  /** Fotos de perfil del conductor y la monitora (`''` = iniciales). */
+  fotoConductor: string;
+  fotoMonitora: string;
 }
 
 export interface EstudiantePortal {
   id: string;
   nombre: string;
   iniciales: string;
+  /** Foto de perfil del estudiante (`''` = iniciales). */
+  foto: string;
   grado: string;
   jornada: string;
   direccion: string;
@@ -146,6 +153,11 @@ export interface PortalAcudiente {
   recibos: ReciboPortal[];
   cotizaciones: CotizacionPortal[];
   resumen: ResumenCuenta;
+  /**
+   * La empresa comparte con los acudientes la ubicación en vivo (`gps.acudientes_ven_ubicacion`). Si es `false`
+   * no hay "Ver en el mapa": solo el estado del estudiante y la hora en que inició el recorrido.
+   */
+  ubicacionEnVivo: boolean;
 }
 
 export const RESUMEN_VACIO: ResumenCuenta = { vencido: 0, cuotasVencidas: 0, porPagar: 0, proximoPago: null, pagadoAnio: 0, pagosAnio: 0 };
@@ -162,7 +174,11 @@ export function situacionRecorrido(
   switch (r.estado) {
     case 'PENDIENTE':
       return r.enCurso
-        ? { texto: `${nombre}: la ruta va en camino`, clase: 'text-info', icono: 'fa-solid fa-route' }
+        ? {
+            texto: `${nombre}: la ruta va en camino${r.horaInicio ? ` (inició a las ${hora(r.horaInicio)})` : ''}`,
+            clase: 'text-info',
+            icono: 'fa-solid fa-route',
+          }
         : { texto: `${nombre}: sin registrar`, clase: 'text-base-content/70', icono: 'fa-regular fa-clock' };
     case 'A_BORDO':
       return { texto: `A bordo desde ${hora(r.horaAbordo)}`, clase: 'text-info', icono: 'fa-solid fa-bus' };

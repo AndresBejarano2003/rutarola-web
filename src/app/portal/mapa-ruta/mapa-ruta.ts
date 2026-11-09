@@ -6,18 +6,21 @@ import { TRAYECTOS } from 'src/app/ruta-del-dia/recorrido';
 import { Mapa, MarcadorMapa } from 'src/app/shared/mapa/mapa';
 import { Modal } from 'src/app/shared/modal/modal';
 import { EstudiantePortal } from '../portal';
+import { PortalEstado } from '../portal-estado';
 
 /**
  * Botón "Ver en el mapa" del estudiante mientras su ruta está EN CURSO, con el vehículo en vivo en un
  * modal. El servidor solo entrega la ubicación del recorrido de SU estudiante y solo mientras está en
- * curso: al terminar el recorrido el botón desaparece y el modal se cierra.
+ * curso: al terminar el recorrido el botón desaparece y el modal se cierra. Si la empresa no comparte la
+ * ubicación con los acudientes (`PortalAcudiente.ubicacionEnVivo`), no hay botón: el estado y la hora de inicio
+ * ya salen en "Hoy en la ruta".
  */
 @Component({
   selector: 'app-mapa-ruta',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Mapa],
   template: `
-    @if (enCurso(); as r) {
+    @if (enCurso() && ubicacionEnVivo()) {
       <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="abierto.set(true)">
         <i class="fa-solid fa-map-location-dot text-info" aria-hidden="true"></i> Ver en el mapa
       </button>
@@ -53,6 +56,9 @@ export class MapaRuta {
   readonly estudiante = input.required<EstudiantePortal>();
 
   private readonly gps = inject(GpsRepositorio);
+  private readonly portal = inject(PortalEstado, { optional: true });
+  /** Sin datos aún (o fuera del portal) se asume que sí, como el valor por defecto del servidor. */
+  protected readonly ubicacionEnVivo = computed(() => this.portal?.datos()?.ubicacionEnVivo ?? true);
   protected readonly abierto = signal(false);
   protected readonly cargando = signal(false);
   protected readonly posicion = signal<PosicionGps | null>(null);

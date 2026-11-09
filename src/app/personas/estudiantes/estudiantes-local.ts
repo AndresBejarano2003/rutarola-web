@@ -79,6 +79,7 @@ export class EstudiantesLocal
       segundoNombre,
       primerApellido,
       segundoApellido,
+      foto: '',
       fechaNacimiento,
       direccion: 'Calle 10 # 5-23, Neiva',
       acudienteId,

@@ -4,12 +4,15 @@
       <a routerLink="/ruta-del-dia" class="shrink-0" aria-label="Ir a mis rutas">
         <img src="logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola" class="h-9 w-auto" />
       </a>
-      <div class="min-w-0 flex-1 border-l border-base-300 pl-3">
-        <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
-        <p class="text-xs text-base-content/70 flex items-center gap-1.5">
-          <i class="fa-solid fa-id-badge text-info" aria-hidden="true"></i>
-          {{ rol() }}
-        </p>
+      <div class="min-w-0 flex-1 border-l border-base-300 pl-3 flex items-center gap-2.5">
+        <app-avatar class="max-[359px]:hidden" [foto]="sesion()?.imagen" [iniciales]="inicialesDe(sesion()?.nombre ?? '')" tono="suave" />
+        <div class="min-w-0">
+          <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
+          <p class="text-xs text-base-content/70 flex items-center gap-1.5">
+            <i class="fa-solid fa-id-badge text-info" aria-hidden="true"></i>
+            {{ rol() }}
+          </p>
+        </div>
       </div>
       <a routerLink="/ruta-del-dia/cuenta" class="btn btn-ghost btn-sm btn-square" aria-label="Mi cuenta">
         <i class="fa-solid fa-user-gear" aria-hidden="true"></i>

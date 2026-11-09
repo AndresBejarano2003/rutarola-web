@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { EMPTY, Observable, auditTime, catchError, distinctUntilChanged, interval, merge, switchMap } from 'rxjs';
+import { EMPTY, Observable, auditTime, catchError, distinctUntilChanged, interval, map, merge, switchMap } from 'rxjs';
 import { TiempoReal } from 'src/app/core/tiempo-real';
 import { environment } from '@environments/environment';
 import { EstadoParada, MotivoAusencia, Recorrido, RutaAsignada, Trayecto } from './recorrido';
@@ -13,6 +13,7 @@ import { RecorridosRepositorio } from './recorridos-repositorio';
  * |-------------|----------|
  * | rutasDelDia | `GET /recorridos/del-dia?fecha=YYYY-MM-DD` → `RutaAsignada[]` |
  * | obtener     | `GET /recorridos/{id}` (403 si no es de una asignación del empleado) |
+ * | fotos       | `GET /recorridos/{id}/fotos` → `[{estudianteId, foto}]` (mismo acceso que `obtener`) |
  * | rutas (sync)| `observarRutasDelDia`: `GET /recorridos/del-dia` con cada `recorridoActualizado` del hub (le llegan al personal sin `Seguir`) y cada `INTERVALO_RESPALDO_MS` |
  * | iniciar     | `POST /recorridos` `{asignacionId, trayecto}` → 201 `Recorrido` con snapshot de ruta, colegio, vehículo y paradas (en la ENTREGA, AUSENTE + `NO_ASISTE` quien no asiste según la recogida de hoy); 200 con el EXISTENTE si ese trayecto ya se inició hoy (el compañero se une) |
  * | marcar      | `PATCH /recorridos/{id}/paradas` `{estudianteIds, estado, motivoAusencia?}` → `Recorrido` (`motivoAusencia` `NO_ASISTE`/`POR_SU_CUENTA` solo con AUSENTE, si no 400; `NO_ASISTE` en la entrega → 422) |
@@ -56,6 +57,12 @@ export class RecorridosHttp extends RecorridosRepositorio {
 
   obtener(id: string): Observable<Recorrido> {
     return this.http.get<Recorrido>(`${this.url}/${encodeURIComponent(id)}`);
+  }
+
+  fotos(id: string): Observable<Map<string, string>> {
+    return this.http
+      .get<{ estudianteId: string; foto: string }[]>(`${this.url}/${encodeURIComponent(id)}/fotos`)
+      .pipe(map((lista) => new Map(lista.map((f) => [f.estudianteId, f.foto]))));
   }
 
   iniciar(asignacionId: string, trayecto: Trayecto): Observable<Recorrido> {

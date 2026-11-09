@@ -9,15 +9,18 @@ import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import { ResumenRecorrido, RutaAsignada, TRAYECTOS, Trayecto, avance } from './recorrido';
 import { RecorridosRepositorio } from './recorridos-repositorio';
+import { Avatar } from 'src/app/shared/foto/avatar';
+import { inicialesDe } from 'src/app/shared/foto/foto';
 
 /** Entrada del conductor/monitora: sus rutas de hoy y el estado de la recogida y la entrega de cada una. */
 @Component({
   selector: 'app-ruta-del-dia-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, Avatar],
   templateUrl: './ruta-del-dia-page.html',
 })
 export default class RutaDelDiaPage implements OnInit {
+  protected readonly inicialesDe = inicialesDe;
   private readonly repositorio = inject(RecorridosRepositorio);
   private readonly avisos = inject(NotificacionesService);
   private readonly router = inject(Router);

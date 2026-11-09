@@ -4,15 +4,18 @@ import { horaLegible } from 'src/app/shared/fechas/fechas';
 import { EstudiantePortal, situacionRecorrido } from '../portal';
 import { PortalEstado } from '../portal-estado';
 import { MapaRuta } from '../mapa-ruta/mapa-ruta';
+import { Avatar } from 'src/app/shared/foto/avatar';
+import { inicialesDe } from 'src/app/shared/foto/foto';
 
 /** Estudiantes a cargo: colegio y horario, ruta, vehículo, personal (con contacto) y cómo van hoy. */
 @Component({
   selector: 'app-portal-estudiantes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MapaRuta],
+  imports: [MapaRuta, Avatar],
   templateUrl: './portal-estudiantes-page.html',
 })
 export default class PortalEstudiantesPage {
+  protected readonly inicialesDe = inicialesDe;
   protected readonly estado = inject(PortalEstado);
   protected readonly datos = this.estado.datos;
   protected readonly horaLegible = horaLegible;

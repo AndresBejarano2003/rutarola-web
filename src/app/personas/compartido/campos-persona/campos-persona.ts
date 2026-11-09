@@ -4,6 +4,7 @@ import { ControlContainer, ReactiveFormsModule } from '@angular/forms';
 import { CatalogosService, OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
 import { mensajeError } from 'src/app/shared/formularios/formularios';
 import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busqueda';
+import { CampoFoto } from 'src/app/shared/foto/campo-foto';
 
 /**
  * Secciones "Identificación" y "Datos personales" (documento y nombres).
@@ -13,7 +14,7 @@ import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busq
 @Component({
   selector: 'app-campos-persona',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectorBusqueda],
+  imports: [ReactiveFormsModule, SelectorBusqueda, CampoFoto],
   // Permite usar formControlName contra el formulario del componente padre.
   viewProviders: [{ provide: ControlContainer, useFactory: () => inject(ControlContainer, { skipSelf: true }) }],
   host: { class: 'contents' },
@@ -31,6 +32,12 @@ export class CamposPersona implements OnInit {
     // El formulario se marca como "tocado" desde fuera (botón Guardar del pie):
     // refrescar para mostrar los errores.
     this.contenedor.control?.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.cdr.markForCheck());
+  }
+
+  /** Iniciales en vivo para la vista previa de la foto. */
+  protected iniciales(): string {
+    const v = this.contenedor.control?.value as { primerNombre?: string; primerApellido?: string } | undefined;
+    return `${v?.primerNombre?.trim().charAt(0) ?? ''}${v?.primerApellido?.trim().charAt(0) ?? ''}`.toUpperCase();
   }
 
   protected error(campo: string): string | null {

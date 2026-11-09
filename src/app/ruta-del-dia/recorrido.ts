@@ -133,7 +133,7 @@ export interface RutaAsignada {
   /** Rol del empleado en esta ruta. */
   rol: 'CONDUCTOR' | 'MONITORA';
   /** La otra persona del vehículo (monitora del conductor o viceversa). */
-  companero: { nombre: string; telefono: string; rol: 'CONDUCTOR' | 'MONITORA' } | null;
+  companero: { nombre: string; telefono: string; rol: 'CONDUCTOR' | 'MONITORA'; /** Foto de perfil (`''` = iniciales). */ foto?: string } | null;
   estudiantes: number;
   /** Recorridos de la fecha consultada. */
   recorridos: ResumenRecorrido[];

@@ -93,7 +93,7 @@
             @if (ruta.companero; as companero) {
               <div class="flex items-center gap-2 sm:col-span-2">
                 <dt class="sr-only">{{ companero.rol === 'MONITORA' ? 'Monitora' : 'Conductor' }}</dt>
-                <i class="fa-solid fa-user-group text-base-content/60 w-4" aria-hidden="true"></i>
+                <app-avatar [foto]="companero.foto" [iniciales]="inicialesDe(companero.nombre)" tamano="xs" tono="suave" />
                 <dd class="flex flex-wrap items-center gap-x-2">
                   <span><span class="text-base-content/70">{{ companero.rol === 'MONITORA' ? 'Monitora' : 'Conductor' }}:</span> {{ companero.nombre }}</span>
                   @if (companero.telefono) {

@@ -4,11 +4,14 @@
       <a routerLink="/plataforma" class="shrink-0" aria-label="Ir a la plataforma">
         <img src="logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola" class="h-9 w-auto" />
       </a>
-      <div class="min-w-0 flex-1 border-l border-base-300 pl-3">
-        <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
-        <p class="text-xs text-base-content/70 flex items-center gap-1.5">
-          <i class="fa-solid fa-shield-halved text-info" aria-hidden="true"></i> Plataforma RutaRola
-        </p>
+      <div class="min-w-0 flex-1 border-l border-base-300 pl-3 flex items-center gap-2.5">
+        <app-avatar class="max-[359px]:hidden" [foto]="sesion()?.imagen" [iniciales]="inicialesDe(sesion()?.nombre ?? '')" tono="suave" />
+        <div class="min-w-0">
+          <p class="font-semibold leading-tight truncate">{{ sesion()?.nombre }}</p>
+          <p class="text-xs text-base-content/70 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-halved text-info" aria-hidden="true"></i> Plataforma RutaRola
+          </p>
+        </div>
       </div>
       <nav class="flex items-center gap-1" aria-label="Secciones de la plataforma">
         <a routerLink="/plataforma/empresas" routerLinkActive="bg-base-300" class="btn btn-ghost btn-sm">

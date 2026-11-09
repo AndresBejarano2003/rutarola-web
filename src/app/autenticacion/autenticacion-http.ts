@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Credenciales, ROLES_USUARIO, RolUsuario, Sesion, TokensSesion } from 'src/app/core/auth';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
-import { AutenticacionRepositorio, SolicitudRegistro } from './autenticacion-repositorio';
+import { AutenticacionRepositorio, DatosPerfil, PerfilUsuario, SolicitudRegistro } from './autenticacion-repositorio';
 
 /** Respuesta de `POST /auth/login`. */
 export interface RespuestaLogin {
@@ -28,6 +28,9 @@ export interface RespuestaLogin {
  * `POST {apiUrl}/auth/registro {empresa, administrador, aceptaTerminos}` (público, limitado por IP) → 201
  * `{ sesion, tokens }`: crea la empresa con 3 meses de prueba del plan Profesional. 400 validación; 409 NIT,
  * usuario o correo ya registrados.
+ *
+ * `GET {apiUrl}/auth/perfil` → `PerfilUsuario`; `PUT {apiUrl}/auth/perfil {nombre, correo, telefono, foto}` →
+ * la sesión actualizada (400 foto no válida; 409 correo en uso; 422 falta el teléfono o el nombre).
  */
 @Injectable()
 export class AutenticacionHttp extends AutenticacionRepositorio {
@@ -41,6 +44,16 @@ export class AutenticacionHttp extends AutenticacionRepositorio {
 
   registrarEmpresa(solicitud: SolicitudRegistro): Observable<Sesion> {
     return this.http.post<RespuestaLogin>(`${environment.apiUrl}/auth/registro`, solicitud).pipe(map(aSesion));
+  }
+
+  perfil(): Observable<PerfilUsuario> {
+    return this.http.get<PerfilUsuario>(`${environment.apiUrl}/auth/perfil`);
+  }
+
+  actualizarPerfil(datos: DatosPerfil): Observable<Pick<Sesion, 'nombre' | 'correo' | 'imagen'>> {
+    return this.http
+      .put<RespuestaLogin['sesion']>(`${environment.apiUrl}/auth/perfil`, datos)
+      .pipe(map(({ nombre, correo, imagen }) => ({ nombre, correo, imagen })));
   }
 
   cambiarContrasena(actual: string, nueva: string): Observable<void> {

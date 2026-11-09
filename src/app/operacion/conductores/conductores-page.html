@@ -51,7 +51,7 @@
           } @else {
             @for (c of store.items(); track c.id) {
               <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors" (click)="consultar(c)">
-                <td><app-celda-persona [nombre]="c.nombre" [iniciales]="c.iniciales" [activo]="c.estado === 'ACTIVO'" [detalle]="c.documento" /></td>
+                <td><app-celda-persona [nombre]="c.nombre" [iniciales]="c.iniciales" [foto]="c.foto" [activo]="c.estado === 'ACTIVO'" [detalle]="c.documento" /></td>
                 <td class="hidden @3xl:table-cell whitespace-nowrap">
                   <span class="badge badge-sm bg-base-300 border-neutral text-base-content/80 font-mono">{{ c.categoriaLicencia || '—' }}</span>
                   <span class="ml-1 font-mono text-sm">{{ c.numeroLicencia }}</span>

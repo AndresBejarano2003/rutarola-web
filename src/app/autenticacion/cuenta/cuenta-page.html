@@ -1,37 +1,67 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
   <section class="card bg-base-200 border border-base-300 shadow-xl">
-    <div class="card-body gap-4">
-      <h2 class="card-title">Mi cuenta</h2>
+    <form class="card-body gap-4" [formGroup]="datos" (ngSubmit)="guardarDatos()" novalidate>
+      <h2 class="card-title">Mis datos</h2>
       @if (sesion(); as s) {
-        <div class="flex items-center gap-4">
-          <div class="avatar avatar-placeholder">
-            <div class="w-16 rounded-full bg-primary/15 text-primary text-xl font-semibold">
-              @if (s.imagen) {
-                <img [src]="s.imagen" alt="" />
-              } @else {
-                <span>{{ s.nombre.charAt(0) }}</span>
-              }
+        @if (cargandoPerfil()) {
+          <div class="flex items-center gap-4">
+            <div class="skeleton size-24 rounded-full shrink-0"></div>
+            <div class="skeleton h-10 w-40"></div>
+          </div>
+          <div class="skeleton h-12 w-full"></div>
+          <div class="skeleton h-12 w-full"></div>
+        } @else {
+          <app-campo-foto formControlName="foto" etiqueta="Foto de perfil" [iniciales]="iniciales()" />
+          @if (perfil()?.editaNombre) {
+            <label app-campo etiqueta="Nombre" requerido [error]="errorDato('nombre')">
+              <input type="text" formControlName="nombre" autocomplete="name"
+                class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDato('nombre')" />
+            </label>
+          } @else {
+            <div>
+              <p class="text-lg font-semibold">{{ s.nombre }}</p>
+              <p class="text-sm text-base-content/70">{{ rol() }}</p>
             </div>
-          </div>
-          <div class="min-w-0">
-            <p class="text-lg font-semibold truncate">{{ s.nombre }}</p>
-            <p class="text-sm text-base-content/70">{{ rol() }}</p>
-          </div>
-        </div>
-        <dl class="grid sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <div><dt class="text-base-content/70">Usuario</dt><dd class="font-mono">{{ s.usuario }}</dd></div>
-          <div><dt class="text-base-content/70">Correo</dt><dd class="break-all">{{ s.correo || '—' }}</dd></div>
-          @if (s.empresa) {
-            <div><dt class="text-base-content/70">Empresa</dt><dd>{{ s.empresa.nombre }}</dd></div>
           }
-          <div><dt class="text-base-content/70">Sesión iniciada</dt><dd>{{ inicio() }}</dd></div>
-        </dl>
-        <p class="text-sm text-base-content/70">
-          <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
-          Tus datos personales y tu usuario los actualiza el administrador de la empresa.
-        </p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label app-campo etiqueta="Teléfono de contacto" [requerido]="!perfil()?.editaNombre" [error]="errorDato('telefono')">
+              <input type="tel" formControlName="telefono" inputmode="tel" autocomplete="tel" placeholder="Ej. 3001234567"
+                class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDato('telefono')" />
+            </label>
+            <label app-campo etiqueta="Correo" [error]="errorDato('correo')">
+              <input type="email" formControlName="correo" inputmode="email" autocomplete="email"
+                class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorDato('correo')" />
+            </label>
+          </div>
+          <dl class="grid sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div><dt class="text-base-content/70">Usuario</dt><dd class="font-mono">{{ s.usuario }}</dd></div>
+            @if (perfil()?.editaNombre) {
+              <div><dt class="text-base-content/70">Tipo de usuario</dt><dd>{{ rol() }}</dd></div>
+            }
+            @if (s.empresa) {
+              <div><dt class="text-base-content/70">Empresa</dt><dd>{{ s.empresa.nombre }}</dd></div>
+            }
+            <div><dt class="text-base-content/70">Sesión iniciada</dt><dd>{{ inicio() }}</dd></div>
+          </dl>
+          @if (!perfil()?.editaNombre) {
+            <p class="text-sm text-base-content/70">
+              <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+              Tu nombre, documento y usuario los actualiza el administrador de la empresa.
+            </p>
+          }
+          <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary" [disabled]="guardandoDatos()">
+              @if (guardandoDatos()) {
+                <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+              } @else {
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+              }
+              Guardar mis datos
+            </button>
+          </div>
+        }
       }
-    </div>
+    </form>
   </section>
 
   <section class="card bg-base-200 border border-base-300 shadow-xl">
@@ -61,7 +91,7 @@
         Mostrar contraseñas
       </label>
       <div class="flex justify-end">
-        <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+        <button type="submit" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="guardando()">
           @if (guardando()) {
             <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
           } @else {

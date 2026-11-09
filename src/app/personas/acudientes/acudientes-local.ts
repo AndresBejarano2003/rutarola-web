@@ -94,6 +94,7 @@ export class AcudientesLocal
       segundoNombre,
       primerApellido,
       segundoApellido,
+      foto: '',
       telefono,
       telefonoAlterno: '',
       correo,

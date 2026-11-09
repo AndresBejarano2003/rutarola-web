@@ -66,11 +66,11 @@ export interface Sesion {
   tokens?: TokensSesion;
 }
 
-/** Perfil de ejemplo del administrador mientras no existe el login real. */
+/** Perfil inicial del administrador de demostración del modo local (lo puede cambiar en Mi cuenta). */
 export const USUARIO_DEMO = {
   nombre: 'Andrés Bejarano',
   correo: 'andres@rutarola.com',
-  imagen: 'https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp',
+  imagen: '',
 };
 
 /** Clave donde se guarda la sesión (localStorage si "Recordarme", si no sessionStorage). */
@@ -110,6 +110,15 @@ export class AuthService {
     const actual = this._sesion();
     if (!actual) return;
     const sesion = { ...actual, tokens };
+    guardar(almacenDeSesion() ?? sessionStorage, sesion);
+    this._sesion.set(sesion);
+  }
+
+  /** Datos del perfil cambiados en Mi cuenta (nombre, correo, foto): conserva los tokens y el almacén. */
+  actualizarSesion(cambios: Partial<Pick<Sesion, 'nombre' | 'correo' | 'imagen'>>): void {
+    const actual = this._sesion();
+    if (!actual) return;
+    const sesion = { ...actual, ...cambios };
     guardar(almacenDeSesion() ?? sessionStorage, sesion);
     this._sesion.set(sesion);
   }

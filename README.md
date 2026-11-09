@@ -215,8 +215,14 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   por texto, acudiente, estado y fechas. En modo local está vacío: los envía el proceso del servidor.
 - **Configuración (`inicio/configuracion`):** el administrador edita los datos de contacto de su empresa (el NIT
   y el estado los cambia la plataforma) y los parámetros: **día límite de pago** (1–31, por defecto 5; para
-  facturas sin programación) y **días de alerta de vencimiento** (1–120, por defecto 30). Un solo "Guardar
-  cambios"; con el API los aplica el servidor en reportes, portal, tablero, notificaciones y conductores.
+  facturas sin programación), **días de alerta de vencimiento** (1–120, por defecto 30) y el interruptor **"Los
+  acudientes ven la ubicación en vivo de la ruta"** (`gps.acudientes_ven_ubicacion`, 1 = sí por defecto; un
+  parámetro de 0 a 1 se muestra como interruptor Sí/No). Un solo "Guardar cambios"; con el API los aplica el
+  servidor en reportes, portal, tablero, notificaciones y conductores.
+- **Ubicación para acudientes:** si el administrador la desactiva, el acudiente NO ve el mapa ni la posición del
+  vehículo (el servidor responde 403 a `gps/ultima` y al `Seguir` del hub, y deja de enviarle posiciones aunque ya
+  estuviera conectado), pero sí el estado de su estudiante y la hora en que inició la ruta ("la ruta va en camino
+  (inició a las …)"). El administrador y el personal siguen viendo el monitoreo, el historial y los mapas.
 - **Centro de Ayuda (`sistema/soporte`):** manuales, tutoriales y preguntas frecuentes se editan solo en
   `contenido-ayuda.ts`; las respuestas deben coincidir con las rutas y reglas vigentes (actualizarlas
   cuando cambie un módulo). La búsqueda filtra los tres a la vez. Una **solicitud de soporte** exige tipo
@@ -261,7 +267,10 @@ Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar
 | `SUPER_ADMIN` | `/plataforma` | Solo con API: empresas de transporte (layout `shell-plataforma`, `plataforma/empresas`) |
 
 - **Mi cuenta** (`autenticacion/cuenta/cuenta-page`, en `/inicio/perfil`, `/ruta-del-dia/cuenta`, `/portal/cuenta` y
-  `/plataforma/cuenta`): datos de la sesión y cambio de la contraseña propia
+  `/plataforma/cuenta`): **Mis datos** — cada usuario cambia su foto de perfil, su teléfono de contacto y su correo
+  (`GET/PUT /auth/perfil`); el administrador y el SuperAdmin también su nombre. Conductores, monitoras y acudientes
+  guardan en SU registro de Personas (el teléfono es obligatorio) y su nombre, documento y usuario los corrige el
+  administrador. La foto nueva se ve al instante en la barra superior — y cambio de la contraseña propia
   (`AutenticacionRepositorio.cambiarContrasena`, `PUT /auth/contrasena {actual, nueva}`; con el API cierra las
   demás sesiones; en modo local cambia `rutarola.credenciales`, salvo el `admin` de demostración).
   `/editar-usuario` redirige aquí.
@@ -330,6 +339,9 @@ App para el celular del conductor y la monitora, dentro del vehículo.
 - **Siguiente paso** (`siguientePaso`): recogida = recoger al siguiente pendiente y luego "Entregar en el
   colegio" a todos los que van a bordo; entrega = abordaje en el colegio y luego cada casa. Cada parada
   ofrece "Cómo llegar" (Google Maps), llamar y avisar por WhatsApp al acudiente.
+- **Fotos de los estudiantes:** si el estudiante tiene foto, la monitora y el conductor la ven en la lista del
+  recorrido y en grande en la tarjeta de la próxima parada, para reconocer al niño. Se cargan una sola vez al abrir
+  el recorrido (`GET /recorridos/{id}/fotos`), no en cada marca, para ahorrar datos móviles.
 - **Orden de visita (monitora):** durante el recorrido, la monitora arrastra a un estudiante que falta
   (manija ⠿ de inmediato, o manteniendo presionada la fila 350 ms; también ↑/↓ con botones o teclado; la página se
   desplaza sola cerca del borde, vibra al levantar y Esc cancela) a otra posición: si el 2 pasa al 6, los del 3 al 6 suben una.
@@ -483,7 +495,13 @@ Estudiantes, acudientes y empleados comparten los datos de identificación.
   - `coincideTexto`: filtro por nombre o documento;
   - `compararPorApellido`: orden del listado;
   - `validarDocumentoUnico`: no permite documentos repetidos.
-- **`<app-celda-persona>`:** primera columna de la tabla, con avatar de iniciales, nombre y detalle.
+- **`<app-celda-persona [foto]>`:** primera columna de la tabla, con avatar (foto de perfil o iniciales), nombre y detalle.
+- **Fotos de perfil (`shared/foto/`):** estudiantes, acudientes y empleados tienen `foto` (en `DatosPersona` y
+  `controlesPersona`; `<app-campos-persona>` muestra `<app-campo-foto>` en "Datos personales"). El navegador recorta
+  la imagen en un cuadrado y la reduce a 256 px JPG (`reducirFoto`, unos 20–40 KB), así viaja en los listados y en
+  la sesión. `<app-avatar>` muestra la foto o, si no hay, las iniciales en todas las pantallas: tablas de Personas y
+  conductores, barra superior y encabezados de la Ruta del día, el portal y la plataforma, Mi cuenta, el portal
+  (estudiante, conductor y monitora) y el compañero en la Ruta del día.
 
 ### Archivos adjuntos
 

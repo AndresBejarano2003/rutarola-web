@@ -27,7 +27,7 @@
           <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors"
             (click)="consultar.emit(estudiante)">
             <td>
-              <app-celda-persona [nombre]="nombreCompleto(estudiante)" [iniciales]="iniciales(estudiante)"
+              <app-celda-persona [nombre]="nombreCompleto(estudiante)" [iniciales]="iniciales(estudiante)" [foto]="estudiante.foto"
                 [activo]="estudiante.estado === 'ACTIVO'" [detalle]="edad !== null ? edad + ' años' : ''" />
             </td>
             <td class="hidden @3xl:table-cell whitespace-nowrap">

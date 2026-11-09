@@ -10,6 +10,8 @@ export interface DatosPersona {
   segundoNombre: string;
   primerApellido: string;
   segundoApellido: string;
+  /** Foto de perfil: data URL JPG de 256 px (`shared/foto`); `''` = se muestran las iniciales. */
+  foto: string;
 }
 
 export function nombreCompleto(p: DatosPersona): string {
@@ -60,6 +62,7 @@ export function controlesPersona(fb: NonNullableFormBuilder) {
     segundoNombre: fb.control('', Validators.maxLength(50)),
     primerApellido: fb.control('', NOMBRE),
     segundoApellido: fb.control('', Validators.maxLength(50)),
+    foto: fb.control(''),
   };
 }
 

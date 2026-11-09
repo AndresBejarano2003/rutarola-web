@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/core/auth';
 import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
-import { DIA_LIMITE_PAGO } from 'src/app/inicio/configuracion/configuracion';
+import { ACUDIENTES_VEN_UBICACION, DIA_LIMITE_PAGO } from 'src/app/inicio/configuracion/configuracion';
 import ConfiguracionPage from 'src/app/inicio/configuracion/configuracion-page';
 import CuentaPage from 'src/app/autenticacion/cuenta/cuenta-page';
 import { AutenticacionRepositorio } from 'src/app/autenticacion/autenticacion-repositorio';
@@ -14,6 +14,7 @@ import { EmpresasRepositorio } from 'src/app/plataforma/empresas/empresas-reposi
 import { FILTROS_EMPRESA_VACIOS } from 'src/app/plataforma/empresas/empresa';
 import SoportePlataformaPage from 'src/app/plataforma/soporte/soporte-plataforma-page';
 import { TicketsRepositorio } from 'src/app/sistema/soporte/tickets/tickets-repositorio';
+import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repositorio';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import { estabilizar, pantalla, repositoriosDePrueba, simularDialogos } from 'src/app/shared/pruebas/pruebas';
 
@@ -64,6 +65,61 @@ describe('Pantallas de GPS, comunicación, configuración y plataforma', () => {
     const repo = TestBed.inject(ConfiguracionRepositorio);
     expect((await firstValueFrom(repo.empresa())).ciudad).toBe('Neiva');
     expect((await firstValueFrom(repo.parametros())).find((p) => p.clave === DIA_LIMITE_PAGO)?.valor).toBe('10');
+  });
+
+  it('Configuración apaga la ubicación en vivo para los acudientes con un interruptor', async () => {
+    const fixture = TestBed.createComponent(ConfiguracionPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    const interruptor = el.querySelector(`input[data-clave="${ACUDIENTES_VEN_UBICACION}"]`) as HTMLInputElement;
+    expect(interruptor.type).toBe('checkbox');
+    expect(interruptor.checked).toBe(true);
+    interruptor.click();
+    pantalla(el).boton('Guardar cambios').click();
+    await estabilizar(fixture, 4);
+    const repo = TestBed.inject(ConfiguracionRepositorio);
+    expect((await firstValueFrom(repo.parametros())).find((p) => p.clave === ACUDIENTES_VEN_UBICACION)?.valor).toBe('0');
+  });
+
+  it('Mi cuenta: el conductor cambia su teléfono y su foto y la sesión los muestra', async () => {
+    const auth = TestBed.inject(AuthService);
+    auth.abrirSesion({
+      usuario: 'jcardenas', nombre: 'José Luis Cárdenas Rojas', correo: '', rol: 'CONDUCTOR', empleadoId: 'emp-1', imagen: '', inicio: new Date().toISOString(),
+    });
+    const fixture = TestBed.createComponent(CuentaPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('input[formcontrolname="nombre"]')).toBeNull(); // su nombre lo cambia el administrador
+    expect(el.textContent).toContain('Subir foto');
+
+    escribirEn(el, 'input[formcontrolname="telefono"]', '');
+    pantalla(el).boton('Guardar mis datos').click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Este campo es obligatorio');
+
+    // La foto llega ya reducida por el campo (jsdom no tiene canvas): se escribe en el control.
+    const foto = 'data:image/jpeg;base64,AAAA';
+    (fixture.componentInstance as unknown as { datos: { controls: { foto: { setValue(v: string): void } } } }).datos.controls.foto.setValue(foto);
+    escribirEn(el, 'input[formcontrolname="telefono"]', '3109998877');
+    pantalla(el).boton('Guardar mis datos').click();
+    await estabilizar(fixture, 4);
+    expect(auth.sesion()?.imagen).toBe(foto);
+    const empleado = await firstValueFrom(TestBed.inject(EmpleadosRepositorio).obtener('emp-1'));
+    expect([empleado.telefono, empleado.foto]).toEqual(['3109998877', foto]);
+  });
+
+  it('Mi cuenta: el administrador de demostración cambia su nombre', async () => {
+    const auth = TestBed.inject(AuthService);
+    auth.abrirSesion(await firstValueFrom(TestBed.inject(AutenticacionRepositorio).iniciarSesion({ usuario: 'admin', contrasena: 'rutarola' })));
+    const fixture = TestBed.createComponent(CuentaPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    escribirEn(el, 'input[formcontrolname="nombre"]', 'Ana Gómez');
+    pantalla(el).boton('Guardar mis datos').click();
+    await estabilizar(fixture, 4);
+    expect(auth.sesion()?.nombre).toBe('Ana Gómez');
+    // Se conserva al volver a entrar.
+    expect((await firstValueFrom(TestBed.inject(AutenticacionRepositorio).iniciarSesion({ usuario: 'admin', contrasena: 'rutarola' }))).nombre).toBe('Ana Gómez');
   });
 
   it('Mi cuenta cambia la contraseña local de un empleado', async () => {

@@ -11,6 +11,8 @@ import PortalInicioPage from './inicio/portal-inicio-page';
 import PortalPagosPage from './pagos/portal-pagos-page';
 import { PortalEstado } from './portal-estado';
 import { PortalRepositorio } from './portal-repositorio';
+import { ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
+import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
 
 describe('Portal del acudiente', () => {
   const entrar = (rol: 'ACUDIENTE' | 'CONDUCTOR', id: string) =>
@@ -60,6 +62,33 @@ describe('Portal del acudiente', () => {
     expect(texto).toContain('A bordo desde');
     expect(texto).toContain('Recogida: no asistió');
     expect(texto).toContain('Entrega: aún no inicia');
+  });
+
+  it('si la empresa no comparte la ubicación, no hay mapa pero sí la hora en que inició la ruta', async () => {
+    entrar('CONDUCTOR', 'emp-1');
+    const recorridos = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(recorridos.rutasDelDia(fechaIso()));
+    await firstValueFrom(recorridos.iniciar(ruta.asignacionId, 'RECOGIDA'));
+
+    entrar('ACUDIENTE', 'acu-1');
+    const estado = TestBed.inject(PortalEstado);
+    await estado.cargar();
+    expect(estado.datos()?.ubicacionEnVivo).toBe(true);
+    let fixture = TestBed.createComponent(PortalInicioPage);
+    await estabilizar(fixture);
+    let el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Ver en el mapa');
+    expect(el.textContent).toContain('la ruta va en camino (inició a las');
+    fixture.destroy();
+
+    await firstValueFrom(TestBed.inject(ConfiguracionRepositorio).guardarParametro(ACUDIENTES_VEN_UBICACION, '0'));
+    await estado.cargar();
+    expect(estado.datos()?.ubicacionEnVivo).toBe(false);
+    fixture = TestBed.createComponent(PortalInicioPage);
+    await estabilizar(fixture);
+    el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Ver en el mapa');
+    expect(el.textContent).toContain('la ruta va en camino (inició a las');
   });
 
   it('las pantallas muestran estudiantes, estado de cuenta y cotizaciones', async () => {

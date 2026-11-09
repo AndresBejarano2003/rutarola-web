@@ -7,14 +7,15 @@ import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { mensajeError } from 'src/app/shared/formularios/formularios';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
-import { DatosEmpresa, Empresa, NOMBRES_PARAMETRO, Parametro } from './configuracion';
+import { DatosEmpresa, Empresa, NOMBRES_PARAMETRO, Parametro, esInterruptor } from './configuracion';
 import { ConfiguracionRepositorio } from './configuracion-repositorio';
 
 type CampoEmpresa = keyof DatosEmpresa;
 
 /**
  * Configuración de la empresa (administrador): datos de contacto (el NIT y el estado los cambia la
- * plataforma) y parámetros del sistema (día límite de pago, días de alerta de vencimiento).
+ * plataforma) y parámetros del sistema (día límite de pago, días de alerta de vencimiento y si los acudientes
+ * ven la ubicación en vivo de la ruta, como interruptor Sí/No).
  * Un solo botón guarda todo; solo se envían los parámetros que cambiaron.
  */
 @Component({
@@ -30,6 +31,7 @@ export default class ConfiguracionPage implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly modoLocal = esFuenteLocal(this.repositorio);
   protected readonly nombres = NOMBRES_PARAMETRO;
+  protected readonly esInterruptor = esInterruptor;
 
   protected readonly empresa = signal<Empresa | null>(null);
   protected readonly parametros = signal<Parametro[]>([]);
@@ -89,6 +91,12 @@ export default class ConfiguracionPage implements OnInit {
         }),
       );
     }
+  }
+
+  protected alternar(clave: string, evento: Event): void {
+    const control = this.valores.controls[clave];
+    control?.setValue((evento.target as HTMLInputElement).checked ? 1 : 0);
+    control?.markAsDirty();
   }
 
   protected errorCampo(campo: CampoEmpresa): string | null {

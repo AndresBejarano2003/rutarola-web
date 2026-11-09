@@ -55,15 +55,27 @@
         @if (modoLocal) {
           <p class="md:col-span-2 text-sm text-base-content/70">
             <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
-            En modo local se guardan en este navegador, pero los cálculos usan los valores por defecto. Con el API los aplica el servidor.
+            En modo local se guardan en este navegador; los cálculos de cobro y alertas usan los valores por defecto (el portal sí respeta la ubicación en vivo). Con el API los aplica el servidor.
           </p>
         }
         <ng-container formGroupName="parametros">
           @for (p of parametros(); track p.clave) {
-            <label app-campo [etiqueta]="nombres[p.clave] ?? p.clave" requerido [error]="errorParametro(p.clave)" [ayuda]="p.descripcion">
-              <input [formControlName]="p.clave" [attr.data-clave]="p.clave" type="number" inputmode="numeric" [min]="p.minimo" [max]="p.maximo"
-                class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorParametro(p.clave)" />
-            </label>
+            @if (esInterruptor(p)) {
+              <!-- Sí/No (1/0): interruptor que escribe el número en el mismo control. -->
+              <div class="md:col-span-2 rounded-box border border-base-300 bg-base-100 p-4 flex items-start gap-3">
+                <input type="checkbox" class="toggle toggle-success mt-0.5 shrink-0" [id]="'parametro-' + p.clave" [attr.data-clave]="p.clave"
+                  [checked]="valores.controls[p.clave]?.value === 1" (change)="alternar(p.clave, $event)" />
+                <label class="min-w-0 cursor-pointer" [for]="'parametro-' + p.clave">
+                  <span class="block font-medium text-base-content/90">{{ nombres[p.clave] ?? p.clave }}</span>
+                  <span class="block text-sm text-base-content/70 mt-1">{{ p.descripcion }}</span>
+                </label>
+              </div>
+            } @else {
+              <label app-campo [etiqueta]="nombres[p.clave] ?? p.clave" requerido [error]="errorParametro(p.clave)" [ayuda]="p.descripcion">
+                <input [formControlName]="p.clave" [attr.data-clave]="p.clave" type="number" inputmode="numeric" [min]="p.minimo" [max]="p.maximo"
+                  class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!errorParametro(p.clave)" />
+              </label>
+            }
           }
         </ng-container>
 

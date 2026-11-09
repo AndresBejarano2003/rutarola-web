@@ -33,6 +33,8 @@ import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { calcularEstadoCuenta } from './estado-cuenta';
 import { EstudiantePortal, PortalAcudiente, RecorridoHoy } from './portal';
 import { PortalRepositorio } from './portal-repositorio';
+import { ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
+import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
 
 /** Arma el portal cruzando los datos locales de todos los módulos (lo que hará `GET /portal`). */
 @Injectable()
@@ -51,6 +53,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
   private readonly programaciones = inject(ProgramacionesRepositorio);
   private readonly cotizaciones = inject(CotizacionesRepositorio);
   private readonly recorridos = inject(HistorialRecorridosRepositorio);
+  private readonly configuracion = inject(ConfiguracionRepositorio);
 
   obtener(): Observable<PortalAcudiente> {
     return defer(() => {
@@ -70,6 +73,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
         programaciones: this.programaciones.listar(FILTROS_PROGRAMACION_VACIOS, SIN_PAGINAR),
         cotizaciones: this.cotizaciones.listar(FILTROS_COTIZACION_VACIOS, SIN_PAGINAR),
         recorridos: this.recorridos.listar({ ...FILTROS_RECORRIDO_VACIOS, desde: hoy, hasta: hoy }, SIN_PAGINAR),
+        parametros: this.configuracion.parametros(),
       }).pipe(
         map((d): PortalAcudiente => {
           const colegioPorId = new Map(d.colegios.items.map((c) => [c.id, c]));
@@ -87,7 +91,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
               .flatMap((r): RecorridoHoy[] => {
                 const parada = r.paradas.find((p) => p.estudianteId === e.id);
                 return parada
-                  ? [{ recorridoId: r.id, trayecto: r.trayecto, enCurso: r.estado === 'EN_CURSO', estado: parada.estado, horaAbordo: parada.horaAbordo, horaEntrega: parada.horaEntrega, motivoAusencia: parada.motivoAusencia ?? '' }]
+                  ? [{ recorridoId: r.id, trayecto: r.trayecto, enCurso: r.estado === 'EN_CURSO', estado: parada.estado, horaAbordo: parada.horaAbordo, horaEntrega: parada.horaEntrega, motivoAusencia: parada.motivoAusencia ?? '', horaInicio: r.inicio || null }]
                   : [];
               })
               .sort((a, b) => a.trayecto.localeCompare(b.trayecto)).reverse(); // RECOGIDA antes que ENTREGA
@@ -95,6 +99,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
               id: e.id,
               nombre: nombreCompleto(e),
               iniciales: iniciales(e),
+              foto: e.foto ?? '',
               grado: GRADOS.find((g) => g.id === e.grado)?.nombre ?? e.grado,
               jornada: e.jornada,
               direccion: e.direccion,
@@ -112,6 +117,8 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
                     telefonoConductor: conductor?.telefono ?? '',
                     monitora: monitora ? nombreCompleto(monitora) : '',
                     telefonoMonitora: monitora?.telefono ?? '',
+                    fotoConductor: conductor?.foto ?? '',
+                    fotoMonitora: monitora?.foto ?? '',
                   }
                 : null,
               hoy: hoyRecorridos,
@@ -125,6 +132,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
             acudiente: { nombre: nombreCompleto(a), telefono: a.telefono, correo: a.correo, direccion: a.direccion },
             estudiantes: estudiantes.sort((x, y) => x.estado.localeCompare(y.estado) || x.nombre.localeCompare(y.nombre)),
             ...cuenta,
+            ubicacionEnVivo: d.parametros.find((p) => p.clave === ACUDIENTES_VEN_UBICACION)?.valor !== '0',
             cotizaciones: d.cotizaciones.items
               .filter((c) => c.acudienteId === acudienteId)
               .sort((x, y) => y.fecha.localeCompare(x.fecha))

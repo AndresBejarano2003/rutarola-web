@@ -11,9 +11,7 @@
     <article class="card bg-base-200 border border-base-300 shadow-xl">
       <div class="card-body p-4 sm:p-5 gap-4">
         <div class="flex items-center gap-3">
-          <div class="avatar avatar-placeholder">
-            <div class="w-12 rounded-full bg-primary/15 text-primary font-semibold text-lg"><span>{{ e.iniciales }}</span></div>
-          </div>
+          <app-avatar [foto]="e.foto" [iniciales]="e.iniciales" tamano="lg" tono="suave" [alt]="'Foto de ' + e.nombre" />
           <div class="min-w-0 flex-1">
             <h2 class="text-lg font-bold truncate">{{ e.nombre }}</h2>
             <p class="text-sm text-base-content/70">{{ e.grado }} · Jornada {{ e.jornada }}</p>
@@ -45,9 +43,10 @@
                 @if (t.vehiculo) {
                   <div class="flex gap-2"><dt class="text-base-content/70">Vehículo:</dt><dd class="font-mono">{{ t.vehiculo }}</dd></div>
                 }
-                @for (p of [{ rol: 'Conductor', nombre: t.conductor, tel: t.telefonoConductor }, { rol: 'Monitora', nombre: t.monitora, tel: t.telefonoMonitora }]; track p.rol) {
+                @for (p of [{ rol: 'Conductor', nombre: t.conductor, tel: t.telefonoConductor, foto: t.fotoConductor }, { rol: 'Monitora', nombre: t.monitora, tel: t.telefonoMonitora, foto: t.fotoMonitora }]; track p.rol) {
                   @if (p.nombre) {
-                    <div class="flex flex-wrap items-center gap-x-2">
+                    <div class="flex flex-wrap items-center gap-x-2 py-0.5">
+                      <app-avatar [foto]="p.foto" [iniciales]="inicialesDe(p.nombre)" tamano="xs" tono="suave" />
                       <dt class="text-base-content/70">{{ p.rol }}:</dt>
                       <dd>{{ p.nombre }}</dd>
                       @if (p.tel) {

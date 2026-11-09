@@ -25,7 +25,7 @@
           <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors"
             (click)="consultar.emit(acudiente)">
             <td>
-              <app-celda-persona [nombre]="nombreCompleto(acudiente)" [iniciales]="iniciales(acudiente)"
+              <app-celda-persona [nombre]="nombreCompleto(acudiente)" [iniciales]="iniciales(acudiente)" [foto]="acudiente.foto"
                 [activo]="acudiente.estado === 'ACTIVO'" [detalle]="acudiente.direccion" />
             </td>
             <td class="hidden @3xl:table-cell whitespace-nowrap">

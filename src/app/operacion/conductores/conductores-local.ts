@@ -46,6 +46,7 @@ export class ConductoresLocal extends ConductoresRepositorio implements FuenteLo
               id: e.id,
               nombre: nombreCompleto(e),
               iniciales: iniciales(e),
+              foto: e.foto ?? '',
               documento: `${e.tipoDocumento} ${e.numeroDocumento}`,
               telefono: e.telefono,
               correo: e.correo,

@@ -7,6 +7,7 @@ import { AuthService } from 'src/app/core/auth';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { estabilizar, pantalla, repositoriosDePrueba, simularDialogos } from 'src/app/shared/pruebas/pruebas';
 import RecorridoPage from './recorrido/recorrido-page';
+import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
 import { RecorridosRepositorio } from './recorridos-repositorio';
 import RutaDelDiaPage from './ruta-del-dia-page';
 
@@ -136,6 +137,25 @@ describe('Ruta del día (conductor)', () => {
     expect(orden).toEqual([segundo.estudianteId, primero.estudianteId]);
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain(segundo.estudiante);
     expect(el.textContent).toContain('Orden ajustado por Yolanda Charry');
+  });
+
+  it('la monitora ve la foto del estudiante en la próxima recogida y en la lista', async () => {
+    const estudiantes = TestBed.inject(EstudiantesRepositorio);
+    const repo = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(repo.iniciar(ruta.asignacionId, 'RECOGIDA'));
+    const foto = 'data:image/jpeg;base64,AAAA';
+    const { id, fechaCreacion, fechaActualizacion, ...datos } = await firstValueFrom(estudiantes.obtener(r.paradas[0].estudianteId));
+    await firstValueFrom(estudiantes.actualizar(id, { ...datos, foto }));
+    TestBed.inject(AuthService).abrirSesion({
+      usuario: 'ycharry', nombre: 'Yolanda Charry', correo: '', rol: 'MONITORA', empleadoId: 'emp-6', imagen: '', inicio: '',
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`/ruta-del-dia/recorrido/${r.id}`, RecorridoPage);
+    await estabilizar(harness.fixture, 4);
+    const el = harness.routeNativeElement as HTMLElement;
+    expect(el.querySelector(`img[alt="Foto de ${r.paradas[0].estudiante}"]`)?.getAttribute('src')).toBe(foto);
+    expect(el.querySelectorAll(`img[src="${foto}"]`).length).toBe(2); // tarjeta + fila
   });
 
   it('la monitora arrastra un estudiante hasta el final aunque la fila cambie de lugar durante el gesto', async () => {

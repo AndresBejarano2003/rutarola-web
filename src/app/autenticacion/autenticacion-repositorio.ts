@@ -18,7 +18,28 @@ export abstract class AutenticacionRepositorio {
    * devuelve la sesión del administrador. Solo con el API.
    */
   abstract registrarEmpresa(solicitud: SolicitudRegistro): Observable<Sesion>;
+  /** Datos de contacto y foto del usuario de la SESIÓN (Mi cuenta). */
+  abstract perfil(): Observable<PerfilUsuario>;
+  /**
+   * Guarda los datos propios y devuelve lo que cambia en la sesión (nombre, correo, foto). El administrador
+   * cambia también su nombre; conductores, monitoras y acudientes, su teléfono (obligatorio), correo y foto.
+   */
+  abstract actualizarPerfil(datos: DatosPerfil): Observable<Pick<Sesion, 'nombre' | 'correo' | 'imagen'>>;
 }
+
+/** `GET /auth/perfil`. `editaNombre`: solo administradores (el de las personas es el de su documento). */
+export interface PerfilUsuario {
+  usuario: string;
+  rol: string;
+  nombre: string;
+  editaNombre: boolean;
+  correo: string;
+  telefono: string;
+  /** Data URL de la foto; `''` = iniciales. */
+  foto: string;
+}
+
+export type DatosPerfil = Pick<PerfilUsuario, 'nombre' | 'correo' | 'telefono' | 'foto'>;
 
 export interface SolicitudRegistro {
   empresa: { nombre: string; nit: string; ciudad: string; telefono: string };
