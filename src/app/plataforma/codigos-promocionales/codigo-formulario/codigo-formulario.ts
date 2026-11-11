@@ -15,9 +15,11 @@ import {
   AlcanceCodigo,
   CodigoPromocional,
   PATRON_CODIGO,
+  PATRON_PREFIJO,
   TIPOS_DESCUENTO,
   TipoDescuento,
   descuentoCodigo,
+  generarCodigo,
   normalizarCodigo,
 } from '../codigo-promocional';
 
@@ -57,7 +59,10 @@ export class CodigoFormulario {
   private readonly fb = inject(NonNullableFormBuilder);
   protected readonly form = this.fb.group(
     {
-      codigo: ['', [Validators.required, Validators.pattern(PATRON_CODIGO)]],
+      /** Al crear: true = lo genera el sistema al guardar (con el prefijo opcional). */
+      generar: [true],
+      prefijo: ['', Validators.pattern(PATRON_PREFIJO)],
+      codigo: [''],
       descripcion: ['', Validators.maxLength(200)],
       tipoDescuento: this.fb.control<TipoDescuento>('PORCENTAJE'),
       valor: this.fb.control<number | null>(20, [Validators.required, Validators.min(1)]),
@@ -78,6 +83,13 @@ export class CodigoFormulario {
   protected readonly tipo = computed(() => this.valores().tipoDescuento ?? 'PORCENTAJE');
   protected readonly alcance = computed(() => this.valores().alcance ?? 'TODAS');
   protected readonly planesElegidos = computed(() => this.valores().planes ?? []);
+  protected readonly creando = computed(() => this.modo() === 'crear');
+  /** El sistema genera el código (solo al crear). */
+  protected readonly automatico = computed(() => this.creando() && (this.valores().generar ?? true));
+  protected readonly ejemploCodigo = computed(() => {
+    const p = (this.valores().prefijo ?? '').toUpperCase();
+    return p ? `${p}-7KQ9M2XT` : '7KQ9-M2XT';
+  });
   /** Ejemplo en vivo con el primer plan al que aplica (mensual). */
   protected readonly ejemplo = computed(() => {
     const v = this.valores();
@@ -91,6 +103,7 @@ export class CodigoFormulario {
       const c = this.codigo();
       if (c) {
         this.form.reset({
+          generar: false,
           codigo: c.codigo,
           descripcion: c.descripcion,
           tipoDescuento: c.tipoDescuento,
@@ -112,7 +125,9 @@ export class CodigoFormulario {
       }
       if (this.soloLectura()) this.form.disable();
       else this.form.enable();
+      this.ajustarCodigo();
     });
+    this.form.controls.generar.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.ajustarCodigo());
     // El tope del valor depende del tipo: 100 % o $10.000.000.
     this.form.controls.tipoDescuento.valueChanges.pipe(takeUntilDestroyed()).subscribe((t) => {
       this.form.controls.valor.setValidators([Validators.required, Validators.min(t === 'PORCENTAJE' ? 1 : 1000), Validators.max(t === 'PORCENTAJE' ? 100 : 10_000_000)]);
@@ -120,8 +135,29 @@ export class CodigoFormulario {
     });
   }
 
+  /** Código obligatorio solo si lo escribe el administrador (o al editar). */
+  private ajustarCodigo(): void {
+    const codigo = this.form.controls.codigo;
+    const automatico = this.modo() === 'crear' && this.form.controls.generar.value;
+    codigo.setValidators(automatico ? null : [Validators.required, Validators.pattern(PATRON_CODIGO)]);
+    codigo.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** "Escribirlo yo" con una sugerencia aleatoria que se puede cambiar. */
+  protected sugerir(): void {
+    this.form.controls.codigo.setValue(generarCodigo(this.form.controls.prefijo.value));
+    this.form.controls.codigo.markAsDirty();
+  }
+
+  protected prefijoMayusculas(evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const valor = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (valor !== campo.value) this.form.controls.prefijo.setValue(valor);
+  }
+
   protected error(campo: keyof typeof this.form.controls): string | null {
     const control = this.form.controls[campo];
+    if (campo === 'prefijo' && control.errors?.['pattern']) return 'Hasta 12 letras o números, sin espacios ni guiones.';
     if (campo === 'codigo' && control.errors?.['pattern'] && control.touched) return 'De 4 a 30 letras, números o guiones, sin espacios.';
     if (campo === 'empresaIds' && control.errors?.['requerido'] && (control.touched || this.form.touched)) return 'Elige al menos una empresa.';
     if (campo === 'fechaFin' && control.errors?.['rango'] && control.touched) return 'Debe ser igual o posterior a la fecha inicial.';
@@ -145,10 +181,12 @@ export class CodigoFormulario {
       this.form.markAllAsTouched();
       return;
     }
-    const v = this.form.getRawValue();
+    const { generar: _generar, prefijo, ...v } = this.form.getRawValue();
+    const automatico = this.automatico();
     this.guardar.emit({
       ...v,
-      codigo: normalizarCodigo(v.codigo),
+      codigo: automatico ? '' : normalizarCodigo(v.codigo),
+      prefijo: automatico ? prefijo : '',
       descripcion: v.descripcion.trim(),
       valor: Number(v.valor),
       usosMaximos: v.usosMaximos ? Number(v.usosMaximos) : null,

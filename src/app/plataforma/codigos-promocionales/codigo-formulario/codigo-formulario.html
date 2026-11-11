@@ -1,10 +1,39 @@
 <form [id]="idFormulario()" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
   <div class="grid md:grid-cols-2 gap-x-4 gap-y-3">
     <app-titulo-seccion>Código</app-titulo-seccion>
-    <label app-campo etiqueta="Código" requerido [error]="error('codigo')" ayuda="Lo que el cliente escribe al pagar. Sin espacios.">
-      <input type="text" formControlName="codigo" maxlength="30" autocomplete="off" spellcheck="false" (input)="mayusculas($event)"
-        class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase" [class.input-error]="error('codigo')" placeholder="Ej. BIENVENIDA20" />
-    </label>
+    @if (creando()) {
+      <fieldset class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <legend class="label-text text-base-content/90 mb-1">¿Cómo se crea el código?</legend>
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+          <input type="radio" class="sr-only" formControlName="generar" [value]="true" />
+          <span class="block font-medium"><i class="fa-solid fa-wand-magic-sparkles text-info" aria-hidden="true"></i> Lo genera el sistema</span>
+          <span class="block text-xs text-base-content/70">Único y aleatorio, al guardar</span>
+        </label>
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+          <input type="radio" class="sr-only" formControlName="generar" [value]="false" />
+          <span class="block font-medium"><i class="fa-solid fa-keyboard text-info" aria-hidden="true"></i> Lo escribo yo</span>
+          <span class="block text-xs text-base-content/70">Por ejemplo BIENVENIDA20</span>
+        </label>
+      </fieldset>
+    }
+    @if (automatico()) {
+      <label app-campo etiqueta="Prefijo (opcional)" [error]="error('prefijo')" [ayuda]="'Quedará así: ' + ejemploCodigo()">
+        <input type="text" formControlName="prefijo" maxlength="12" autocomplete="off" spellcheck="false" (input)="prefijoMayusculas($event)"
+          class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase" [class.input-error]="error('prefijo')" placeholder="Ej. REGRESO" />
+      </label>
+    } @else {
+      <div app-campo etiqueta="Código" requerido [error]="error('codigo')" ayuda="Lo que el cliente escribe al pagar. Sin espacios.">
+        <div class="join w-full">
+          <input type="text" formControlName="codigo" maxlength="30" autocomplete="off" spellcheck="false" (input)="mayusculas($event)" aria-label="Código"
+            class="input input-bordered join-item bg-base-100 border-neutral w-full font-mono uppercase" [class.input-error]="error('codigo')" placeholder="Ej. BIENVENIDA20" />
+          @if (!soloLectura()) {
+            <button type="button" class="btn join-item bg-base-300 border-neutral hover:bg-neutral" (click)="sugerir()" aria-label="Sugerir un código aleatorio">
+              <i class="fa-solid fa-shuffle" aria-hidden="true"></i><span class="hidden sm:inline">Sugerir</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
     <div app-campo etiqueta="Estado" requerido [error]="error('estado')">
       <app-selector-busqueda formControlName="estado" [opciones]="estados" etiqueta="Estado" [invalido]="!!error('estado')" />
     </div>

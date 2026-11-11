@@ -14,8 +14,10 @@ export type AlcanceCodigo = 'TODAS' | 'EMPRESAS' | 'PRIMERA_COMPRA';
 export type VigenciaCodigo = 'PROGRAMADO' | 'VIGENTE' | 'VENCIDO';
 
 export interface CodigoPromocional extends Entidad {
-  /** Mayúsculas, único: letras, números y guiones (4–30). */
+  /** Mayúsculas, único: letras, números y guiones (4–30). Vacío al crear = lo genera el sistema (con `prefijo`). */
   codigo: string;
+  /** Solo al enviar: prefijo del código generado (hasta 12 letras o números). */
+  prefijo?: string;
   descripcion: string;
   tipoDescuento: TipoDescuento;
   /** Porcentaje (1–100) o pesos. */
@@ -75,6 +77,17 @@ export interface ValidacionCodigo {
 }
 
 export const PATRON_CODIGO = /^[A-Z0-9-]{4,30}$/;
+export const PATRON_PREFIJO = /^[A-Z0-9]{0,12}$/;
+/** Sin 0/O ni 1/I/L para dictarlo y escribirlo sin confundirse (igual que `ReglasCodigoPromocional.Generar`). */
+const ALFABETO_CODIGO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+/** Código aleatorio: `PREFIJO-XXXXXXXX` o `XXXX-XXXX` (el API lo genera igual cuando el código llega vacío). */
+export function generarCodigo(prefijo = ''): string {
+  const bytes = crypto.getRandomValues(new Uint32Array(8));
+  const azar = [...bytes].map((b) => ALFABETO_CODIGO[b % ALFABETO_CODIGO.length]).join('');
+  const p = normalizarCodigo(prefijo);
+  return p ? `${p}-${azar}` : `${azar.slice(0, 4)}-${azar.slice(4)}`;
+}
 
 export const TIPOS_DESCUENTO: { id: TipoDescuento; nombre: string; descripcion: string }[] = [
   { id: 'PORCENTAJE', nombre: 'Porcentaje', descripcion: '% del valor de un mes' },

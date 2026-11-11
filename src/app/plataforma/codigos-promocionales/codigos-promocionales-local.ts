@@ -8,6 +8,7 @@ import {
   FILTROS_CODIGO_VACIOS,
   FiltrosCodigoPromocional,
   UsoCodigo,
+  generarCodigo,
   normalizarCodigo,
   vigenciaDe,
 } from './codigo-promocional';
@@ -41,10 +42,14 @@ export class CodigosPromocionalesLocal
     return (b.fechaCreacion ?? '').localeCompare(a.fechaCreacion ?? '');
   }
 
-  protected override preparar(datos: DatosRegistro<CodigoPromocional>): DatosRegistro<CodigoPromocional> {
+  protected override preparar(datos: DatosRegistro<CodigoPromocional>, idActual: string | null, registros: CodigoPromocional[]): DatosRegistro<CodigoPromocional> {
+    const { prefijo, ...resto } = datos;
+    // Vacío: al editar se conserva; al crear lo genera el sistema (sin repetir).
+    let codigo = normalizarCodigo(datos.codigo) || (registros.find((r) => r.id === idActual)?.codigo ?? '');
+    while (!codigo || (!datos.codigo && registros.some((r) => r.codigo === codigo))) codigo = generarCodigo(prefijo);
     return {
-      ...datos,
-      codigo: normalizarCodigo(datos.codigo),
+      ...resto,
+      codigo,
       descripcion: datos.descripcion.trim(),
       empresaIds: datos.alcance === 'EMPRESAS' ? datos.empresaIds : [],
       usos: datos.usos ?? 0,
@@ -53,6 +58,7 @@ export class CodigosPromocionalesLocal
 
   protected override validar(datos: DatosRegistro<CodigoPromocional>, idActual: string | null, registros: CodigoPromocional[]): void {
     const codigo = normalizarCodigo(datos.codigo);
+    if (!codigo) return; // Lo genera el sistema.
     if (registros.some((r) => r.id !== idActual && r.codigo === codigo)) {
       throw new ErrorCrud(`Ya existe el código ${codigo}.`, 'DUPLICADO');
     }

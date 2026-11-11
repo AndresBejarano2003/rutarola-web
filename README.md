@@ -254,7 +254,8 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   la campana). `suscripcion.ts` debe coincidir con `CatalogoPlanes.cs`. `/offline-membership` es la página pública de precios y
   `<app-aviso-plan>` avisa en el shell 15 días antes del fin o en Gratis.
 - **Códigos promocionales (`plataforma/codigos-promocionales/`, Plataforma › Promociones):** el SuperAdmin crea
-  códigos (letras, números y guiones, 4–30, únicos sin importar mayúsculas) con descuento en **porcentaje** (1–100)
+  códigos que genera el sistema (aleatorios y únicos, con un prefijo opcional: `REGRESO-7KQ9M2XT` o `7KQ9-M2XT`, sin
+  0/O ni 1/I/L) o que escribe él mismo (letras, números y guiones, 4–30, únicos sin importar mayúsculas; botón "Sugerir") con descuento en **porcentaje** (1–100)
   o **valor fijo** (pesos), vigencia desde–hasta (fechas de Colombia, ambas incluidas), a quién aplica (**todas** las
   empresas, **empresas elegidas** o **primera compra** = nunca han pagado un plan), planes (ninguno = todos los de
   pago), periodo (mensual, anual o ambos), usos máximos en total (vacío = sin límite) y usos por empresa (por defecto 1).

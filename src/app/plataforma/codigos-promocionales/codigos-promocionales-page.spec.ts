@@ -39,7 +39,17 @@ describe('Códigos promocionales', () => {
     await new Promise((r) => setTimeout(r, 350)); // filtros en vivo con 300 ms de espera
     await estabilizar(fixture, 3);
 
+    // Lo genera el sistema con el prefijo.
     ui.boton('Nuevo código').click();
+    await estabilizar(fixture);
+    ui.escribir('prefijo', 'verano');
+    ui.boton('Crear código').click();
+    await estabilizar(fixture, 3);
+    expect(el.querySelector('table')?.textContent).toMatch(/VERANO-[A-Z2-9]{8}/);
+
+    ui.boton('Nuevo código').click();
+    await estabilizar(fixture);
+    radio('Lo escribo yo').click();
     await estabilizar(fixture);
     ui.escribir('codigo', 'ab');
     ui.boton('Crear código').click();
@@ -58,7 +68,7 @@ describe('Códigos promocionales', () => {
     radio('Todas las empresas').click();
     ui.boton('Crear código').click();
     await estabilizar(fixture, 3);
-    expect(ui.filas('table').length).toBe(2);
+    expect(ui.filas('table').length).toBe(3);
     expect(el.textContent).toContain('REGRESO-50');
 
     const fila = [...ui.filas('table')].find((f) => f.textContent?.includes('REGRESO-50')) as HTMLElement;
@@ -66,7 +76,7 @@ describe('Códigos promocionales', () => {
     await estabilizar(fixture, 3);
     (el.querySelector('app-dialogo-confirmacion button.btn-error') as HTMLButtonElement).click();
     await estabilizar(fixture, 3);
-    expect(ui.filas('table').length).toBe(1);
+    expect(ui.filas('table').length).toBe(2);
     expect(el.querySelector('table')?.textContent).not.toContain('REGRESO-50');
   });
 
