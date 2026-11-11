@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
+import { ValidacionCodigo, textoDescuento } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
 import { Modal } from 'src/app/shared/modal/modal';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import {
@@ -68,6 +69,20 @@ export default class MembresiasPage {
   protected readonly elegido = signal<Plan | null>(null);
   protected readonly modalPago = signal(false);
   protected readonly redirigiendo = signal(false);
+  // Código promocional (solo descuenta el primer mes que se factura).
+  protected readonly codigoTexto = signal('');
+  protected readonly codigoAplicado = signal<ValidacionCodigo | null>(null);
+  protected readonly errorCodigo = signal<string | null>(null);
+  protected readonly aplicandoCodigo = signal(false);
+  protected readonly textoDescuento = textoDescuento;
+  /** Total del modal: con el código aplicado, el que calculó el servidor. */
+  protected readonly totalAPagar = computed(() => {
+    const p = this.elegido();
+    return this.codigoAplicado()?.total ?? (p ? this.precio(p) : 0);
+  });
+  /** El código cubre todo el primer pago: el plan se activa sin pasar por Wompi. */
+  protected readonly sinCobro = computed(() => this.codigoAplicado()?.total === 0);
+
   /** Resultado al volver de Wompi. */
   protected readonly confirmacion = signal<{ estado: 'VERIFICANDO' | PagoSuscripcion['estado']; pago: PagoSuscripcion | null } | null>(null);
 
@@ -147,7 +162,41 @@ export default class MembresiasPage {
   protected elegir(p: Plan): void {
     if (p.precioMensual === 0) return;
     this.elegido.set(p);
+    this.quitarCodigo();
     this.modalPago.set(true);
+  }
+
+  /** Cambiar el periodo con un código aplicado lo vuelve a validar (puede ser solo mensual o solo anual). */
+  protected cambiarPeriodo(periodo: PeriodoPago): void {
+    this.periodo.set(periodo);
+    if (this.codigoAplicado()) void this.aplicarCodigo();
+  }
+
+  protected escribirCodigo(evento: Event): void {
+    this.codigoTexto.set((evento.target as HTMLInputElement).value.toUpperCase());
+    this.errorCodigo.set(null);
+  }
+
+  protected async aplicarCodigo(): Promise<void> {
+    const p = this.elegido();
+    const codigo = this.codigoTexto().trim();
+    if (!p || !codigo || this.aplicandoCodigo()) return;
+    this.aplicandoCodigo.set(true);
+    try {
+      this.codigoAplicado.set(await firstValueFrom(this.repositorio.validarCodigo(codigo, p.id, this.periodo())));
+      this.errorCodigo.set(null);
+    } catch (e) {
+      this.codigoAplicado.set(null);
+      this.errorCodigo.set(mensajeDeError(e));
+    } finally {
+      this.aplicandoCodigo.set(false);
+    }
+  }
+
+  protected quitarCodigo(): void {
+    this.codigoAplicado.set(null);
+    this.codigoTexto.set('');
+    this.errorCodigo.set(null);
   }
 
   /** Abre el Web Checkout de Wompi con la firma que calcula el servidor. */
@@ -156,7 +205,15 @@ export default class MembresiasPage {
     if (!p) return;
     this.redirigiendo.set(true);
     try {
-      const checkout = await firstValueFrom(this.repositorio.iniciarPago(p.id, this.periodo()));
+      const checkout = await firstValueFrom(this.repositorio.iniciarPago(p.id, this.periodo(), this.codigoAplicado()?.codigo ?? ''));
+      if (!checkout.url) {
+        // El código cubrió todo el primer pago: el servidor ya activó el plan.
+        this.avisos.exito(`¡Listo! Tu plan ${p.nombre} está activo.`);
+        this.modalPago.set(false);
+        this.redirigiendo.set(false);
+        await this.cargar();
+        return;
+      }
       window.location.assign(checkout.url);
     } catch (e) {
       this.avisos.error(mensajeDeError(e));
@@ -166,8 +223,23 @@ export default class MembresiasPage {
 
   /** Sin pago en línea: el plan se pide en Soporte (la plataforma lo activa en Empresas › Plan). */
   protected solicitarPorSoporte(): void {
+    const p = this.elegido();
     this.modalPago.set(false);
-    void this.router.navigate(['/sistema/soporte']);
+    if (!p) return;
+    const periodo = this.periodo() === 'ANUAL' ? 'anual' : 'mensual';
+    const c = this.codigoAplicado();
+    const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
+    const descripcion = [
+      `Quiero activar el plan ${p.nombre} con pago ${periodo}.`,
+      c ? `Código promocional: ${c.codigo} (descuento de ${pesos(c.descuento)} en el primer mes; total ${pesos(c.total)}).` : '',
+      'Por favor envíenme los datos para el pago.',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    // Precarga la solicitud de soporte; la plataforma activa el plan (y aplica el código) en Empresas › Plan.
+    void this.router.navigate(['/sistema/soporte'], {
+      queryParams: { tipo: 'CONSULTA', modulo: 'Sistema › Planes y Membresías', asunto: `Quiero el plan ${p.nombre} (${periodo})`, descripcion },
+    });
   }
 
   /** Al volver de Wompi: confirma con el servidor y espera la confirmación (evento) si aún está pendiente. */

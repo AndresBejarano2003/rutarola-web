@@ -1,8 +1,12 @@
-import { Injectable, inject } from '@angular/core';
-import { Observable, defer } from 'rxjs';
+import { Injectable, Injector, inject } from '@angular/core';
+import { Observable, defer, map } from 'rxjs';
+import { ValidacionCodigo, evaluarCodigo } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
+import { CodigosPromocionalesRepositorio } from 'src/app/plataforma/codigos-promocionales/codigos-promocionales-repositorio';
+import { FILTROS_CODIGO_VACIOS } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
+import { SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
 import { FuenteLocal, LATENCIA_LOCAL, responderLocal } from 'src/app/shared/crud/repositorio-local';
-import { MESES_PRUEBA, AjusteSuscripcion, Checkout, PLANES, PagoSuscripcion, Plan, Suscripcion } from './suscripcion';
+import { MESES_PRUEBA, AjusteSuscripcion, Checkout, PLANES, PagoSuscripcion, PeriodoPago, Plan, PlanSuscripcion, Suscripcion } from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 
 const CLAVE = 'rutarola.suscripcion';
@@ -15,6 +19,8 @@ const CLAVE = 'rutarola.suscripcion';
 export class SuscripcionLocal extends SuscripcionRepositorio implements FuenteLocal {
   readonly modoLocal = true as const;
   private readonly latenciaMs = inject(LATENCIA_LOCAL);
+  // Perezoso: el repositorio de códigos se resuelve al validar.
+  private readonly injector = inject(Injector);
 
   planes(): Observable<Plan[]> {
     return defer(() => responderLocal(() => PLANES, this.latenciaMs));
@@ -26,6 +32,22 @@ export class SuscripcionLocal extends SuscripcionRepositorio implements FuenteLo
 
   pagos(): Observable<PagoSuscripcion[]> {
     return defer(() => responderLocal(() => [], this.latenciaMs));
+  }
+
+  /** Mismas reglas del API con los códigos del navegador (sin pagos locales, ninguna empresa los ha usado aún). */
+  validarCodigo(codigo: string, plan: PlanSuscripcion, periodo: PeriodoPago): Observable<ValidacionCodigo> {
+    return this.injector
+      .get(CodigosPromocionalesRepositorio)
+      .listar(FILTROS_CODIGO_VACIOS, SIN_PAGINAR)
+      .pipe(
+        map((pagina) =>
+          evaluarCodigo(pagina.items, codigo, PLANES.find((p) => p.id === plan) ?? PLANES[0], periodo, {
+            empresaId: 'local',
+            usosDeLaEmpresa: () => 0,
+            primeraCompra: this.leer().estado !== 'ACTIVA',
+          }),
+        ),
+      );
   }
 
   iniciarPago(): Observable<Checkout> {

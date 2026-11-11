@@ -9,6 +9,9 @@ import { PortalRepositorio } from "../portal/portal-repositorio";
 import { EmpresasHttp } from "../plataforma/empresas/empresas-http";
 import { EmpresasLocal } from "../plataforma/empresas/empresas-local";
 import { EmpresasRepositorio } from "../plataforma/empresas/empresas-repositorio";
+import { CodigosPromocionalesHttp } from "../plataforma/codigos-promocionales/codigos-promocionales-http";
+import { CodigosPromocionalesLocal } from "../plataforma/codigos-promocionales/codigos-promocionales-local";
+import { CodigosPromocionalesRepositorio } from "../plataforma/codigos-promocionales/codigos-promocionales-repositorio";
 import { TicketsHttp } from "../sistema/soporte/tickets/tickets-http";
 import { TicketsLocal } from "../sistema/soporte/tickets/tickets-local";
 import { TicketsRepositorio } from "../sistema/soporte/tickets/tickets-repositorio";
@@ -140,6 +143,7 @@ export function proveerRepositorios({
     api(PortalRepositorio, PortalLocal, PortalHttp),
     // Plataforma (SUPER_ADMIN, solo existe con el API)
     api(EmpresasRepositorio, EmpresasLocal, EmpresasHttp),
+    api(CodigosPromocionalesRepositorio, CodigosPromocionalesLocal, CodigosPromocionalesHttp),
     // Tickets de soporte (empresa y plataforma)
     api(TicketsRepositorio, TicketsLocal, TicketsHttp),
     // Plan de la empresa y pagos en línea (Wompi)

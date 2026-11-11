@@ -64,11 +64,15 @@ export interface PagoSuscripcion {
   idTransaccion: string;
   fechaCreacion: string;
   fechaAplicacion: string | null;
+  /** `''` sin código. */
+  codigoPromocional: string;
+  /** Pesos descontados del primer mes. */
+  descuento: number;
 }
 
 export interface Checkout {
   referencia: string;
-  /** Web Checkout de Wompi con la firma de integridad calculada en el servidor. */
+  /** Web Checkout de Wompi con la firma de integridad calculada en el servidor. `''` si el código cubrió todo y el plan ya quedó activo. */
   url: string;
   valorCentavos: number;
 }
@@ -80,6 +84,8 @@ export interface AjusteSuscripcion {
   /** ISO 8601; `''` en Gratis. */
   fechaFin: string;
   nota: string;
+  /** Opcional (solo ACTIVA): registra el uso del código y anota el descuento del primer mes en la nota. */
+  codigoPromocional?: string;
 }
 
 export const MESES_PRUEBA = 3;

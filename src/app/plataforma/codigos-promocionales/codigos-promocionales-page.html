@@ -1,0 +1,129 @@
+<form [formGroup]="filtros" class="card bg-base-200 border border-base-300 shadow-xl">
+  <app-panel-filtros (limpiar)="filtros.reset()">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2 md:col-span-2">
+        <i class="fa-solid fa-magnifying-glass text-base-content/60" aria-hidden="true"></i>
+        <input type="search" formControlName="texto" class="grow" placeholder="Código o descripción..." aria-label="Buscar código promocional" />
+      </label>
+      <app-selector-busqueda formControlName="vigencia" [opciones]="vigencias" textoTodos="Todas las vigencias" etiqueta="Vigencia" />
+      <app-selector-busqueda formControlName="estado" [opciones]="estados" textoTodos="Todos los estados" etiqueta="Estado" />
+    </div>
+  </app-panel-filtros>
+</form>
+
+<section class="mt-6 card bg-base-200 border border-base-300 shadow-xl">
+  <div class="card-body">
+    <app-encabezado-listado titulo="Códigos promocionales"
+      descripcion="Descuentos que las empresas escriben al pagar su plan. Solo descuentan el primer mes que se factura."
+      [cargando]="store.cargando()" [total]="store.total()" [modoLocal]="store.modoLocal" [error]="store.error()"
+      textoNuevo="Nuevo código" (nuevo)="nuevo()" (reintentar)="store.recargar()" />
+
+    <div class="@container overflow-x-auto rounded-box border border-base-300">
+      <table class="table">
+        <thead>
+          <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+            <th>Código</th>
+            <th>Descuento</th>
+            <th class="hidden @3xl:table-cell">Vigencia</th>
+            <th class="hidden @5xl:table-cell">Aplica a</th>
+            <th class="hidden @3xl:table-cell text-right">Usos</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="transition-opacity" [class.opacity-50]="store.cargando() && store.items().length > 0">
+          @if (store.cargando() && store.items().length === 0) {
+            @for (fila of [1, 2, 3]; track fila) {
+              <tr class="border-base-300">
+                @for (col of [1, 2, 3, 4, 5, 6, 7]; track col) {
+                  <td><div class="skeleton bg-base-300 h-4 w-full"></div></td>
+                }
+              </tr>
+            }
+          } @else {
+            @for (c of store.items(); track c.id) {
+              <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors" (click)="abrir('consultar', c)">
+                <td>
+                  <div class="font-mono font-semibold">{{ c.codigo }}</div>
+                  <div class="text-xs text-base-content/70 truncate max-w-56">{{ c.descripcion || '—' }}</div>
+                </td>
+                <td class="whitespace-nowrap">{{ textoDescuento(c) }}</td>
+                <td class="hidden @3xl:table-cell whitespace-nowrap">
+                  <span class="badge badge-soft badge-sm {{ vigencia(c).badge }}">{{ vigencia(c).nombre }}</span>
+                  <div class="text-xs text-base-content/70">{{ c.fechaInicio | date: 'd MMM y' }} – {{ c.fechaFin | date: 'd MMM y' }}</div>
+                </td>
+                <td class="hidden @5xl:table-cell">
+                  <div>{{ alcance(c) }}</div>
+                  <div class="text-xs text-base-content/70">{{ planes(c) }}</div>
+                </td>
+                <td class="hidden @3xl:table-cell text-right whitespace-nowrap">{{ c.usos ?? 0 }}{{ c.usosMaximos ? ' / ' + c.usosMaximos : '' }}</td>
+                <td><app-badge-estado [estado]="c.estado" /></td>
+                <td class="text-right whitespace-nowrap">
+                  <app-acciones-fila (consultar)="abrir('consultar', c)" (editar)="abrir('editar', c)" (eliminar)="pedirEliminar(c)" />
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <app-estado-vacio icono="fa-solid fa-ticket" mensaje="Aún no hay códigos promocionales." [hayFiltros]="store.hayFiltros()" (crear)="nuevo()" />
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <app-paginacion [pagina]="store.paginacion().pagina" [tamano]="store.paginacion().tamano" [total]="store.total()"
+      [totalPaginas]="store.totalPaginas()" (cambiarPagina)="store.irAPagina($event)" (cambiarTamano)="store.cambiarTamano($event)" />
+  </div>
+</section>
+
+<app-modal [(abierto)]="modalAbierto" [titulo]="tituloModal()" [subtitulo]="subtituloModal()" ancho="max-w-4xl">
+  @if (modalAbierto()) {
+    <div class="relative flex flex-col gap-6">
+      @if (cargandoDetalle()) {
+        <div class="absolute inset-0 z-10 grid place-items-center bg-base-200/80 rounded-xl">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+      }
+      <app-codigo-formulario idFormulario="form-codigo-promocional" [modo]="modo()" [codigo]="seleccionado()" [empresas]="empresas()"
+        (guardar)="guardar($event)" />
+
+      @if (modo() === 'consultar') {
+        <section class="flex flex-col gap-2" aria-labelledby="titulo-usos-codigo">
+          <h3 id="titulo-usos-codigo" class="text-info text-xs font-semibold uppercase tracking-wide">Empresas que lo usaron</h3>
+          @if (usos(); as lista) {
+            @if (lista.length) {
+              <ul class="flex flex-col divide-y divide-base-300 rounded-box border border-base-300 text-sm">
+                @for (u of lista; track u.id) {
+                  <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                    <span class="min-w-0">
+                      <span class="font-medium">{{ u.empresa || 'Empresa' }}</span>
+                      <span class="block text-xs text-base-content/70">
+                        {{ u.fecha | date: 'd MMM y, h:mm a' }} · {{ nombrePlan(u.plan) }} {{ u.periodo === 'ANUAL' ? 'anual' : 'mensual' }} ·
+                        {{ u.referencia ? 'Pago en línea' : 'Activado por la plataforma' }}
+                      </span>
+                    </span>
+                    <span class="text-success whitespace-nowrap">−{{ u.descuento | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-sm text-base-content/70">Aún nadie lo ha usado.</p>
+            }
+          } @else {
+            <div class="skeleton bg-base-300 h-10 w-full"></div>
+          }
+        </section>
+      }
+    </div>
+  }
+  @if (modalAbierto()) {
+    <app-acciones-formulario pie formulario="form-codigo-promocional" [modo]="modo()" [guardando]="store.guardando()"
+      [bloqueado]="cargandoDetalle()" textoCrear="Crear código" (cancelar)="modalAbierto.set(false)" (editar)="modo.set('editar')" />
+  }
+</app-modal>
+
+<app-dialogo-confirmacion [(abierto)]="confirmacionAbierta" titulo="Eliminar código promocional" [mensaje]="mensajeEliminar()"
+  [permitirConfirmar]="puedeEliminar()" [procesando]="store.guardando() || verificandoEliminar()" (confirmar)="confirmarEliminar()" />

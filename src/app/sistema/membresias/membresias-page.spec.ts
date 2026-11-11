@@ -37,6 +37,35 @@ describe('Planes y membresías', () => {
     expect(ui.boton('Solicitar por Soporte')).toBeTruthy();
   });
 
+  it('aplica un código promocional solo al primer mes y muestra el motivo si no aplica', async () => {
+    const fixture = TestBed.createComponent(MembresiasPage);
+    await estabilizar(fixture, 4);
+    const el = fixture.nativeElement as HTMLElement;
+    const ui = pantalla(el);
+    ui.boton('Quedarme con Profesional').click();
+    await estabilizar(fixture);
+    const campo = el.querySelector('#codigo-promocional') as HTMLInputElement;
+    campo.value = 'no-existe';
+    campo.dispatchEvent(new Event('input'));
+    await estabilizar(fixture);
+    ui.boton('Aplicar').click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('no existe o no está activo');
+
+    const otro = el.querySelector('#codigo-promocional') as HTMLInputElement;
+    otro.value = 'bienvenida20';
+    otro.dispatchEvent(new Event('input'));
+    await estabilizar(fixture);
+    ui.boton('Aplicar').click();
+    await estabilizar(fixture, 4);
+    expect(el.textContent).toContain('BIENVENIDA20');
+    expect(el.textContent).toContain('Descuento primer mes');
+    expect(el.textContent).toContain('solo al primer mes');
+    ui.boton('Quitar').click();
+    await estabilizar(fixture);
+    expect(el.textContent).not.toContain('Descuento primer mes');
+  });
+
   it('la página pública invita a registrarse', async () => {
     const fixture = TestBed.createComponent(PlanesPublicosPage);
     await estabilizar(fixture);

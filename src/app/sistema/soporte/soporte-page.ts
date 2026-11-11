@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -99,6 +100,18 @@ export default class SoportePage {
   });
 
   private readonly valores = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  constructor() {
+    // `?tipo=&modulo=&asunto=&descripcion=` precargan la solicitud (p. ej. "Solicitar por Soporte" en Planes).
+    const q = inject(ActivatedRoute, { optional: true })?.snapshot.queryParamMap;
+    const asunto = q?.get('asunto');
+    if (q && asunto) {
+      const tipo = TIPOS_SOLICITUD.find((t) => t.id === q.get('tipo'))?.id ?? '';
+      const modulo = this.modulos.find((m) => m.id === q.get('modulo'))?.id ?? '';
+      this.form.patchValue({ tipo, modulo, asunto: asunto.slice(0, ASUNTO_MAXIMO), descripcion: (q.get('descripcion') ?? '').slice(0, DESCRIPCION_MAXIMA) });
+      afterNextRender(() => this.irA('solicitud'));
+    }
+  }
   protected readonly guiaDescripcion = computed(
     () =>
       TIPOS_SOLICITUD.find((t) => t.id === this.valores().tipo)?.guia ??

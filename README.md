@@ -253,6 +253,19 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   Soporte" y la plataforma activa el plan en Empresas › Plan; el correo también está simulado (avisos solo por
   la campana). `suscripcion.ts` debe coincidir con `CatalogoPlanes.cs`. `/offline-membership` es la página pública de precios y
   `<app-aviso-plan>` avisa en el shell 15 días antes del fin o en Gratis.
+- **Códigos promocionales (`plataforma/codigos-promocionales/`, Plataforma › Promociones):** el SuperAdmin crea
+  códigos (letras, números y guiones, 4–30, únicos sin importar mayúsculas) con descuento en **porcentaje** (1–100)
+  o **valor fijo** (pesos), vigencia desde–hasta (fechas de Colombia, ambas incluidas), a quién aplica (**todas** las
+  empresas, **empresas elegidas** o **primera compra** = nunca han pagado un plan), planes (ninguno = todos los de
+  pago), periodo (mensual, anual o ambos), usos máximos en total (vacío = sin límite) y usos por empresa (por defecto 1).
+  **El descuento es solo del primer mes que se factura**: en el anual se descuenta una mensualidad (el porcentaje
+  se calcula sobre el valor mensual y el valor fijo no supera un mes); las renovaciones van a precio normal. Al pagar,
+  la empresa escribe el código en "¿Tienes un código promocional?" y ve el descuento o el motivo si no aplica (no
+  existe/inactivo, aún no empieza o venció, otro plan o periodo, no es para su empresa, solo primera compra, usos
+  agotados). Si el total queda en $0, "Activar plan" lo activa de inmediato. El uso cuenta cuando el pago se aprueba
+  o cuando la plataforma activa el plan a mano con el código (Empresas › Plan, queda anotado en la nota). Mientras
+  Wompi está pausado, "Solicitar por Soporte" precarga la solicitud con el plan y el código. Un código usado no se
+  elimina (se inactiva); su detalle muestra las empresas que lo usaron.
 - **Administradores de empresa (plataforma):** en Plataforma › Empresas el SuperAdmin ve los administradores de
   cada empresa, los crea, edita, inactiva y les cambia la contraseña (revoca sus sesiones), y ajusta su plan.
 

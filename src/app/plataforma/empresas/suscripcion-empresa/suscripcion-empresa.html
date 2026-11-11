@@ -51,6 +51,13 @@
             </div>
           }
         }
+        @if (estadoForm() === 'ACTIVA') {
+          <label app-campo class="md:col-span-2" etiqueta="Código promocional (opcional)" [error]="errorDe('codigoPromocional')"
+            ayuda="Registra el uso del código y anota en la nota el descuento del primer mes.">
+            <input formControlName="codigoPromocional" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Ej. BIENVENIDA20"
+              class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase" />
+          </label>
+        }
         <label app-campo class="md:col-span-2" etiqueta="Nota (la ve la empresa)" [error]="errorDe('nota')">
           <input formControlName="nota" maxlength="500" placeholder="Pago por transferencia del 5 de noviembre" class="input input-bordered bg-base-100 border-neutral w-full" />
         </label>
@@ -70,7 +77,12 @@
       <ul class="flex flex-col divide-y divide-base-300 rounded-box border border-base-300 text-sm">
         @for (p of pagos(); track p.id) {
           <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-            <span>{{ p.fechaCreacion | date: 'd MMM y' }} · {{ nombrePlan(p.plan) }} {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</span>
+            <span>
+              {{ p.fechaCreacion | date: 'd MMM y' }} · {{ nombrePlan(p.plan) }} {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}
+              @if (p.codigoPromocional) {
+                <span class="text-xs text-success"><i class="fa-solid fa-ticket" aria-hidden="true"></i> {{ p.codigoPromocional }}</span>
+              }
+            </span>
             <span class="flex items-center gap-2">
               {{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
               <span class="badge badge-soft badge-sm {{ estadosPago[p.estado].badge }}">{{ estadosPago[p.estado].nombre }}</span>

@@ -1,0 +1,99 @@
+<form [id]="idFormulario()" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+  <div class="grid md:grid-cols-2 gap-x-4 gap-y-3">
+    <app-titulo-seccion>Código</app-titulo-seccion>
+    <label app-campo etiqueta="Código" requerido [error]="error('codigo')" ayuda="Lo que el cliente escribe al pagar. Sin espacios.">
+      <input type="text" formControlName="codigo" maxlength="30" autocomplete="off" spellcheck="false" (input)="mayusculas($event)"
+        class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase" [class.input-error]="error('codigo')" placeholder="Ej. BIENVENIDA20" />
+    </label>
+    <div app-campo etiqueta="Estado" requerido [error]="error('estado')">
+      <app-selector-busqueda formControlName="estado" [opciones]="estados" etiqueta="Estado" [invalido]="!!error('estado')" />
+    </div>
+    <label app-campo class="md:col-span-2" etiqueta="Descripción (interna)" [error]="error('descripcion')">
+      <input type="text" formControlName="descripcion" maxlength="200" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('descripcion')" placeholder="Ej. Campaña de regreso a clases" />
+    </label>
+
+    <app-titulo-seccion>Descuento (solo el primer mes que se factura)</app-titulo-seccion>
+    <fieldset class="grid grid-cols-2 gap-2" [disabled]="soloLectura()">
+      <legend class="sr-only">Tipo de descuento</legend>
+      @for (t of tipos; track t.id) {
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-disabled:cursor-default">
+          <input type="radio" class="sr-only" formControlName="tipoDescuento" [value]="t.id" />
+          <span class="block font-medium">{{ t.nombre }}</span>
+          <span class="block text-xs text-base-content/70">{{ t.descripcion }}</span>
+        </label>
+      }
+    </fieldset>
+    <label app-campo [etiqueta]="tipo() === 'PORCENTAJE' ? 'Porcentaje (%)' : 'Valor en pesos'" requerido [error]="error('valor')">
+      <span class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2" [class.input-error]="error('valor')">
+        @if (tipo() === 'VALOR_FIJO') {
+          <span class="text-base-content/70" aria-hidden="true">$</span>
+        }
+        <input type="number" formControlName="valor" class="grow" inputmode="numeric" [min]="tipo() === 'PORCENTAJE' ? 1 : 1000"
+          [max]="tipo() === 'PORCENTAJE' ? 100 : 10000000" [step]="tipo() === 'PORCENTAJE' ? 1 : 1000" />
+        @if (tipo() === 'PORCENTAJE') {
+          <span class="text-base-content/70" aria-hidden="true">%</span>
+        }
+      </span>
+    </label>
+    @if (ejemplo(); as e) {
+      <p class="md:col-span-2 rounded-box border border-base-300 bg-base-100 px-3 py-2 text-sm text-base-content/80">
+        <i class="fa-solid fa-calculator text-info" aria-hidden="true"></i>
+        Ejemplo: {{ e.plan }} mensual {{ e.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} − {{ e.descuento | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        = <span class="font-semibold text-primary">{{ e.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span> el primer mes.
+        En el anual se descuenta lo mismo (una mensualidad); las renovaciones van a precio normal.
+      </p>
+    }
+
+    <app-titulo-seccion>Vigencia y usos</app-titulo-seccion>
+    <label app-campo etiqueta="Válido desde" requerido [error]="error('fechaInicio')">
+      <input type="date" formControlName="fechaInicio" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="error('fechaInicio')" />
+    </label>
+    <label app-campo etiqueta="Válido hasta (incluido)" requerido [error]="error('fechaFin')">
+      <input type="date" formControlName="fechaFin" class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="error('fechaFin')" />
+    </label>
+    <label app-campo etiqueta="Usos máximos en total" [error]="error('usosMaximos')" ayuda="Vacío = sin límite.">
+      <input type="number" formControlName="usosMaximos" min="1" inputmode="numeric" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('usosMaximos')" placeholder="Sin límite" />
+    </label>
+    <label app-campo etiqueta="Usos por empresa" requerido [error]="error('usosPorEmpresa')">
+      <input type="number" formControlName="usosPorEmpresa" min="1" max="120" inputmode="numeric" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('usosPorEmpresa')" />
+    </label>
+
+    <app-titulo-seccion>A quién aplica</app-titulo-seccion>
+    <fieldset class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2" [disabled]="soloLectura()">
+      <legend class="sr-only">Empresas</legend>
+      @for (a of alcances; track a.id) {
+        <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-disabled:cursor-default">
+          <input type="radio" class="sr-only" formControlName="alcance" [value]="a.id" />
+          <span class="block font-medium">{{ a.nombre }}</span>
+          <span class="block text-xs text-base-content/70">{{ a.descripcion }}</span>
+        </label>
+      }
+    </fieldset>
+    @if (alcance() === 'EMPRESAS') {
+      <div app-campo class="md:col-span-2" etiqueta="Empresas" requerido [error]="error('empresaIds')">
+        <app-lista-seleccion formControlName="empresaIds" [opciones]="empresas()" etiqueta="Empresa" placeholder="Busca la empresa..." />
+      </div>
+    }
+    <fieldset class="flex flex-col gap-1" [disabled]="soloLectura()">
+      <legend class="label-text text-base-content/90 mb-1">Planes <span class="text-base-content/70">(ninguno = todos)</span></legend>
+      <div class="flex flex-wrap gap-2">
+        @for (p of planesDePago; track p.id) {
+          <label class="btn btn-sm border-neutral" [class.bg-base-300]="!planesElegidos().includes(p.id)"
+            [class.btn-secondary]="planesElegidos().includes(p.id)">
+            <input type="checkbox" class="sr-only" [checked]="planesElegidos().includes(p.id)" (change)="alternarPlan(p.id)" />
+            @if (planesElegidos().includes(p.id)) {
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+            }
+            {{ p.nombre }}
+          </label>
+        }
+      </div>
+    </fieldset>
+    <div app-campo etiqueta="Periodo de pago">
+      <app-selector-busqueda formControlName="periodo" [opciones]="periodos" textoTodos="Mensual y anual" etiqueta="Periodo de pago" />
+    </div>
+  </div>
+</form>

@@ -176,6 +176,12 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
       'Al registrarte tienes 3 meses gratis del plan Profesional. En Sistema › Planes y membresías ves cuántos días te quedan, cuántos vehículos y estudiantes activos usas y los planes Gratis, Esencial, Profesional y Empresarial (el anual tiene 2 meses gratis). Por ahora el plan se solicita desde Soporte: te enviamos los datos para pagar por transferencia y lo activamos apenas lo confirmemos (pronto podrás pagar en línea). Si la prueba o el plan vencen, pasas a Gratis sin perder datos: solo no podrás activar más vehículos o estudiantes que los del plan y se pausan el GPS en vivo y los recordatorios automáticos.',
   },
   {
+    modulo: 'Sistema',
+    pregunta: '¿Cómo uso un código promocional?',
+    respuesta:
+      'En Sistema › Planes y membresías elige el plan, escribe el código en "¿Tienes un código promocional?" y pulsa Aplicar: verás el descuento y el total, o el motivo si no aplica (venció, es para otro plan o periodo, ya lo usaste…). El descuento es solo del primer mes que se factura; en el pago anual se descuenta una de las mensualidades y las renovaciones van a precio normal. Si el código cubre todo el primer pago, el plan se activa de inmediato. Mientras el pago en línea no esté disponible, "Solicitar por Soporte" envía tu solicitud con el código incluido y lo aplicamos al activar tu plan.',
+  },
+  {
     modulo: 'General',
     pregunta: '¿Por qué no puedo eliminar un registro?',
     respuesta:

@@ -193,7 +193,12 @@
                       <div>{{ p.fechaCreacion | date: 'd MMM y' }}</div>
                       <div class="text-xs text-base-content/70 font-mono truncate max-w-40">{{ p.referencia }}</div>
                     </td>
-                    <td>{{ nombrePlan(p.plan) }} · {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</td>
+                    <td>
+                      <div>{{ nombrePlan(p.plan) }} · {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</div>
+                      @if (p.codigoPromocional) {
+                        <div class="text-xs text-success"><i class="fa-solid fa-ticket" aria-hidden="true"></i> {{ p.codigoPromocional }} −{{ p.descuento | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
+                      }
+                    </td>
                     <td class="hidden @3xl:table-cell">{{ p.metodoPago || '—' }}</td>
                     <td><span class="badge badge-soft badge-sm {{ estadosPago[p.estado].badge }}">{{ estadosPago[p.estado].nombre }}</span></td>
                     <td class="text-right">{{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
@@ -262,26 +267,65 @@
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Periodo de pago">
         <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
-          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'MENSUAL'" (change)="periodo.set('MENSUAL')" />
+          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'MENSUAL'" (change)="cambiarPeriodo('MENSUAL')" />
           <span class="block font-medium">Mensual</span>
           <span class="block text-sm text-base-content/70">{{ p.precioMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} / mes</span>
         </label>
         <label class="rounded-box border border-neutral bg-base-100 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
-          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'ANUAL'" (change)="periodo.set('ANUAL')" />
+          <input type="radio" class="sr-only" name="periodo-pago" [checked]="periodo() === 'ANUAL'" (change)="cambiarPeriodo('ANUAL')" />
           <span class="block font-medium">Anual <span class="badge badge-sm badge-success">-{{ mesesGratisAnual }} meses</span></span>
           <span class="block text-sm text-base-content/70">{{ p.precioAnual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} / año</span>
         </label>
       </div>
+      <div class="flex flex-col gap-1">
+        <label for="codigo-promocional" class="label-text text-base-content/90">¿Tienes un código promocional?</label>
+        @if (codigoAplicado(); as c) {
+          <div class="flex flex-wrap items-center justify-between gap-2 rounded-box border border-success/40 bg-success/10 px-3 py-2 text-sm">
+            <span class="min-w-0"><i class="fa-solid fa-ticket text-success" aria-hidden="true"></i>
+              <span class="font-mono font-semibold">{{ c.codigo }}</span> · {{ textoDescuento(c) }}</span>
+            <button type="button" class="btn btn-ghost btn-xs" (click)="quitarCodigo()">Quitar</button>
+          </div>
+        } @else {
+          <div class="join w-full">
+            <input id="codigo-promocional" class="input input-bordered join-item bg-base-100 border-neutral w-full font-mono uppercase"
+              [class.input-error]="!!errorCodigo()" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false"
+              placeholder="Escribe el código" [value]="codigoTexto()" (input)="escribirCodigo($event)" (keydown.enter)="aplicarCodigo()"
+              [attr.aria-invalid]="!!errorCodigo()" aria-describedby="error-codigo-promocional" />
+            <button type="button" class="btn join-item bg-base-300 border-neutral hover:bg-neutral" [disabled]="!codigoTexto().trim() || aplicandoCodigo()" (click)="aplicarCodigo()">
+              @if (aplicandoCodigo()) {
+                <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+              }
+              Aplicar
+            </button>
+          </div>
+          @if (errorCodigo()) {
+            <span id="error-codigo-promocional" class="text-xs text-error" role="alert">{{ errorCodigo() }}</span>
+          }
+        }
+      </div>
       <dl class="rounded-box border border-base-300 bg-base-100 p-4 text-sm grid grid-cols-2 gap-y-2">
         <dt class="text-base-content/70">Plan</dt><dd class="text-right font-medium">{{ p.nombre }}</dd>
         <dt class="text-base-content/70">Periodo</dt><dd class="text-right">{{ periodo() === 'ANUAL' ? '12 meses' : '1 mes' }}</dd>
+        @if (codigoAplicado(); as c) {
+          <dt class="text-base-content/70">Valor del plan</dt><dd class="text-right">{{ c.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+          <dt class="text-success">Descuento primer mes</dt>
+          <dd class="text-right text-success">−{{ c.descuento | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+        }
         <dt class="text-base-content/70 font-semibold">Total a pagar</dt>
-        <dd class="text-right text-lg font-bold text-primary">{{ precio(p) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+        <dd class="text-right text-lg font-bold text-primary">{{ totalAPagar() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
       </dl>
+      @if (codigoAplicado()) {
+        <p class="text-xs text-base-content/70">
+          <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+          El descuento aplica solo al primer mes que se factura{{ periodo() === 'ANUAL' ? ' (una de las mensualidades del año)' : '' }}; las renovaciones se cobran a precio normal.
+        </p>
+      }
       @if (enPrueba()) {
         <p class="text-xs text-base-content/70"><i class="fa-solid fa-gift text-success" aria-hidden="true"></i> Los {{ suscripcion()?.diasRestantes }} días de prueba que te quedan se suman.</p>
       }
-      @if (pagoEnLinea()) {
+      @if (sinCobro()) {
+        <p class="text-xs text-base-content/70"><i class="fa-solid fa-gift text-success" aria-hidden="true"></i> Tu código cubre todo el primer pago: el plan se activa de inmediato, sin pagar.</p>
+      } @else if (pagoEnLinea()) {
         <p class="text-xs text-base-content/70">Te llevaremos a Wompi para pagar con tarjeta, PSE, Nequi o Botón Bancolombia y luego volverás aquí.</p>
       } @else {
         <div role="status" class="alert alert-soft alert-info text-sm">
@@ -294,7 +338,16 @@
   @if (modalPago()) {
     <div pie class="flex flex-wrap justify-end gap-2 w-full">
       <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="modalPago.set(false)">Cancelar</button>
-      @if (pagoEnLinea()) {
+      @if (sinCobro()) {
+        <button type="button" class="btn btn-primary" [disabled]="redirigiendo()" (click)="pagar()">
+          @if (redirigiendo()) {
+            <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+          } @else {
+            <i class="fa-solid fa-gift" aria-hidden="true"></i>
+          }
+          Activar plan
+        </button>
+      } @else if (pagoEnLinea()) {
         <button type="button" class="btn btn-primary" [disabled]="redirigiendo()" (click)="pagar()">
           @if (redirigiendo()) {
             <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>

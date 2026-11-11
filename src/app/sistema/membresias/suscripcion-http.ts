@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
+import { ValidacionCodigo } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
 import { AjusteSuscripcion, Checkout, PagoSuscripcion, PeriodoPago, Plan, PlanSuscripcion, Suscripcion } from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 
@@ -9,12 +10,18 @@ import { SuscripcionRepositorio } from './suscripcion-repositorio';
  * - `GET /suscripcion/planes` (público) → `Plan[]`;
  * - `GET /suscripcion` (`suscripcion.leer`) → `Suscripcion` (crea la prueba si no existía; si venció la baja a GRATIS);
  * - `GET /suscripcion/pagos` → `PagoSuscripcion[]` (más recientes primero);
- * - `POST /suscripcion/pagos {plan, periodo}` (`suscripcion.gestionar`) → 201 `Checkout` (URL firmada del Web
- *   Checkout de Wompi); 400 plan GRATIS; 422 si los pagos en línea no están configurados;
+ * - `POST /suscripcion/codigo {codigo, plan, periodo}` (`suscripcion.gestionar`) → `ValidacionCodigo` o 422 con el
+ *   motivo (no existe/inactivo, aún no empieza o venció, otro plan o periodo, no es para esta empresa o solo primera
+ *   compra, usos agotados). El descuento es SOLO del primer mes;
+ * - `POST /suscripcion/pagos {plan, periodo, codigoPromocional}` (`suscripcion.gestionar`) → 201 `Checkout` (URL firmada
+ *   del Web Checkout de Wompi, con el descuento); 400 plan GRATIS; 422 si el código no aplica o si los pagos en línea no
+ *   están configurados. Si el código deja el total en $0 el plan se activa de una vez (`url` vacía, también sin Wompi).
+ *   El uso del código cuenta cuando el pago queda aprobado;
  * - `POST /suscripcion/pagos/{referencia}/verificacion {idTransaccion}` → `PagoSuscripcion` (el servidor consulta
  *   la transacción en Wompi; el plan se activa SOLO con la confirmación de Wompi, también por el evento firmado
  *   `POST /pagos/wompi/eventos`); 404 si el pago no es de la empresa;
- * - Plataforma (`empresas.gestionar`): `GET/PUT /empresas/{id}/suscripcion` (422 fecha de fin pasada) y
+ * - Plataforma (`empresas.gestionar`): `GET/PUT /empresas/{id}/suscripcion` (422 fecha de fin pasada o código que no
+ *   aplica; `codigoPromocional` solo con ACTIVA) y
  *   `GET /empresas/{id}/suscripcion/pagos`.
  * Crear o activar vehículos/estudiantes por encima del plan responde 422 con el límite.
  */
@@ -36,8 +43,12 @@ export class SuscripcionHttp extends SuscripcionRepositorio {
     return this.http.get<PagoSuscripcion[]>(`${this.url}/pagos`);
   }
 
-  iniciarPago(plan: PlanSuscripcion, periodo: PeriodoPago): Observable<Checkout> {
-    return this.http.post<Checkout>(`${this.url}/pagos`, { plan, periodo });
+  validarCodigo(codigo: string, plan: PlanSuscripcion, periodo: PeriodoPago): Observable<ValidacionCodigo> {
+    return this.http.post<ValidacionCodigo>(`${this.url}/codigo`, { codigo, plan, periodo });
+  }
+
+  iniciarPago(plan: PlanSuscripcion, periodo: PeriodoPago, codigoPromocional = ''): Observable<Checkout> {
+    return this.http.post<Checkout>(`${this.url}/pagos`, { plan, periodo, codigoPromocional });
   }
 
   verificarPago(referencia: string, idTransaccion: string): Observable<PagoSuscripcion> {

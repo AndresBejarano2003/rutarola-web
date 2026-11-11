@@ -66,6 +66,7 @@ export class SuscripcionEmpresa {
     periodo: this.fb.control<PeriodoPago | ''>(''),
     fechaFin: [''],
     nota: ['', Validators.maxLength(500)],
+    codigoPromocional: ['', Validators.maxLength(30)],
   });
   protected readonly estadoForm = toSignal(this.form.controls.estado.valueChanges, { initialValue: this.form.controls.estado.value });
   protected readonly conVigencia = computed(() => this.estadoForm() !== 'GRATIS');
@@ -91,11 +92,11 @@ export class SuscripcionEmpresa {
   protected editar(): void {
     const s = this.suscripcion();
     if (!s) return;
-    this.form.reset({ plan: s.plan, estado: s.estado, periodo: s.periodo, fechaFin: fechaLocal(s.fechaFin), nota: s.nota });
+    this.form.reset({ plan: s.plan, estado: s.estado, periodo: s.periodo, fechaFin: fechaLocal(s.fechaFin), nota: s.nota, codigoPromocional: '' });
     this.editando.set(true);
   }
 
-  protected errorDe(campo: 'fechaFin' | 'nota'): string | null {
+  protected errorDe(campo: 'fechaFin' | 'nota' | 'codigoPromocional'): string | null {
     return mensajeError(this.form.controls[campo]);
   }
 
@@ -120,7 +121,12 @@ export class SuscripcionEmpresa {
       const fin = final.estado === 'GRATIS' ? '' : new Date(`${final.fechaFin}T23:59:59`).toISOString();
       this.suscripcion.set(
         await firstValueFrom(
-          this.repositorio.ajustar(this.empresaId(), { ...final, periodo: final.estado === 'ACTIVA' ? final.periodo || 'MENSUAL' : '', fechaFin: fin }),
+          this.repositorio.ajustar(this.empresaId(), {
+            ...final,
+            periodo: final.estado === 'ACTIVA' ? final.periodo || 'MENSUAL' : '',
+            fechaFin: fin,
+            codigoPromocional: final.estado === 'ACTIVA' ? final.codigoPromocional.trim().toUpperCase() : '',
+          }),
         ),
       );
       this.editando.set(false);
