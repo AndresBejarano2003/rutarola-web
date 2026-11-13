@@ -376,6 +376,14 @@ Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar
 - Guards: `soloRoles(...)` en cada módulo (sin sesión → `/login?volver=<url>`; otro rol → la entrada de
   su sistema) y `soloInvitados` en el login. `volver` solo acepta rutas internas (`rutaInternaSegura`).
 - El login vive en `modulos.routes.ts` (no en `app.routes.ts`) porque en modo local consulta empleados.
+- **Entrada:** la raíz (`https://rutarola.netlify.app`) y cualquier ruta que no existe van a `/login`; con sesión, el
+  login lleva al inicio de su rol. En `app.routes.ts` la redirección `''` → `login` va ANTES de la ruta `''` con
+  `loadChildren` (si no, la URL vacía la acepta sin hijos y la pantalla queda en blanco). En Netlify, toda dirección
+  sin hash que no sea un archivo (`/cualquier-cosa`) redirige a `/` (`netlify.toml`).
+- **Animación del login:** cada vez que se abre el login, `<app-presentacion>` (`autenticacion/login/presentacion/`)
+  reproduce el logo a pantalla completa, silenciado (`public/videos/`: `rutarola-logo-9x16.mp4` en pantallas
+  verticales, `rutarola-logo-16x9-_1_.mp4` en horizontales) con botón "Saltar"; al terminar se desvanece y muestra
+  el login. Si el video no arranca en 5 s (red lenta, ahorro de energía) o pasa de 13 s, sigue al login.
 - La barra superior y el saludo del inicio muestran el usuario de la sesión.
 
 ### Ruta del día (`ruta-del-dia/`)

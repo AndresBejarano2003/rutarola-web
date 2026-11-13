@@ -1,9 +1,22 @@
 # Configuración de Netlify (tiene prioridad sobre la del panel).
 # Angular (builder "application") deja la app en dist/RutaRolaApp/browser; @netlify/angular-runtime
-# exige exactamente esa carpeta. Rutas con hash (#/...), así que no hace falta redirección de SPA.
+# exige exactamente esa carpeta. Rutas con hash (#/...): la redirección de abajo solo limpia direcciones inexistentes.
 [build]
   command = "npm run build"
   publish = "dist/RutaRolaApp/browser"
+
+# Las pantallas usan rutas con hash (#/...): cualquier otra dirección que no sea un archivo (p. ej. /cualquier-cosa)
+# vuelve a la raíz, que lleva al login (o al inicio de cada rol si ya hay sesión). Los archivos existentes no se tocan.
+[[redirects]]
+  from = "/*"
+  to = "/"
+  status = 302
+
+# Animaciones del login: el nombre no cambia con cada versión, así que caché de una semana.
+[[headers]]
+  for = "/videos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
 
 [build.environment]
   # Angular 21 requiere Node ^20.19 || ^22.12 || >=24

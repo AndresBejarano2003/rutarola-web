@@ -18,6 +18,7 @@ import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { SIN_PAGINAR, esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { AutenticacionRepositorio } from '../autenticacion-repositorio';
 import { ADMIN_LOCAL, CONTRASENA_DEMO } from '../credenciales-local';
+import { Presentacion } from './presentacion/presentacion';
 
 interface AccesoDemo {
   rol: RolUsuario;
@@ -41,7 +42,7 @@ const CARACTERISTICAS = [
 @Component({
   selector: 'app-login-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [Presentacion, ReactiveFormsModule, RouterLink],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
@@ -58,6 +59,8 @@ export default class LoginPage {
   protected readonly caracteristicas = CARACTERISTICAS;
   protected readonly anioActual = new Date().getFullYear();
   protected readonly modoLocal = esFuenteLocal(this.repositorio);
+  /** Animación de RutaRola antes de mostrar el login (cada vez que se abre). */
+  protected readonly presentando = signal(true);
   protected readonly mostrarContrasena = signal(false);
   private readonly campoContrasena = viewChild<ElementRef<HTMLInputElement>>('campoContrasena');
   protected readonly ingresando = signal(false);
