@@ -383,7 +383,9 @@ Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar
 - **Animación del login:** cada vez que se abre el login, `<app-presentacion>` (`autenticacion/login/presentacion/`)
   reproduce el logo a pantalla completa, silenciado (`public/videos/`: `rutarola-logo-9x16.mp4` en pantallas
   verticales, `rutarola-logo-16x9-_1_.mp4` en horizontales) con botón "Saltar"; al terminar se desvanece y muestra
-  el login. Si el video no arranca en 5 s (red lenta, ahorro de energía) o pasa de 13 s, sigue al login.
+  el login. Si el video no arranca en 5 s (red lenta, ahorro de energía), se queda cargando 2,5 s o pasa de 13 s,
+  sigue al login. `muted` va como PROPIEDAD y se llama a `play()`: el atributo que pone Angular no silencia el video
+  y Chrome de escritorio lo dejaba quieto en el primer cuadro.
 - La barra superior y el saludo del inicio muestran el usuario de la sesión.
 
 ### Ruta del día (`ruta-del-dia/`)

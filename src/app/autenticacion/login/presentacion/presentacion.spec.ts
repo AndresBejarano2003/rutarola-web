@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { MockInstance } from 'vitest';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from 'src/app/app.routes';
@@ -7,6 +8,52 @@ import { estabilizar, repositoriosDePrueba, simularDialogos } from 'src/app/shar
 import { Presentacion, VIDEO_HORIZONTAL, VIDEO_VERTICAL, videoPresentacion } from './presentacion';
 
 describe('Presentacion', () => {
+  // jsdom no reproduce video.
+  let play: MockInstance<() => Promise<void>>;
+  beforeEach(() => {
+    play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve());
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('silencia el video como propiedad y lo reproduce (Chrome de escritorio no lo hacía con el atributo)', async () => {
+    const fixture = TestBed.createComponent(Presentacion);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const video = fixture.nativeElement.querySelector('video') as HTMLVideoElement;
+    expect(video.muted).toBe(true);
+    expect(video.getAttribute('src')).toMatch(/^videos\/rutarola-logo-(16x9-_1_|9x16)\.mp4$/);
+    expect(play).toHaveBeenCalled();
+  });
+
+  it('pasa al login si el navegador no deja reproducir', async () => {
+    play.mockImplementation(() => Promise.reject(new DOMException('bloqueado', 'NotAllowedError')));
+    const fixture = TestBed.createComponent(Presentacion);
+    let termino = false;
+    fixture.componentInstance.termino.subscribe(() => (termino = true));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 450));
+    expect(termino).toBe(true);
+  });
+
+  it('pasa al login si el video se queda cargando a mitad', () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = TestBed.createComponent(Presentacion);
+      let termino = false;
+      fixture.componentInstance.termino.subscribe(() => (termino = true));
+      fixture.detectChanges();
+      const video = fixture.nativeElement.querySelector('video') as HTMLVideoElement;
+      video.dispatchEvent(new Event('playing'));
+      video.dispatchEvent(new Event('waiting'));
+      vi.advanceTimersByTime(2000);
+      expect(termino).toBe(false);
+      vi.advanceTimersByTime(1000);
+      expect(termino).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('elige el video según la forma de la pantalla', () => {
     expect(videoPresentacion(true)).toBe(VIDEO_VERTICAL);
     expect(videoPresentacion(false)).toBe(VIDEO_HORIZONTAL);
