@@ -1,3 +1,4 @@
+import { AvisoFuncion } from 'src/app/sistema/membresias/aviso-funcion/aviso-funcion';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -27,7 +28,7 @@ interface EstadoHistorial {
 @Component({
   selector: 'app-programacion-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [AvisoFuncion, 
     ProgramacionesFiltros,
     ProgramacionesTabla,
     ProgramacionFormulario,

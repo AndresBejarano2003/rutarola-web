@@ -31,6 +31,8 @@ import { ConfiguracionHttp } from "../inicio/configuracion/configuracion-http";
 import { ConfiguracionLocal } from "../inicio/configuracion/configuracion-local";
 import { ConfiguracionRepositorio } from "../inicio/configuracion/configuracion-repositorio";
 import { CentroNotificaciones } from "../inicio/notificaciones/centro-notificaciones";
+import { PlanEmpresa } from "./plan-empresa";
+import { GeneradorPdf } from "../shared/documentos-pdf/generador-pdf";
 import { NotificacionesHttp } from "../inicio/notificaciones/notificaciones-http";
 import { NotificacionesLocal } from "../inicio/notificaciones/notificaciones-local";
 import { NotificacionesRepositorio } from "../inicio/notificaciones/notificaciones-repositorio";
@@ -64,6 +66,12 @@ import { ConductoresRepositorio } from "../operacion/conductores/conductores-rep
 import { HistorialRecorridosHttp } from "../operacion/recorridos/historial-recorridos-http";
 import { HistorialRecorridosLocal } from "../operacion/recorridos/historial-recorridos-local";
 import { HistorialRecorridosRepositorio } from "../operacion/recorridos/historial-recorridos-repositorio";
+import { DocumentosVehiculoHttp } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-http";
+import { DocumentosVehiculoLocal } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-local";
+import { DocumentosVehiculoRepositorio } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-repositorio";
+import { AvisosAusenciaHttp } from "../operacion/avisos-ausencia/avisos-ausencia-http";
+import { AvisosAusenciaLocal } from "../operacion/avisos-ausencia/avisos-ausencia-local";
+import { AvisosAusenciaRepositorio } from "../operacion/avisos-ausencia/avisos-ausencia-repositorio";
 import { RutasHttp } from "../operacion/rutas/rutas-http";
 import { RutasLocal } from "../operacion/rutas/rutas-local";
 import { RutasRepositorio } from "../operacion/rutas/rutas-repositorio";
@@ -112,6 +120,7 @@ export function proveerRepositorios({
     // Operación
     api(ColegiosRepositorio, ColegiosLocal, ColegiosHttp),
     api(VehiculosRepositorio, VehiculosLocal, VehiculosHttp),
+    api(DocumentosVehiculoRepositorio, DocumentosVehiculoLocal, DocumentosVehiculoHttp),
     api(RutasRepositorio, RutasLocal, RutasHttp),
     api(AsignacionesRepositorio, AsignacionesLocal, AsignacionesHttp),
     api(ConductoresRepositorio, ConductoresLocal, ConductoresHttp),
@@ -120,6 +129,8 @@ export function proveerRepositorios({
       HistorialRecorridosLocal,
       HistorialRecorridosHttp,
     ),
+    // Avisos de ausencia de los acudientes (el administrador los ve en Asignaciones)
+    api(AvisosAusenciaRepositorio, AvisosAusenciaLocal, AvisosAusenciaHttp),
     // Finanzas
     api(CotizacionesRepositorio, CotizacionesLocal, CotizacionesHttp),
     api(FacturasRepositorio, FacturasLocal, FacturasHttp),
@@ -134,6 +145,10 @@ export function proveerRepositorios({
     // compartido de la campana y la página; va aquí porque necesita estos repositorios.
     api(NotificacionesRepositorio, NotificacionesLocal, NotificacionesHttp),
     CentroNotificaciones,
+    // Plan de la empresa compartido por el shell, el menú y las guardias por función del plan.
+    PlanEmpresa,
+    // PDF de facturas, recibos y cotizaciones con el formato de la empresa.
+    GeneradorPdf,
     // Acceso (el login local resuelve el rol con los empleados) y ruta del día de conductores/monitoras
     api(AutenticacionRepositorio, AutenticacionLocal, AutenticacionHttp),
     api(RecorridosRepositorio, RecorridosLocal, RecorridosHttp),

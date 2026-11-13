@@ -6,7 +6,7 @@
     </nav>
 
     <header class="text-center max-w-3xl mx-auto">
-      <h1 class="text-3xl sm:text-5xl font-bold">Prueba RutaRola <span class="text-primary">{{ mesesPrueba }} meses gratis</span></h1>
+      <h1 class="text-3xl sm:text-5xl font-bold">Prueba RutaRola <span class="text-primary">{{ diasPrueba() }} días gratis</span></h1>
       <p class="text-base-content/70 mt-4 text-lg">
         Todo el plan Profesional desde el primer día: ruta del día, asistencia, GPS en vivo para las familias, facturación y recordatorios de cobro.
         Sin tarjeta y sin permanencia.
@@ -29,12 +29,12 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
       @for (p of planes; track p.id) {
-        <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [textoBoton]="p.precioMensual === 0 ? 'Empezar gratis' : 'Probar ' + mesesPrueba + ' meses gratis'"
-          (elegir)="registrarse()" />
+        <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [textoBoton]="p.precioMensual === 0 ? 'Probar ' + diasPrueba() + ' días gratis' : 'Pagar ahora, sin prueba'"
+          (elegir)="p.precioMensual === 0 ? registrarse() : pagarAhora(p)" />
       }
     </div>
     <p class="text-center text-sm text-base-content/70">
-      Precios en COP con IVA incluido. Al terminar la prueba eliges un plan o sigues en Gratis con todos tus datos.
+      Precios en COP con IVA incluido. Al terminar la prueba eliges un plan o sigues en Gratis con todos tus datos. Si ya sabes qué plan quieres, puedes pagarlo de una vez.
     </p>
   </div>
 </div>

@@ -6,15 +6,19 @@ import { DatosRegistro, ESTADOS_REGISTRO, EstadoRegistro, ModoFormulario } from 
 import { mensajeError, placa } from 'src/app/shared/formularios/formularios';
 import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busqueda';
 import { BadgeVencimiento } from 'src/app/shared/vencimiento/vencimiento';
+import { CampoFoto } from 'src/app/shared/foto/campo-foto';
 import { DOCUMENTOS_VEHICULO, TIPOS_VEHICULO, TipoVehiculo, Vehiculo } from '../vehiculo';
 
 const ANIO_ACTUAL = new Date().getFullYear();
 
-/** Datos del vehículo y vencimiento de sus documentos. Botones en el pie del modal. */
+/**
+ * Foto y datos del vehículo y vencimiento de sus documentos (cambiar una fecha agrega el registro al historial de
+ * documentos). Botones en el pie del modal.
+ */
 @Component({
   selector: 'app-vehiculo-formulario',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectorBusqueda, Campo, TituloSeccion, BadgeVencimiento],
+  imports: [ReactiveFormsModule, SelectorBusqueda, Campo, TituloSeccion, BadgeVencimiento, CampoFoto],
   templateUrl: './vehiculo-formulario.html',
 })
 export class VehiculoFormulario {
@@ -45,6 +49,7 @@ export class VehiculoFormulario {
     vencimientoPolizas: ['', Validators.required],
     estado: this.fb.control<EstadoRegistro>('ACTIVO', Validators.required),
     observaciones: ['', Validators.maxLength(500)],
+    foto: [''],
   });
 
   /** Valores en vivo para mostrar el estado de cada documento al lado de la fecha. */
@@ -55,7 +60,7 @@ export class VehiculoFormulario {
       const vehiculo = this.vehiculo();
       if (vehiculo) {
         const { id: _id, fechaCreacion: _c, fechaActualizacion: _a, ...datos } = vehiculo;
-        this.form.reset(datos);
+        this.form.reset({ ...datos, foto: datos.foto ?? '' });
       } else {
         this.form.reset();
       }

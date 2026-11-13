@@ -16,6 +16,8 @@ import { ModoFormulario } from '../crud/crud';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-wrap items-center justify-end gap-2' },
   template: `
+    <!-- Acciones extra del registro (p. ej. "Descargar PDF"), a la izquierda de Cerrar. -->
+    <ng-content />
     <button type="button" class="btn btn-ghost" [disabled]="guardando()" (click)="cancelar.emit()">
       {{ soloLectura() ? 'Cerrar' : 'Cancelar' }}
     </button>

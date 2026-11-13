@@ -7,7 +7,7 @@
       textoNuevo="Registrar pago" (nuevo)="nuevo()" (reintentar)="store.recargar()" />
 
     <app-recibos-tabla [recibos]="store.items()" [cargando]="store.cargando()" [hayFiltros]="store.hayFiltros()"
-      (consultar)="abrir('consultar', $event)" (editar)="abrir('editar', $event)" (eliminar)="pedirEliminar($event)" (crear)="nuevo()" />
+      (consultar)="abrir('consultar', $event)" (editar)="abrir('editar', $event)" (eliminar)="pedirEliminar($event)" (crear)="nuevo()" (pdf)="descargarPdf($event)" />
 
     <app-paginacion [pagina]="store.paginacion().pagina" [tamano]="store.paginacion().tamano" [total]="store.total()"
       [totalPaginas]="store.totalPaginas()" (cambiarPagina)="store.irAPagina($event)" (cambiarTamano)="store.cambiarTamano($event)" />
@@ -29,7 +29,13 @@
   }
   @if (modalAbierto()) {
     <app-acciones-formulario pie formulario="form-recibo" [modo]="modo()" [guardando]="store.guardando()"
-      [bloqueado]="cargandoDetalle()" textoCrear="Registrar pago" (cancelar)="modalAbierto.set(false)" (editar)="modo.set('editar')" />
+      [bloqueado]="cargandoDetalle()" textoCrear="Registrar pago" (cancelar)="modalAbierto.set(false)" (editar)="modo.set('editar')">
+      @if (modo() === 'consultar' && seleccionado(); as registro) {
+        <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="descargarPdf(registro)">
+          <i class="fa-solid fa-file-pdf text-info" aria-hidden="true"></i> Descargar PDF
+        </button>
+      }
+    </app-acciones-formulario>
   }
 </app-modal>
 

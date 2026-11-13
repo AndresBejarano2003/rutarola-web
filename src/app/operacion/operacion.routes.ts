@@ -1,3 +1,4 @@
+import { conFuncion } from 'src/app/core/plan-empresa';
 import { Routes } from '@angular/router';
 
 // Los repositorios (local / API) se eligen en `core/repositorios.ts`.
@@ -34,6 +35,7 @@ export default [
   },
   {
     path: 'monitoreo',
+    canActivate: [conFuncion('GPS_EN_VIVO')],
     loadComponent: () => import('./monitoreo/monitoreo-page'),
     data: { breadcrumb: ['Operación', 'Monitoreo en vivo'] },
   },

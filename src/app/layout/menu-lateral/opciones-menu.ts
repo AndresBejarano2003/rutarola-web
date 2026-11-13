@@ -1,5 +1,9 @@
+import { FuncionPlan } from 'src/app/sistema/membresias/suscripcion';
+
 export interface OpcionMenu {
   icono: string;
+  /** La pantalla depende del plan: sin la función, el menú muestra un candado con el plan desde el que está. */
+  funcion?: FuncionPlan;
   etiqueta: string;
   /** Opcional en los grupos que solo despliegan `hijos`. */
   ruta?: string;
@@ -35,11 +39,13 @@ export const MENU_OPERATIVO: OpcionMenu[] = [
         icono: 'fa-solid fa-calendar-check',
         etiqueta: 'Programación de facturación',
         ruta: '/finanzas/programacion-facturacion',
+        funcion: 'RECORDATORIOS',
       },
       { icono: 'fa-brands fa-whatsapp', etiqueta: 'Mensajes de WhatsApp', ruta: '/finanzas/mensajes-whatsapp' },
       {
         icono: 'fa-solid fa-chart-line',
         etiqueta: 'Reportes financieros',
+        funcion: 'REPORTES',
         hijos: [
           { icono: 'fa-solid fa-dollar-sign', etiqueta: 'Ingresos', ruta: '/finanzas/reportes-financieros/ingresos' },
           {
@@ -66,7 +72,7 @@ export const MENU_OPERATIVO: OpcionMenu[] = [
       { icono: 'fa-solid fa-id-badge', etiqueta: 'Conductores', ruta: '/operacion/conductores' },
       { icono: 'fa-solid fa-diagram-project', etiqueta: 'Asignaciones', ruta: '/operacion/asignaciones' },
       { icono: 'fa-solid fa-clock-rotate-left', etiqueta: 'Recorridos', ruta: '/operacion/recorridos' },
-      { icono: 'fa-solid fa-map-location-dot', etiqueta: 'Monitoreo en vivo', ruta: '/operacion/monitoreo' },
+      { icono: 'fa-solid fa-map-location-dot', etiqueta: 'Monitoreo en vivo', ruta: '/operacion/monitoreo', funcion: 'GPS_EN_VIVO' },
     ],
   },
 ];

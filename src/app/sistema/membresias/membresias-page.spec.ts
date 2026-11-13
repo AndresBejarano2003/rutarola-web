@@ -70,7 +70,7 @@ describe('Planes y membresías', () => {
     const fixture = TestBed.createComponent(PlanesPublicosPage);
     await estabilizar(fixture);
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('3 meses gratis');
+    expect(el.textContent).toContain('15 días gratis');
     expect(el.querySelectorAll('app-tarjeta-plan').length).toBe(4);
   });
 

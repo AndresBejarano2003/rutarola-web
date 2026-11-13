@@ -90,6 +90,13 @@
               <i class="fa-solid fa-van-shuttle text-base-content/60 mt-0.5 w-4" aria-hidden="true"></i>
               <dd><span class="font-medium">{{ ruta.vehiculo }}</span> · {{ ruta.estudiantes }} {{ ruta.estudiantes === 1 ? 'estudiante' : 'estudiantes' }}</dd>
             </div>
+            @if (ruta.avisosAusencia) {
+              <div class="flex items-center gap-2 sm:col-span-2 text-warning">
+                <dt class="sr-only">Avisos de ausencia</dt>
+                <i class="fa-solid fa-user-slash mt-0.5 w-4" aria-hidden="true"></i>
+                <dd>{{ ruta.avisosAusencia === 1 ? '1 acudiente avisó' : ruta.avisosAusencia + ' acudientes avisaron' }} que su estudiante no viaja hoy</dd>
+              </div>
+            }
             @if (ruta.companero; as companero) {
               <div class="flex items-center gap-2 sm:col-span-2">
                 <dt class="sr-only">{{ companero.rol === 'MONITORA' ? 'Monitora' : 'Conductor' }}</dt>

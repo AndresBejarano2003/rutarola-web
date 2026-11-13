@@ -41,6 +41,7 @@ import {
 } from 'src/app/sistema/soporte/tickets/tickets';
 import { TicketsRepositorio } from 'src/app/sistema/soporte/tickets/tickets-repositorio';
 import { EmpresasRepositorio } from '../empresas/empresas-repositorio';
+import { FILTROS_EMPRESA_VACIOS } from '../empresas/empresa';
 import { BandejaTicketsStore, FILTROS_BANDEJA_INICIALES } from './bandeja-tickets-store';
 
 type Pestana = 'avanzar' | 'responder' | 'asignar' | 'reunion';
@@ -98,7 +99,7 @@ export default class SoportePlataformaPage implements OnInit {
   protected readonly nombreTipo = nombreTipo;
 
   protected readonly opcionesEmpresa = toSignal(
-    this.empresas.listar({ texto: '', estado: '' }, { pagina: 1, tamano: 1000 }).pipe(
+    this.empresas.listar(FILTROS_EMPRESA_VACIOS, { pagina: 1, tamano: 1000 }).pipe(
       map((p) => p.items.map((e) => ({ id: e.id, nombre: e.nombre }))),
       catchError(() => of([])),
     ),

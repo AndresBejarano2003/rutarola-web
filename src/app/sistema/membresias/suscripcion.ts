@@ -1,7 +1,8 @@
 /**
  * Planes y suscripción de la empresa (contrato: `Application/Suscripciones` del API).
- * Quien se registra tiene 3 meses del plan Profesional; al terminar sin pagar pasa a Gratis (conserva sus
- * datos; solo se limita crear o activar vehículos y estudiantes por encima del plan). El anual = 10 meses.
+ * Quien se registra tiene los días de prueba del plan Profesional que fija la plataforma (15 por defecto; cada
+ * empresa conserva los que recibió). Al vencer la prueba o el plan pagado, al entrar el administrador elige pagar
+ * o seguir en Gratis; en Gratis (o al bajar de plan) se inactiva lo que supere los límites. El anual = 10 meses.
  */
 export type PlanSuscripcion = 'GRATIS' | 'ESENCIAL' | 'PROFESIONAL' | 'EMPRESARIAL';
 export type EstadoSuscripcion = 'PRUEBA' | 'ACTIVA' | 'GRATIS';
@@ -14,7 +15,18 @@ export const FUNCIONES_PLAN = {
   RECORDATORIOS: 'RECORDATORIOS',
   SOPORTE_PRIORITARIO: 'SOPORTE_PRIORITARIO',
   ACOMPANAMIENTO: 'ACOMPANAMIENTO',
+  REPORTES: 'REPORTES',
 } as const;
+export type FuncionPlan = (typeof FUNCIONES_PLAN)[keyof typeof FUNCIONES_PLAN];
+
+/** Para los mensajes "Tu plan Gratis no incluye …" (igual que `FuncionPlan.Nombre`). */
+export const NOMBRES_FUNCION: Record<FuncionPlan, string> = {
+  GPS_EN_VIVO: 'el GPS en vivo',
+  RECORDATORIOS: 'los recordatorios automáticos de cobro',
+  SOPORTE_PRIORITARIO: 'el soporte prioritario',
+  ACOMPANAMIENTO: 'el acompañamiento',
+  REPORTES: 'los reportes financieros',
+};
 
 /** `null` = sin límite. */
 export interface LimitesPlan {
@@ -50,6 +62,69 @@ export interface Suscripcion {
   funciones: string[];
   pagosEnLinea: boolean;
   nota: string;
+  /** Venció la prueba o el plan (o se registró para pagar de una vez): al entrar, pagar o seguir en Gratis. */
+  pendienteDecision: boolean;
+  /** Plan que venció (`''` si no aplica) y cuándo. */
+  planVencido: PlanSuscripcion | '';
+  fechaVencimiento: string | null;
+  /** Días de prueba que recibió la empresa al registrarse (0 = sin prueba o anterior). */
+  diasPrueba: number;
+}
+
+/** "Continuar con el plan Gratis": lo que quedó inactivo por superar los límites. */
+export interface DecisionGratis {
+  suscripcion: Suscripcion;
+  inactivados: { vehiculos: string[]; estudiantes: number };
+}
+
+/** `GET /suscripcion/condiciones` (público). */
+export interface CondicionesRegistro {
+  diasPrueba: number;
+  planPrueba: PlanSuscripcion;
+  nombrePlanPrueba: string;
+}
+
+/** Parámetro global de la plataforma (Plataforma › Ajustes). */
+export interface ParametroPlataforma {
+  clave: string;
+  nombre: string;
+  descripcion: string;
+  valor: string;
+  minimo: number;
+  maximo: number;
+}
+
+export const CLAVE_DIAS_PRUEBA = 'suscripcion.dias_prueba';
+
+/** Situación de la membresía en la tabla de la plataforma (`ServicioSuscripcion.Situacion`). */
+export type SituacionMembresia = 'PRUEBA' | 'PRUEBA_POR_VENCER' | 'ACTIVA' | 'POR_VENCER' | 'VENCIDA' | 'GRATIS';
+
+export interface MembresiaEmpresa {
+  plan: PlanSuscripcion;
+  nombrePlan: string;
+  estado: EstadoSuscripcion;
+  situacion: SituacionMembresia;
+  periodo: PeriodoPago | '';
+  fechaInicio: string;
+  fechaFin: string | null;
+  diasRestantes: number | null;
+  diasPrueba: number;
+  planVencido: PlanSuscripcion | '';
+  fechaVencimiento: string | null;
+  fechaUltimoPago: string | null;
+}
+
+export const SITUACIONES_MEMBRESIA: { id: SituacionMembresia; nombre: string; badge: string; icono: string; descripcion: string }[] = [
+  { id: 'PRUEBA', nombre: 'En prueba', badge: 'badge-info', icono: 'fa-solid fa-flask', descripcion: 'Prueba gratuita vigente' },
+  { id: 'PRUEBA_POR_VENCER', nombre: 'Prueba por vencer', badge: 'badge-warning', icono: 'fa-solid fa-hourglass-half', descripcion: 'Le quedan 3 días o menos' },
+  { id: 'ACTIVA', nombre: 'Al día', badge: 'badge-success', icono: 'fa-solid fa-circle-check', descripcion: 'Plan pagado vigente' },
+  { id: 'POR_VENCER', nombre: 'Por vencer', badge: 'badge-warning', icono: 'fa-solid fa-clock', descripcion: 'Vence en 7 días o menos' },
+  { id: 'VENCIDA', nombre: 'Se pasó el pago', badge: 'badge-error', icono: 'fa-solid fa-circle-exclamation', descripcion: 'Venció y no ha pagado ni elegido Gratis' },
+  { id: 'GRATIS', nombre: 'Gratis', badge: 'bg-base-300', icono: 'fa-solid fa-seedling', descripcion: 'Eligió seguir en el plan Gratis' },
+];
+
+export function situacionMembresia(id: SituacionMembresia) {
+  return SITUACIONES_MEMBRESIA.find((s) => s.id === id) ?? SITUACIONES_MEMBRESIA[0];
 }
 
 export interface PagoSuscripcion {
@@ -88,7 +163,8 @@ export interface AjusteSuscripcion {
   codigoPromocional?: string;
 }
 
-export const MESES_PRUEBA = 3;
+/** Días de prueba por defecto (la plataforma los cambia; `GET /suscripcion/condiciones`). */
+export const DIAS_PRUEBA_POR_DEFECTO = 15;
 export const MESES_PAGADOS_POR_ANIO = 10;
 
 const BASE = [
@@ -97,6 +173,7 @@ const BASE = [
   'Facturas, recibos y estado de cuenta',
   'Portal del acudiente con sus pagos y estudiantes',
   'Alertas de documentos y licencias por vencer',
+  'Tablero con indicadores del mes',
 ];
 
 /** Copia del catálogo del API (`CatalogoPlanes.cs`) para el modo local y mientras carga. */
@@ -122,12 +199,11 @@ export const PLANES: Plan[] = [
     precioDesde: false,
     destacado: false,
     limites: { vehiculos: 5, estudiantes: 120 },
-    funciones: [FUNCIONES_PLAN.RECORDATORIOS],
+    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.REPORTES],
     incluye: [
       'Todo lo del plan Gratis',
       'Recordatorios automáticos de cobro por correo y WhatsApp',
       'Reportes de ingresos, cartera y morosos con exportación a CSV',
-      'Tablero con indicadores del mes',
     ],
   },
   {
@@ -139,7 +215,7 @@ export const PLANES: Plan[] = [
     precioDesde: false,
     destacado: true,
     limites: { vehiculos: 15, estudiantes: 400 },
-    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO],
+    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.REPORTES, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO],
     incluye: [
       'Todo lo del plan Esencial',
       'GPS en vivo desde los teléfonos del conductor y la monitora',
@@ -157,7 +233,7 @@ export const PLANES: Plan[] = [
     precioDesde: true,
     destacado: false,
     limites: { vehiculos: null, estudiantes: null },
-    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO, FUNCIONES_PLAN.ACOMPANAMIENTO],
+    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.REPORTES, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO, FUNCIONES_PLAN.ACOMPANAMIENTO],
     incluye: [
       'Todo lo del plan Profesional',
       'Vehículos y estudiantes sin límite',
@@ -185,6 +261,22 @@ export const ESTADOS_PAGO: Record<EstadoPagoSuscripcion, { nombre: string; badge
 
 export function nombrePlan(plan: PlanSuscripcion): string {
   return PLANES.find((p) => p.id === plan)?.nombre ?? plan;
+}
+
+/** El plan más barato que incluye la función. */
+export function planDesdeConFuncion(funcion: FuncionPlan, planes: Plan[] = PLANES): Plan {
+  return planes.find((p) => p.funciones.includes(funcion)) ?? planes[planes.length - 1];
+}
+
+/** "Tu plan Gratis no incluye los reportes financieros. Está disponible desde el plan Esencial." */
+export function mensajeFuncionBloqueada(funcion: FuncionPlan, planActual: string): string {
+  return `Tu plan ${planActual} no incluye ${NOMBRES_FUNCION[funcion]}. Está disponible desde el plan ${planDesdeConFuncion(funcion).nombre}.`;
+}
+
+/** Cuánto quedaría inactivo al pasar a `plan` con el uso actual (se conservan primero los que están en uso). */
+export function excedentes(s: Pick<Suscripcion, 'uso'>, plan: Plan): { vehiculos: number; estudiantes: number } {
+  const sobra = (usados: number, limite: number | null) => (limite === null ? 0 : Math.max(0, usados - limite));
+  return { vehiculos: sobra(s.uso.vehiculos, plan.limites.vehiculos), estudiantes: sobra(s.uso.estudiantes, plan.limites.estudiantes) };
 }
 
 /** Valor mensual equivalente del plan anual (para mostrar el ahorro). */

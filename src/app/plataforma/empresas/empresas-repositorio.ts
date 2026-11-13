@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { Empresa } from 'src/app/inicio/configuracion/configuracion';
 import { RepositorioLectura } from 'src/app/shared/crud/repositorio-crud';
-import { AdministradorEmpresa, FiltrosEmpresa, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
+import { AdministradorEmpresa, FiltrosEmpresa, ResumenMembresias, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
 
 /**
  * Empresas de transporte de la plataforma (solo SUPER_ADMIN). No se eliminan: se dejan INACTIVAS
@@ -10,6 +10,8 @@ import { AdministradorEmpresa, FiltrosEmpresa, SolicitudAdministrador, Solicitud
 export abstract class EmpresasRepositorio extends RepositorioLectura<Empresa, FiltrosEmpresa> {
   abstract crear(solicitud: SolicitudEmpresa): Observable<Empresa>;
   abstract actualizar(id: string, solicitud: SolicitudEmpresa): Observable<Empresa>;
+  /** Cuántas empresas hay en cada situación de membresía (tarjetas de la plataforma). */
+  abstract resumenMembresias(): Observable<ResumenMembresias>;
 
   // Administradores de cada empresa (la plataforma los ve y les restablece la contraseña).
   abstract administradores(empresaId: string): Observable<AdministradorEmpresa[]>;

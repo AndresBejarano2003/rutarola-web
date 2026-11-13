@@ -51,7 +51,13 @@ import { Factura, mesesFactura, totalFactura } from '../factura';
                 <td class="hidden @6xl:table-cell text-right whitespace-nowrap">{{ total(f) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
                 <td><app-badge-estado [estado]="f.estado" textoActivo="Vigente" textoInactivo="Anulada" /></td>
                 <td class="text-right whitespace-nowrap">
-                  <app-acciones-fila (consultar)="consultar.emit(f)" (editar)="editar.emit(f)" (eliminar)="eliminar.emit(f)" />
+                  <app-acciones-fila (consultar)="consultar.emit(f)" (editar)="editar.emit(f)" (eliminar)="eliminar.emit(f)">
+                    <div class="tooltip tooltip-left" data-tip="Descargar PDF">
+                      <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Descargar PDF" (click)="pdf.emit(f)">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </app-acciones-fila>
                 </td>
               </tr>
             } @empty {
@@ -76,6 +82,8 @@ export class FacturasTabla {
   readonly consultar = output<Factura>();
   readonly editar = output<Factura>();
   readonly eliminar = output<Factura>();
+  /** Descargar el PDF con el formato de la empresa. */
+  readonly pdf = output<Factura>();
   readonly crear = output<void>();
 
   protected readonly nombrePeriodo = nombrePeriodo;

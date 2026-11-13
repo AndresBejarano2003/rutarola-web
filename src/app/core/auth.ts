@@ -58,8 +58,8 @@ export interface Sesion {
   imagen: string;
   /** ISO de inicio de sesión. */
   inicio: string;
-  /** Empresa de transporte del usuario (solo con API). */
-  empresa?: { id: string; nombre: string } | null;
+  /** Empresa de transporte del usuario (solo con API); `tema` = apariencia que eligió la empresa. */
+  empresa?: { id: string; nombre: string; tema?: 'OSCURO' | 'CLARO' } | null;
   /** Permisos `modulo.accion` del rol (solo con API). */
   permisos?: string[];
   /** Solo con API; ausente en modo local. */
@@ -119,6 +119,15 @@ export class AuthService {
     const actual = this._sesion();
     if (!actual) return;
     const sesion = { ...actual, ...cambios };
+    guardar(almacenDeSesion() ?? sessionStorage, sesion);
+    this._sesion.set(sesion);
+  }
+
+  /** El administrador cambió el tema de la empresa: queda en la sesión (si la sesión trae empresa). */
+  actualizarEmpresa(cambios: { tema: 'OSCURO' | 'CLARO' }): void {
+    const actual = this._sesion();
+    if (!actual?.empresa || actual.empresa.tema === cambios.tema) return;
+    const sesion = { ...actual, empresa: { ...actual.empresa, ...cambios } };
     guardar(almacenDeSesion() ?? sessionStorage, sesion);
     this._sesion.set(sesion);
   }

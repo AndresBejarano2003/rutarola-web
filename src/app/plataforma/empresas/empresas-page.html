@@ -1,10 +1,30 @@
+<section aria-label="Membresías de las empresas" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+  @for (s of situaciones; track s.id) {
+    <button type="button" class="card bg-base-200 border shadow-xl p-3 text-left gap-1 hover:border-primary focus-visible:outline-2 cursor-pointer"
+      [class.border-primary]="filtros.controls.membresia.value === s.id" [class.border-base-300]="filtros.controls.membresia.value !== s.id"
+      [attr.aria-pressed]="filtros.controls.membresia.value === s.id" (click)="filtrarSituacion(s.id)" [title]="s.descripcion">
+      <span class="flex items-center justify-between gap-2 text-sm text-base-content/80">
+        <span class="truncate">{{ s.nombre }}</span>
+        <span class="badge badge-sm badge-soft {{ s.badge }}"><i [class]="s.icono" aria-hidden="true"></i></span>
+      </span>
+      @if (resumen()) {
+        <span class="text-2xl font-bold">{{ conteo(s.id) }}</span>
+      } @else {
+        <span class="skeleton bg-base-300 h-8 w-10"></span>
+      }
+    </button>
+  }
+</section>
+
 <form [formGroup]="filtros" class="card bg-base-200 border border-base-300 shadow-xl">
   <app-panel-filtros (limpiar)="filtros.reset()">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2 md:col-span-2 xl:col-span-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2 md:col-span-2">
         <i class="fa-solid fa-magnifying-glass text-base-content/60" aria-hidden="true"></i>
         <input type="search" formControlName="texto" class="grow" placeholder="Nombre o NIT..." aria-label="Buscar empresa" />
       </label>
+      <app-selector-busqueda formControlName="membresia" [opciones]="situaciones" textoTodos="Todas las membresías" etiqueta="Membresía" />
+      <app-selector-busqueda formControlName="plan" [opciones]="planes" textoTodos="Todos los planes" etiqueta="Plan" />
       <app-selector-busqueda formControlName="estado" [opciones]="estados" textoTodos="Todos los estados" etiqueta="Estado" />
     </div>
   </app-panel-filtros>
@@ -25,10 +45,11 @@
         <thead>
           <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
             <th>Empresa</th>
+            <th>Membresía</th>
             <th class="hidden @3xl:table-cell">NIT</th>
-            <th class="hidden @5xl:table-cell">Ciudad</th>
-            <th class="hidden @6xl:table-cell">Correo</th>
-            <th>Estado</th>
+            <th class="hidden @5xl:table-cell">Último pago</th>
+            <th class="hidden @6xl:table-cell">Ciudad</th>
+            <th class="hidden @3xl:table-cell">Estado</th>
             <th class="text-right">Acciones</th>
           </tr>
         </thead>
@@ -36,7 +57,7 @@
           @if (store.cargando() && store.items().length === 0) {
             @for (fila of [1, 2, 3]; track fila) {
               <tr class="border-base-300">
-                @for (col of [1, 2, 3, 4, 5, 6]; track col) {
+                @for (col of [1, 2, 3, 4, 5, 6, 7]; track col) {
                   <td><div class="skeleton bg-base-300 h-4 w-full"></div></td>
                 }
               </tr>
@@ -48,10 +69,30 @@
                   <div class="font-medium">{{ e.nombre }}</div>
                   <div class="text-xs text-base-content/70">Desde {{ fecha(e.fechaCreacion) }}</div>
                 </td>
+                <td>
+                  @if (e.membresia; as m) {
+                    @let s = situacionMembresia(m.situacion);
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">{{ m.nombrePlan }}</span>
+                      <span class="badge badge-sm badge-soft {{ s.badge }}" [title]="s.descripcion">
+                        <i [class]="s.icono" aria-hidden="true"></i> {{ s.nombre }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-base-content/70">
+                      Desde {{ m.fechaInicio | date: 'd MMM y' }}
+                      @if (m.situacion === 'PRUEBA' || m.situacion === 'PRUEBA_POR_VENCER') { · prueba de {{ m.diasPrueba }} días }
+                      @if (m.periodo) { · {{ m.periodo === 'ANUAL' ? 'anual' : 'mensual' }} }
+                    </div>
+                    <div class="text-xs" [class.text-error]="m.situacion === 'VENCIDA'" [class.text-warning]="m.situacion === 'POR_VENCER' || m.situacion === 'PRUEBA_POR_VENCER'"
+                      [class.text-base-content/70]="m.situacion !== 'VENCIDA' && m.situacion !== 'POR_VENCER' && m.situacion !== 'PRUEBA_POR_VENCER'">{{ vigencia(m) }}</div>
+                  } @else {
+                    <span class="text-sm text-base-content/70">—</span>
+                  }
+                </td>
                 <td class="hidden @3xl:table-cell font-mono text-sm">{{ e.nit }}</td>
-                <td class="hidden @5xl:table-cell text-sm">{{ e.ciudad || '—' }}</td>
-                <td class="hidden @6xl:table-cell text-sm">{{ e.email || '—' }}</td>
-                <td><app-badge-estado [estado]="e.estado" textoActivo="Activa" textoInactivo="Inactiva" /></td>
+                <td class="hidden @5xl:table-cell text-sm">{{ e.membresia?.fechaUltimoPago ? (e.membresia!.fechaUltimoPago | date: 'd MMM y') : 'Nunca' }}</td>
+                <td class="hidden @6xl:table-cell text-sm">{{ e.ciudad || '—' }}</td>
+                <td class="hidden @3xl:table-cell"><app-badge-estado [estado]="e.estado" textoActivo="Activa" textoInactivo="Inactiva" /></td>
                 <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
                   <div class="tooltip tooltip-left" data-tip="Consultar">
                     <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Consultar"
@@ -65,7 +106,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="6">
+                <td colspan="7">
                   <app-estado-vacio icono="fa-solid fa-building" mensaje="Aún no hay empresas registradas." textoCrear="Registrar la primera"
                     [hayFiltros]="store.hayFiltros()" (crear)="nueva()" />
                 </td>
@@ -138,7 +179,7 @@
     </form>
     @if (modo() !== 'crear' && seleccionada(); as e) {
       <app-administradores-empresa [empresaId]="e.id" />
-      <app-suscripcion-empresa [empresaId]="e.id" />
+      <app-suscripcion-empresa [empresaId]="e.id" (cambio)="membresiaCambio()" />
     }
     </div>
   }

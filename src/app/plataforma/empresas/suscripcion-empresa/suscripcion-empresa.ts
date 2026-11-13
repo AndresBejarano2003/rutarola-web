@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -40,6 +40,8 @@ function fechaLocal(iso: string | null): string {
 })
 export class SuscripcionEmpresa {
   readonly empresaId = input.required<string>();
+  /** Se ajustó el plan (la tabla de empresas refresca su membresía). */
+  readonly cambio = output<void>();
 
   private readonly repositorio = inject(SuscripcionRepositorio);
   private readonly avisos = inject(NotificacionesService);
@@ -131,6 +133,7 @@ export class SuscripcionEmpresa {
       );
       this.editando.set(false);
       this.avisos.exito('Plan de la empresa actualizado.');
+      this.cambio.emit();
     } catch (e) {
       this.avisos.error(mensajeDeError(e));
     } finally {

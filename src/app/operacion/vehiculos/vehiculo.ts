@@ -22,6 +22,8 @@ export interface Vehiculo extends Entidad {
   vencimientoPolizas: string;
   estado: EstadoRegistro;
   observaciones: string;
+  /** Foto del vehículo (data URL JPEG cuadrada de 256 px, `''` = sin foto). */
+  foto?: string;
 }
 
 export interface FiltrosVehiculo {
@@ -47,6 +49,21 @@ export const DOCUMENTOS_VEHICULO = [
   { campo: 'vencimientoTarjetaOperacion', nombre: 'Tarjeta de operación' },
   { campo: 'vencimientoPolizas', nombre: 'Pólizas RCC / RCE' },
 ] as const;
+
+export type TipoDocumentoVehiculo = 'SOAT' | 'TECNOMECANICA' | 'TARJETA_OPERACION' | 'POLIZAS' | 'OTRO';
+
+/** Tipos del historial; cada uno (menos OTRO) mantiene el vencimiento del vehículo con su registro más reciente. */
+export const TIPOS_DOCUMENTO_VEHICULO: { id: TipoDocumentoVehiculo; nombre: string; campo: (typeof DOCUMENTOS_VEHICULO)[number]['campo'] | null }[] = [
+  { id: 'SOAT', nombre: 'SOAT', campo: 'vencimientoSoat' },
+  { id: 'TECNOMECANICA', nombre: 'Revisión técnico-mecánica', campo: 'vencimientoTecnomecanica' },
+  { id: 'TARJETA_OPERACION', nombre: 'Tarjeta de operación', campo: 'vencimientoTarjetaOperacion' },
+  { id: 'POLIZAS', nombre: 'Pólizas RCC / RCE', campo: 'vencimientoPolizas' },
+  { id: 'OTRO', nombre: 'Otro documento', campo: null },
+];
+
+export function nombreTipoDocumento(tipo: TipoDocumentoVehiculo): string {
+  return TIPOS_DOCUMENTO_VEHICULO.find((t) => t.id === tipo)?.nombre ?? tipo;
+}
 
 export function estadoDocumentos(v: Vehiculo) {
   return peorVencimiento(DOCUMENTOS_VEHICULO.map((d) => v[d.campo]));

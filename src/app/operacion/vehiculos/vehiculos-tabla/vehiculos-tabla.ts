@@ -3,13 +3,14 @@ import { AccionesFila } from 'src/app/shared/acciones-fila/acciones-fila';
 import { BadgeEstado } from 'src/app/shared/badge-estado/badge-estado';
 import { aMapa } from 'src/app/shared/catalogos/catalogos';
 import { EstadoVacio } from 'src/app/shared/estado-vacio/estado-vacio';
+import { Avatar } from 'src/app/shared/foto/avatar';
 import { BadgeVencimiento } from 'src/app/shared/vencimiento/vencimiento';
 import { TIPOS_VEHICULO, Vehiculo, estadoDocumentos } from '../vehiculo';
 
 @Component({
   selector: 'app-vehiculos-tabla',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AccionesFila, BadgeEstado, BadgeVencimiento, EstadoVacio],
+  imports: [AccionesFila, Avatar, BadgeEstado, BadgeVencimiento, EstadoVacio],
   template: `
     <div class="@container overflow-x-auto rounded-box border border-base-300">
       <table class="table">
@@ -38,6 +39,13 @@ import { TIPOS_VEHICULO, Vehiculo, estadoDocumentos } from '../vehiculo';
               <tr class="border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors" (click)="consultar.emit(vehiculo)">
                 <td>
                   <div class="flex items-center gap-3">
+                    @if (vehiculo.foto) {
+                      <app-avatar [foto]="vehiculo.foto" [alt]="'Foto del vehículo ' + vehiculo.placa" tamano="md" />
+                    } @else {
+                      <span class="w-10 h-10 rounded-full bg-base-300 grid place-items-center shrink-0" aria-hidden="true">
+                        <i class="fa-solid fa-van-shuttle text-base-content/60"></i>
+                      </span>
+                    }
                     <span class="badge bg-primary text-primary-content border-0 font-mono font-bold tracking-wider">{{ vehiculo.placa }}</span>
                     <div class="min-w-0">
                       <div class="font-semibold truncate">{{ vehiculo.marca }} {{ vehiculo.linea }}</div>

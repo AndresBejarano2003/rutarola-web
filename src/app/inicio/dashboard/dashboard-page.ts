@@ -16,6 +16,7 @@ import {
   ApexYAxis,
   NgApexchartsModule,
 } from 'ng-apexcharts';
+import { TemaApp } from 'src/app/core/tema';
 import { AuthService } from 'src/app/core/auth';
 import { MEDIOS_PAGO, MedioPago } from 'src/app/finanzas/recibos/recibo';
 import { CambiosDatos } from 'src/app/shared/crud/cambios-datos';
@@ -29,13 +30,22 @@ import { TableroRepositorio } from './tablero-repositorio';
 const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const pesosCortos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
 
-/** Colores del tema `rutarola` para ApexCharts (no lee variables CSS). */
-const COLORES = {
-  texto: '#d1d5db',
-  rejilla: '#374151',
-  facturado: '#38bdf8',
-  recaudado: '#4ade80',
-  serie: ['#facc15', '#38bdf8', '#4ade80', '#f87171', '#a78bfa', '#9ca3af'],
+/** Colores de cada tema (`rutarola` / `rutarola-claro`) para ApexCharts (no lee variables CSS). */
+const COLORES_TEMA = {
+  OSCURO: {
+    texto: '#d1d5db',
+    rejilla: '#374151',
+    facturado: '#38bdf8',
+    recaudado: '#4ade80',
+    serie: ['#facc15', '#38bdf8', '#4ade80', '#f87171', '#a78bfa', '#9ca3af'],
+  },
+  CLARO: {
+    texto: '#374151',
+    rejilla: '#e5e7eb',
+    facturado: '#0369a1',
+    recaudado: '#15803d',
+    serie: ['#ca8a04', '#0369a1', '#15803d', '#b91c1c', '#7c3aed', '#6b7280'],
+  },
 };
 
 /** Máximo de colegios en la dona; el resto se agrupa en "Otros". */
@@ -52,6 +62,7 @@ const EVENTOS_AGENDA = 6;
 export default class DashboardPage {
   private readonly repositorio = inject(TableroRepositorio);
   private readonly cambios = inject(CambiosDatos);
+  private readonly temaApp = inject(TemaApp);
 
   protected readonly modoLocal = esFuenteLocal(this.repositorio);
   protected readonly tablero = signal<Tablero>(TABLERO_VACIO);
@@ -93,6 +104,7 @@ export default class DashboardPage {
   // Gráficas
   protected readonly graficoRecaudo = computed(() => {
     const historico = this.tablero().historico.slice(-this.mesesGrafico());
+    const COLORES = COLORES_TEMA[this.temaApp.tema()];
     return {
       series: [
         { name: 'Facturado', data: historico.map((m) => m.facturado) },
@@ -106,13 +118,14 @@ export default class DashboardPage {
       yaxis: { labels: { formatter: (v: number) => pesosCortos.format(v) } } as ApexYAxis,
       grid: { borderColor: COLORES.rejilla, strokeDashArray: 4 } as ApexGrid,
       legend: { position: 'top', horizontalAlign: 'right' } as ApexLegend,
-      tooltip: { theme: 'dark', y: { formatter: (v: number) => pesos.format(v) } } as ApexTooltip,
+      tooltip: { theme: this.temaApp.tema() === 'CLARO' ? 'light' : 'dark', y: { formatter: (v: number) => pesos.format(v) } } as ApexTooltip,
       colors: [COLORES.facturado, COLORES.recaudado],
     };
   });
 
   protected readonly graficoColegios = computed(() => {
     const lista = this.tablero().estudiantesPorColegio;
+    const COLORES = COLORES_TEMA[this.temaApp.tema()];
     const principales = lista.slice(0, COLEGIOS_EN_DONA);
     const otros = lista.slice(COLEGIOS_EN_DONA).reduce((s, c) => s + c.cantidad, 0);
     const datos = otros ? [...principales, { colegio: 'Otros', cantidad: otros }] : principales;

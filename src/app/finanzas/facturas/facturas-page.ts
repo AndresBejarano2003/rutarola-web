@@ -6,6 +6,8 @@ import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes
 import { AccionesFormulario } from 'src/app/shared/acciones-formulario/acciones-formulario';
 import { OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
 import { PaginaCrud } from 'src/app/shared/crud/pagina-crud';
+import { GeneradorPdf } from 'src/app/shared/documentos-pdf/generador-pdf';
+import { contenidoFactura } from 'src/app/shared/documentos-pdf/documentos-pdf';
 import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo-confirmacion';
 import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-listado';
 import { Modal } from 'src/app/shared/modal/modal';
@@ -25,6 +27,12 @@ import { FacturasTabla } from './facturas-tabla/facturas-tabla';
 })
 export default class FacturasPage extends PaginaCrud<Factura, FiltrosFactura> {
   protected readonly store = inject(FacturasStore);
+  private readonly pdf = inject(GeneradorPdf);
+
+  /** Abre "Imprimir / Guardar como PDF" con el formato de la empresa (Inicio › Configuración › Documentos PDF). */
+  protected descargarPdf(f: Factura): void {
+    void this.pdf.descargar(contenidoFactura(f));
+  }
   protected readonly titulos = { crear: 'Nueva factura', editar: 'Editar factura', consultar: 'Detalle de la factura' };
 
   private readonly estudiantes = inject(EstudiantesRepositorio);

@@ -1,3 +1,4 @@
+import { AvisosDelDia } from '../avisos-ausencia/avisos-del-dia';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
@@ -23,7 +24,7 @@ const opcionesSeguras = (fuente: ReturnType<RutasRepositorio['opciones']>) =>
 @Component({
   selector: 'app-asignaciones-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsignacionesFiltros, AsignacionesTabla, AsignacionFormulario, EncabezadoListado, AccionesFormulario, Modal, DialogoConfirmacion, Paginacion],
+  imports: [AvisosDelDia, AsignacionesFiltros, AsignacionesTabla, AsignacionFormulario, EncabezadoListado, AccionesFormulario, Modal, DialogoConfirmacion, Paginacion],
   providers: [AsignacionesStore],
   templateUrl: './asignaciones-page.html',
 })

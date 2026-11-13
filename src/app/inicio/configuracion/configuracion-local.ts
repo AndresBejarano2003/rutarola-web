@@ -2,11 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, defer } from 'rxjs';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
 import { FuenteLocal, LATENCIA_LOCAL, responderLocal } from 'src/app/shared/crud/repositorio-local';
+import { TemaApariencia, temaGuardado } from 'src/app/core/tema';
+import { DatosFormatoDocumentos, FORMATO_VACIO, FormatoDocumentos, MAXIMO_LOGO } from 'src/app/shared/documentos-pdf/documentos-pdf';
 import { DatosEmpresa, Empresa, PARAMETROS_PREDETERMINADOS, Parametro } from './configuracion';
 import { ConfiguracionRepositorio } from './configuracion-repositorio';
 
 const CLAVE_EMPRESA = 'rutarola.empresa';
 const CLAVE_PARAMETROS = 'rutarola.configuracion';
+const CLAVE_FORMATO = 'rutarola.formato-documentos';
 
 const EMPRESA_DEMO: Empresa = {
   id: 'empresa-local',
@@ -60,6 +63,40 @@ export class ConfiguracionLocal extends ConfiguracionRepositorio implements Fuen
       guardar(CLAVE_PARAMETROS, { ...guardados, [clave]: String(numero) });
       return { ...base, valor: String(numero) };
     }, this.latenciaMs);
+  }
+
+  formatoDocumentos(): Observable<FormatoDocumentos> {
+    return defer(() =>
+      responderLocal(() => {
+        const guardado = leer<DatosFormatoDocumentos | null>(CLAVE_FORMATO, null);
+        if (guardado) return { ...FORMATO_VACIO, ...guardado, personalizado: true };
+        const e = this.leerEmpresa();
+        return { ...FORMATO_VACIO, nombreComercial: e.nombre, nit: e.nit, direccion: e.direccion, ciudad: e.ciudad, telefono: e.telefono, correo: e.email };
+      }, this.latenciaMs),
+    );
+  }
+
+  /** Mismas reglas que `ValidadorSolicitudFormatoDocumentos`. */
+  guardarFormatoDocumentos(datos: DatosFormatoDocumentos): Observable<FormatoDocumentos> {
+    return responderLocal(() => {
+      if (!datos.nombreComercial.trim()) throw new ErrorCrud('Ingresa el nombre que aparece en los documentos.', 'VALIDACION');
+      if (!/^#[0-9A-Fa-f]{6}$/.test(datos.colorPrincipal)) throw new ErrorCrud('El color debe tener el formato #RRGGBB.', 'VALIDACION');
+      if (datos.logo && (datos.logo.length > MAXIMO_LOGO || !/^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(datos.logo))) {
+        throw new ErrorCrud('El logo debe ser una imagen PNG, JPG, WebP o SVG de máximo 300 KB.', 'VALIDACION');
+      }
+      const limpio = Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])) as DatosFormatoDocumentos;
+      guardar(CLAVE_FORMATO, limpio);
+      return { ...limpio, personalizado: true };
+    }, this.latenciaMs);
+  }
+
+  tema(): Observable<TemaApariencia> {
+    return defer(() => responderLocal(() => temaGuardado(), this.latenciaMs));
+  }
+
+  guardarTema(tema: TemaApariencia): Observable<TemaApariencia> {
+    // `TemaApp.establecer` lo deja en `rutarola.tema` (texto plano, el mismo que se lee al arrancar).
+    return responderLocal(() => tema, this.latenciaMs);
   }
 
   private leerEmpresa(): Empresa {

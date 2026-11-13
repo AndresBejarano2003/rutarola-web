@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { catchError, of } from 'rxjs';
-import { SuscripcionRepositorio } from '../suscripcion-repositorio';
+import { PlanEmpresa } from 'src/app/core/plan-empresa';
 
 const CLAVE_OCULTO = 'rutarola.aviso-plan.oculto';
 /** Se avisa cuando a la prueba o al periodo pagado le quedan estos días o menos. */
@@ -30,12 +28,14 @@ export const DIAS_AVISO_PLAN = 15;
   `,
 })
 export class AvisoPlan {
-  private readonly suscripcion = toSignal(inject(SuscripcionRepositorio).actual().pipe(catchError(() => of(null))), { initialValue: null });
+  private readonly plan = inject(PlanEmpresa);
+  private readonly suscripcion = this.plan.suscripcion;
   private readonly oculto = signal(leerOculto());
 
   protected readonly mensaje = computed(() => {
     const s = this.suscripcion();
-    if (!s || this.oculto()) return null;
+    // Con la decisión pendiente manda la pasarela (app-decision-plan).
+    if (!s || this.oculto() || s.pendienteDecision) return null;
     const dias = s.diasRestantes ?? 0;
     if (s.estado === 'PRUEBA' && dias <= DIAS_AVISO_PLAN) {
       return { urgente: dias <= 5, texto: `Tu prueba gratuita termina en ${dias} día(s). Elige un plan para conservar el GPS en vivo y los recordatorios de cobro.` };
@@ -48,6 +48,10 @@ export class AvisoPlan {
     }
     return null;
   });
+
+  constructor() {
+    void this.plan.asegurar();
+  }
 
   protected ocultar(): void {
     try {

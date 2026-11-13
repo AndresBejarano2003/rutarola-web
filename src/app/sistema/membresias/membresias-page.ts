@@ -6,21 +6,27 @@ import { firstValueFrom } from 'rxjs';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { ValidacionCodigo, textoDescuento } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
+import { PlanEmpresa } from 'src/app/core/plan-empresa';
+import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo-confirmacion';
 import { Modal } from 'src/app/shared/modal/modal';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import {
+  DIAS_PRUEBA_POR_DEFECTO,
   ESTADOS_PAGO,
   FUNCIONES_PLAN,
+  FuncionPlan,
   MESES_PAGADOS_POR_ANIO,
-  MESES_PRUEBA,
+  NOMBRES_FUNCION,
   ORDEN_PLAN,
   PLANES,
   PagoSuscripcion,
   PeriodoPago,
   Plan,
   Suscripcion,
+  excedentes,
   leerRetornoPago,
   nombrePlan,
+  planDesdeConFuncion,
 } from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 import { TarjetaPlan } from './tarjeta-plan/tarjeta-plan';
@@ -43,7 +49,7 @@ const ESPERA_CONFIRMACION_MS = 5000;
 @Component({
   selector: 'app-membresias-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, DatePipe, Modal, RouterLink, TarjetaPlan],
+  imports: [CurrencyPipe, DatePipe, DialogoConfirmacion, Modal, RouterLink, TarjetaPlan],
   templateUrl: './membresias-page.html',
 })
 export default class MembresiasPage {
@@ -51,9 +57,29 @@ export default class MembresiasPage {
   private readonly avisos = inject(NotificacionesService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly planEmpresa = inject(PlanEmpresa);
 
   protected readonly modoLocal = esFuenteLocal(this.repositorio);
-  protected readonly mesesPrueba = MESES_PRUEBA;
+  /** Días de prueba que recibe hoy una empresa nueva (los fija la plataforma). */
+  protected readonly diasPrueba = signal(DIAS_PRUEBA_POR_DEFECTO);
+  /** Llegó desde una pantalla que su plan no incluye (`?funcion=`). */
+  protected readonly funcionBloqueada = signal<{ nombre: string; plan: string } | null>(null);
+  // "Seguir en Gratis" cuando venció la prueba o el plan.
+  protected readonly confirmarGratis = signal(false);
+  protected readonly pasandoAGratis = signal(false);
+  protected readonly pendienteDecision = computed(() => this.suscripcion()?.pendienteDecision ?? false);
+  protected readonly mensajeGratis = computed(() => {
+    const s = this.suscripcion();
+    if (!s) return '';
+    const sobra = excedentes(s, PLANES[0]);
+    const partes = [
+      sobra.vehiculos ? `${sobra.vehiculos} vehículo(s)` : '',
+      sobra.estudiantes ? `${sobra.estudiantes} estudiante(s)` : '',
+    ].filter(Boolean);
+    return partes.length
+      ? `El plan Gratis permite ${PLANES[0].limites.vehiculos} vehículo y ${PLANES[0].limites.estudiantes} estudiantes activos: se inactivarán ${partes.join(' y ')} (se conservan primero los que están en rutas). Tus datos no se borran; para activar otro, inactiva primero uno activo o mejora tu plan.`
+      : 'Seguirás en el plan Gratis con todos tus datos. Puedes mejorar tu plan cuando quieras.';
+  });
   protected readonly mesesGratisAnual = 12 - MESES_PAGADOS_POR_ANIO;
   protected readonly estadosPago = ESTADOS_PAGO;
   protected readonly nombrePlan = nombrePlan;
@@ -90,8 +116,10 @@ export default class MembresiasPage {
   protected readonly pagoEnLinea = computed(() => this.suscripcion()?.pagosEnLinea ?? false);
   protected readonly enPrueba = computed(() => this.suscripcion()?.estado === 'PRUEBA');
   protected readonly progresoPrueba = computed(() => {
-    const dias = this.suscripcion()?.diasRestantes ?? 0;
-    return Math.min(100, Math.max(0, Math.round(((MESES_PRUEBA * 30 - dias) / (MESES_PRUEBA * 30)) * 100)));
+    const s = this.suscripcion();
+    const dias = s?.diasRestantes ?? 0;
+    const total = s?.diasPrueba || this.diasPrueba();
+    return Math.min(100, Math.max(0, Math.round(((total - dias) / total) * 100)));
   });
   protected readonly usoVehiculos = computed(() => this.uso('vehiculos'));
   protected readonly usoEstudiantes = computed(() => this.uso('estudiantes'));
@@ -106,7 +134,7 @@ export default class MembresiasPage {
       { nombre: 'Ruta del día y asistencia', valores: p.map(() => true) },
       { nombre: 'Facturación, recibos y portal del acudiente', valores: p.map(() => true) },
       { nombre: 'Recordatorios automáticos de cobro', valores: tiene(FUNCIONES_PLAN.RECORDATORIOS) },
-      { nombre: 'Reportes y exportación a CSV', valores: tiene(FUNCIONES_PLAN.RECORDATORIOS) },
+      { nombre: 'Reportes y exportación a CSV', valores: tiene(FUNCIONES_PLAN.REPORTES) },
       { nombre: 'GPS en vivo y mapa para acudientes', valores: tiene(FUNCIONES_PLAN.GPS_EN_VIVO) },
       { nombre: 'Soporte prioritario', valores: tiene(FUNCIONES_PLAN.SOPORTE_PRIORITARIO) },
       { nombre: 'Capacitación y acompañamiento', valores: tiene(FUNCIONES_PLAN.ACOMPANAMIENTO) },
@@ -120,10 +148,58 @@ export default class MembresiasPage {
       .subscribe((q) => {
         const retorno = leerRetornoPago(q.get('pago'), q.get('id'));
         if (retorno) void this.confirmar(retorno.referencia, retorno.idTransaccion);
+        const funcion = q.get('funcion') as FuncionPlan | null;
+        this.funcionBloqueada.set(
+          funcion && funcion in NOMBRES_FUNCION ? { nombre: NOMBRES_FUNCION[funcion], plan: planDesdeConFuncion(funcion).nombre } : null,
+        );
+        // Desde la pasarela al iniciar sesión (`?plan=&periodo=`): abre el pago de ese plan.
+        const plan = q.get('plan');
+        if (plan) {
+          if (q.get('periodo') === 'ANUAL' || q.get('periodo') === 'MENSUAL') this.periodo.set(q.get('periodo') as PeriodoPago);
+          void this.abrirPlanAlCargar(plan);
+        }
       });
+    this.repositorio
+      .condiciones()
+      .pipe(takeUntilDestroyed())
+      .subscribe({ next: (c) => this.diasPrueba.set(c.diasPrueba), error: () => undefined });
   }
 
-  protected async cargar(): Promise<void> {
+  private carga: Promise<void> | null = null;
+
+  private async abrirPlanAlCargar(id: string): Promise<void> {
+    await this.carga;
+    const p = this.planes().find((x) => x.id === id);
+    if (p && p.precioMensual > 0) this.elegir(p);
+    void this.router.navigate([], { queryParams: { plan: null, periodo: null }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  /** No quiere pagar: sigue en Gratis (el servidor inactiva lo que sobre). */
+  protected async seguirEnGratis(): Promise<void> {
+    this.pasandoAGratis.set(true);
+    try {
+      const d = await this.planEmpresa.continuarGratis();
+      this.confirmarGratis.set(false);
+      const total = d.inactivados.vehiculos.length + d.inactivados.estudiantes;
+      this.avisos.exito(
+        total
+          ? `Sigues en el plan Gratis. Se inactivaron ${d.inactivados.vehiculos.length} vehículo(s) y ${d.inactivados.estudiantes} estudiante(s) que superaban el límite.`
+          : 'Sigues en el plan Gratis con todos tus datos.',
+      );
+      await this.cargar();
+    } catch (e) {
+      this.avisos.error(mensajeDeError(e));
+    } finally {
+      this.pasandoAGratis.set(false);
+    }
+  }
+
+  protected cargar(): Promise<void> {
+    this.carga = this.cargarDatos();
+    return this.carga;
+  }
+
+  private async cargarDatos(): Promise<void> {
     this.cargando.set(true);
     try {
       const [planes, suscripcion, pagos] = await Promise.all([
@@ -133,6 +209,7 @@ export default class MembresiasPage {
       ]);
       this.planes.set(planes);
       this.suscripcion.set(suscripcion);
+      this.planEmpresa.establecer(suscripcion);
       this.pagos.set(pagos);
       this.error.set(null);
     } catch (e) {
@@ -153,14 +230,17 @@ export default class MembresiasPage {
   /** Texto del botón de cada plan. */
   protected accion(p: Plan): string {
     const s = this.suscripcion();
-    if (p.precioMensual === 0) return s?.plan === 'GRATIS' ? 'Tu plan actual' : 'Incluido al terminar';
+    if (p.precioMensual === 0) return s?.pendienteDecision ? 'Seguir en Gratis' : s?.plan === 'GRATIS' ? 'Tu plan actual' : 'Incluido al terminar';
     if (!s) return `Elegir ${p.nombre}`;
     if (s.plan === p.id) return s.estado === 'PRUEBA' ? `Quedarme con ${p.nombre}` : 'Renovar';
     return ORDEN_PLAN[p.id] > ORDEN_PLAN[s.plan] ? `Mejorar a ${p.nombre}` : `Cambiar a ${p.nombre}`;
   }
 
   protected elegir(p: Plan): void {
-    if (p.precioMensual === 0) return;
+    if (p.precioMensual === 0) {
+      if (this.pendienteDecision()) this.confirmarGratis.set(true);
+      return;
+    }
     this.elegido.set(p);
     this.quitarCodigo();
     this.modalPago.set(true);

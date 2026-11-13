@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { MENU_OPERATIVO, MENU_SISTEMA } from './opciones-menu';
+import { PlanEmpresa } from 'src/app/core/plan-empresa';
+import { planDesdeConFuncion } from 'src/app/sistema/membresias/suscripcion';
+import { MENU_OPERATIVO, MENU_SISTEMA, OpcionMenu } from './opciones-menu';
 
 const CLAVE_MENUS_ABIERTOS = 'menusAbiertos';
 
@@ -16,6 +18,12 @@ export class MenuLateral {
   protected readonly menuSistema = MENU_SISTEMA;
 
   private readonly menusAbiertos = signal(new Set<string>(leerMenusAbiertos()));
+  private readonly plan = inject(PlanEmpresa, { optional: true });
+
+  /** "Esencial" si el plan de la empresa no incluye la función de la opción; null si está disponible. */
+  protected bloqueo(opcion: OpcionMenu): string | null {
+    return opcion.funcion && this.plan && !this.plan.tiene(opcion.funcion) ? planDesdeConFuncion(opcion.funcion).nombre : null;
+  }
 
   protected estaAbierto(menu: string): boolean {
     return this.menusAbiertos().has(menu);

@@ -27,6 +27,7 @@ import {
   siguientePaso,
 } from '../recorrido';
 import { RecorridosRepositorio } from '../recorridos-repositorio';
+import { motivoAlConfirmar } from '../avisos-ausencia';
 import { EmisorGps } from '../gps/emisor-gps';
 import { haceCuanto } from '../gps/gps';
 import { Sonidos } from '../sonidos';
@@ -92,6 +93,11 @@ export default class RecorridoPage implements OnInit {
 
   protected readonly trayecto = computed(() => TRAYECTOS.find((t) => t.id === this.recorrido()?.trayecto) ?? TRAYECTOS[0]);
   protected readonly conteo = computed(() => contarParadas(this.recorrido()?.paradas ?? []));
+  /** Estudiantes por visitar con aviso del acudiente que aún nadie confirmó. */
+  protected readonly avisosPorConfirmar = computed(() =>
+    (this.recorrido()?.paradas ?? []).filter((p) => p.aviso && !p.aviso.confirmado && p.estado === 'PENDIENTE'),
+  );
+  protected readonly nombresAviso = computed(() => this.avisosPorConfirmar().map((p) => p.estudiante).join(', '));
   protected readonly avance = computed(() => avance(this.conteo()));
   protected readonly paso = computed(() => {
     const r = this.recorrido();
@@ -197,6 +203,30 @@ export default class RecorridoPage implements OnInit {
 
   protected idsCon(estado: EstadoParada): string[] {
     return (this.recorrido()?.paradas ?? []).filter((p) => p.estado === estado).map((p) => p.estudianteId);
+  }
+
+  /** "Subieron todos": no incluye a quien el acudiente avisó que no viaja (se confirma uno a uno). */
+  protected idsSinAviso(estado: EstadoParada): string[] {
+    return (this.recorrido()?.paradas ?? []).filter((p) => p.estado === estado && !(p.aviso && !p.aviso.confirmado)).map((p) => p.estudianteId);
+  }
+
+  /** Confirma el aviso del acudiente: lo marca AUSENTE con el motivo que avisó. */
+  protected confirmarAviso(p: Parada): Promise<void> {
+    const r = this.recorrido();
+    if (!p.aviso || !r) return Promise.resolve();
+    return this.marcar([p.estudianteId], 'AUSENTE', motivoAlConfirmar(p.aviso, r.trayecto));
+  }
+
+  protected textoAvisoParada(p: Parada): string {
+    if (!p.aviso) return '';
+    return p.aviso.motivo === 'NO_ASISTE' ? 'No va hoy al colegio' : 'No viaja en la ruta en este trayecto';
+  }
+
+  /** WhatsApp para confirmar con el acudiente que el estudiante no viaja. */
+  protected whatsappAviso(p: Parada): string {
+    const r = this.recorrido();
+    const quien = `${this.sesion()?.nombre ?? ''}, de la ruta ${r?.ruta ?? ''} de RutaRola`;
+    return enlaceWhatsapp(p.telefonoAcudiente, `Hola, ${p.acudiente}. Soy ${quien}. Vi tu aviso: ¿confirmas que ${p.estudiante} no viaja hoy en la ruta?`);
   }
 
   // --- Orden de visita -------------------------------------------------------------------------

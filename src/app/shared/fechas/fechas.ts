@@ -63,3 +63,9 @@ export function horaLegible(hora: string): string {
   const [h, m] = hora.split(':').map(Number);
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
 }
+
+/** `YYYY-MM-DD` + `dias` (negativo para restar), en fecha local. */
+export function sumarDias(fecha: string, dias: number): string {
+  const [a, m, d] = fecha.split('-').map(Number);
+  return fechaIso(new Date(a, m - 1, d + dias));
+}

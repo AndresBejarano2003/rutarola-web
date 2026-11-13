@@ -1,22 +1,22 @@
-<div class="card bg-gray-800/70 border border-gray-700 shadow-xl">
+<div class="card bg-base-200/80 border border-base-300 shadow-xl">
     <div class="card-body">
 
-        <h2 class="card-title text-white">
+        <h2 class="card-title text-base-content">
             Filtros
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 
             <input type="text" placeholder="Buscar empleado..."
-                class="input input-bordered bg-gray-900 border-gray-700 text-white w-full">
+                class="input input-bordered bg-base-100 border-base-300 text-base-content w-full">
 
-            <select class="select select-bordered bg-gray-900 border-gray-700 text-white">
+            <select class="select select-bordered bg-base-100 border-base-300 text-base-content">
                 <option>Todos los tipos</option>
                 <option>Conductores</option>
                 <option>Monitoras</option>
             </select>
 
-            <select class="select select-bordered bg-gray-900 border-gray-700 text-white">
+            <select class="select select-bordered bg-base-100 border-base-300 text-base-content">
                 <option>Todos los estados</option>
                 <option>Activo</option>
                 <option>Inactivo</option>
@@ -30,18 +30,18 @@
 
     </div>
 </div>
-<div class="mt-6 card bg-gray-800/70 border border-gray-700 shadow-xl">
+<div class="mt-6 card bg-base-200/80 border border-base-300 shadow-xl">
 
     <div class="card-body">
 
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
             <div>
-                <h2 class="card-title text-white text-xl">
+                <h2 class="card-title text-base-content text-xl">
                     Lista de empleados
                 </h2>
 
-                <p class="text-gray-400 text-sm">
+                <p class="text-base-content/70 text-sm">
                     Gestiona conductores y monitoras registradas en el sistema.
                 </p>
             </div>
@@ -102,10 +102,10 @@
 
                         <td>
                             <div class="flex flex-col">
-                                <span class="font-semibold text-white">
+                                <span class="font-semibold text-base-content">
                                     Carlos Andrés Gómez
                                 </span>
-                                <span class="text-xs text-gray-500">
+                                <span class="text-xs text-base-content/70">
                                     Conductor Ruta Norte
                                 </span>
                             </div>
@@ -136,15 +136,15 @@
 
                             <div class="flex justify-center gap-2">
 
-                                <button class="btn btn-square btn-sm btn-ghost text-blue-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-info">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
 
-                                <button class="btn btn-square btn-sm btn-ghost text-yellow-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-primary">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
 
-                                <button class="btn btn-square btn-sm btn-ghost text-red-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-error">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
 
@@ -168,10 +168,10 @@
 
                         <td>
                             <div class="flex flex-col">
-                                <span class="font-semibold text-white">
+                                <span class="font-semibold text-base-content">
                                     Laura Martínez
                                 </span>
-                                <span class="text-xs text-gray-500">
+                                <span class="text-xs text-base-content/70">
                                     Monitora Ruta Escolar
                                 </span>
                             </div>
@@ -202,15 +202,15 @@
 
                             <div class="flex justify-center gap-2">
 
-                                <button class="btn btn-square btn-sm btn-ghost text-blue-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-info">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
 
-                                <button class="btn btn-square btn-sm btn-ghost text-yellow-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-primary">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
 
-                                <button class="btn btn-square btn-sm btn-ghost text-red-400">
+                                <button class="btn btn-square btn-sm btn-ghost text-error">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
 
@@ -229,32 +229,32 @@
 </div>
 <dialog id="nuevoEmpleado" class="modal">
 
-    <div class="modal-box max-w-6xl bg-gray-800 border border-gray-700">
+    <div class="modal-box max-w-6xl bg-base-200 border border-base-300">
 
-        <h3 class="font-bold text-xl text-white mb-6">
+        <h3 class="font-bold text-xl text-base-content mb-6">
             Nuevo empleado
         </h3>
 
         <div class="grid md:grid-cols-2 gap-4">
 
-            <select class="select select-bordered bg-gray-900 text-white">
+            <select class="select select-bordered bg-base-100 text-base-content">
                 <option>Tipo documento</option>
                 <option>CC</option>
                 <option>CE</option>
                 <option>Pasaporte</option>
             </select>
 
-            <input type="text" placeholder="Identificación" class="input input-bordered bg-gray-900 text-white">
+            <input type="text" placeholder="Identificación" class="input input-bordered bg-base-100 text-base-content">
 
-            <input type="text" placeholder="Primer nombre" class="input input-bordered bg-gray-900 text-white">
+            <input type="text" placeholder="Primer nombre" class="input input-bordered bg-base-100 text-base-content">
 
-            <input type="text" placeholder="Segundo nombre" class="input input-bordered bg-gray-900 text-white">
+            <input type="text" placeholder="Segundo nombre" class="input input-bordered bg-base-100 text-base-content">
 
-            <input type="text" placeholder="Primer apellido" class="input input-bordered bg-gray-900 text-white">
+            <input type="text" placeholder="Primer apellido" class="input input-bordered bg-base-100 text-base-content">
 
-            <input type="text" placeholder="Segundo apellido" class="input input-bordered bg-gray-900 text-white">
+            <input type="text" placeholder="Segundo apellido" class="input input-bordered bg-base-100 text-base-content">
 
-            <select class="select select-bordered bg-gray-900 text-white">
+            <select class="select select-bordered bg-base-100 text-base-content">
 
                 <option>Tipo empleado</option>
                 <option>Conductor</option>
@@ -262,9 +262,9 @@
 
             </select>
 
-            <input type="number" placeholder="Sueldo" class="input input-bordered bg-gray-900 text-white">
+            <input type="number" placeholder="Sueldo" class="input input-bordered bg-base-100 text-base-content">
 
-            <select class="select select-bordered bg-gray-900 text-white">
+            <select class="select select-bordered bg-base-100 text-base-content">
 
                 <option>Tipo contrato</option>
                 <option>Indefinido</option>
@@ -275,27 +275,27 @@
 
             <div>
 
-                <input type="file" class="file-input file-input-bordered w-full bg-gray-900">
+                <input type="file" class="file-input file-input-bordered w-full bg-base-100">
 
             </div>
 
         </div>
 
-        <div class="divider text-gray-500">
+        <div class="divider text-base-content/70">
             Contrato adjunto
         </div>
 
-        <div class="alert bg-gray-900 border border-gray-700">
+        <div class="alert bg-base-100 border border-base-300">
 
-            <i class="fa-solid fa-file-pdf text-red-400"></i>
+            <i class="fa-solid fa-file-pdf text-error"></i>
 
             <div>
 
-                <h3 class="font-semibold text-white">
+                <h3 class="font-semibold text-base-content">
                     Contrato laboral
                 </h3>
 
-                <p class="text-xs text-gray-400">
+                <p class="text-xs text-base-content/70">
                     Adjunte el contrato firmado del empleado.
                 </p>
 

@@ -4,7 +4,7 @@
     <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-crown" aria-hidden="true"></i> Planes y membresías</span>
     <h1 class="text-2xl sm:text-4xl font-bold mt-3">Transporte escolar organizado, <span class="text-primary">cobros a tiempo</span> y familias tranquilas</h1>
     <p class="text-base-content/70 mt-3">
-      Empieza con {{ mesesPrueba }} meses gratis del plan Profesional. Sin tarjeta, sin permanencia: si no eliges un plan, sigues en Gratis con todos tus datos.
+      Empieza con {{ diasPrueba() }} días gratis del plan Profesional. Sin tarjeta, sin permanencia: si no eliges un plan, sigues en Gratis con todos tus datos.
     </p>
   </header>
 
@@ -30,6 +30,29 @@
           <span>El pago no se completó ({{ estadosPago[c.estado].nombre.toLowerCase() }}). No se hizo ningún cobro; puedes intentarlo de nuevo.</span>
         }
       }
+    </div>
+  }
+
+  @if (funcionBloqueada(); as f) {
+    <div role="status" class="alert alert-soft alert-info">
+      <i class="fa-solid fa-lock" aria-hidden="true"></i>
+      <span>Tu plan actual no incluye {{ f.nombre }}. Está disponible desde el plan <strong>{{ f.plan }}</strong>.</span>
+    </div>
+  }
+
+  @if (pendienteDecision()) {
+    <div role="alert" class="alert alert-soft alert-warning flex-col sm:flex-row items-start sm:items-center">
+      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+      <span class="grow">
+        @if (suscripcion()!.planVencido) {
+          Tu plan {{ nombrePlan(suscripcion()!.planVencido || 'GRATIS') }} venció
+          @if (suscripcion()!.fechaVencimiento) { el {{ suscripcion()!.fechaVencimiento | date: 'd MMM y' }} }.
+        } @else {
+          Elige el plan que quieres pagar.
+        }
+        Elige un plan para pagarlo o sigue en el plan Gratis.
+      </span>
+      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="confirmarGratis.set(true)">Seguir en Gratis</button>
     </div>
   }
 
@@ -117,7 +140,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
     @for (p of planes(); track p.id) {
       <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [actual]="esActual(p)" [textoBoton]="accion(p)"
-        [deshabilitado]="cargando() || p.precioMensual === 0" (elegir)="elegir(p)" />
+        [deshabilitado]="cargando() || (p.precioMensual === 0 && !pendienteDecision())" (elegir)="elegir(p)" />
     }
   </div>
 
@@ -365,3 +388,6 @@
     </div>
   }
 </app-modal>
+
+<app-dialogo-confirmacion [(abierto)]="confirmarGratis" titulo="¿Seguir en el plan Gratis?" [mensaje]="mensajeGratis()"
+  textoConfirmar="Seguir en Gratis" [procesando]="pasandoAGratis()" (confirmar)="seguirEnGratis()" />

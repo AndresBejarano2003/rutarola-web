@@ -32,6 +32,9 @@
       <summary class="py-2.5 lg:py-2" (click)="$event.preventDefault(); alternarMenu(opcion.etiqueta)">
         <i [class]="opcion.icono" class="w-5 text-center"></i>
         {{ opcion.etiqueta }}
+        @if (bloqueo(opcion); as desde) {
+          <span class="badge badge-sm badge-soft badge-warning gap-1" [attr.title]="'Disponible desde el plan ' + desde"><i class="fa-solid fa-lock" aria-hidden="true"></i><span class="sr-only">Disponible desde el plan</span> {{ desde }}</span>
+        }
       </summary>
       <ul>
         @for (hijo of opcion.hijos; track hijo.etiqueta) {
@@ -46,6 +49,9 @@
       <i [class]="opcion.icono" class="w-5 text-center"></i> {{ opcion.etiqueta }}
       @if (opcion.esPro) {
         <span class="badge badge-sm">Pro</span>
+      }
+      @if (bloqueo(opcion); as desde) {
+        <span class="badge badge-sm badge-soft badge-warning gap-1" [attr.title]="'Disponible desde el plan ' + desde"><i class="fa-solid fa-lock" aria-hidden="true"></i><span class="sr-only">Disponible desde el plan</span> {{ desde }}</span>
       }
       @if (opcion.notificaciones) {
         <span class="badge badge-error badge-sm">{{ opcion.notificaciones }}</span>

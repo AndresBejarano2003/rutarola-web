@@ -3,7 +3,10 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AccionesFormulario } from 'src/app/shared/acciones-formulario/acciones-formulario';
 import { OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
+import { MEDIOS_PAGO } from './recibo';
 import { PaginaCrud } from 'src/app/shared/crud/pagina-crud';
+import { GeneradorPdf } from 'src/app/shared/documentos-pdf/generador-pdf';
+import { contenidoRecibo } from 'src/app/shared/documentos-pdf/documentos-pdf';
 import { SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
 import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo-confirmacion';
 import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-listado';
@@ -33,6 +36,12 @@ interface DetalleFactura {
 })
 export default class RecibosPage extends PaginaCrud<Recibo, FiltrosRecibo> {
   protected readonly store = inject(RecibosStore);
+  private readonly pdf = inject(GeneradorPdf);
+
+  /** Abre "Imprimir / Guardar como PDF" con el formato de la empresa (Inicio › Configuración › Documentos PDF). */
+  protected descargarPdf(f: Recibo): void {
+    void this.pdf.descargar(contenidoRecibo(f, MEDIOS_PAGO.find((m) => m.id === f.medioPago)?.nombre ?? f.medioPago));
+  }
   protected readonly titulos = { crear: 'Registrar pago', editar: 'Editar recibo', consultar: 'Detalle del recibo' };
 
   private readonly facturasRepo = inject(FacturasRepositorio);

@@ -56,7 +56,13 @@ import { Cotizacion, ESTADOS_COTIZACION } from '../cotizacion';
                 <td class="text-right whitespace-nowrap font-semibold">{{ c.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
                 <td><span class="badge badge-soft badge-sm" [class]="estado?.clase">{{ estado?.nombre }}</span></td>
                 <td class="text-right whitespace-nowrap">
-                  <app-acciones-fila (consultar)="consultar.emit(c)" (editar)="editar.emit(c)" (eliminar)="eliminar.emit(c)" />
+                  <app-acciones-fila (consultar)="consultar.emit(c)" (editar)="editar.emit(c)" (eliminar)="eliminar.emit(c)">
+                    <div class="tooltip tooltip-left" data-tip="Descargar PDF">
+                      <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Descargar PDF" (click)="pdf.emit(c)">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </app-acciones-fila>
                 </td>
               </tr>
             } @empty {
@@ -81,6 +87,8 @@ export class CotizacionesTabla {
   readonly consultar = output<Cotizacion>();
   readonly editar = output<Cotizacion>();
   readonly eliminar = output<Cotizacion>();
+  /** Descargar el PDF con el formato de la empresa. */
+  readonly pdf = output<Cotizacion>();
   readonly crear = output<void>();
 
   protected readonly estados = new Map(ESTADOS_COTIZACION.map((e) => [e.id, e]));

@@ -45,4 +45,6 @@ export interface SolicitudRegistro {
   empresa: { nombre: string; nit: string; ciudad: string; telefono: string };
   administrador: { nombre: string; usuario: string; email: string; contrasena: string };
   aceptaTerminos: boolean;
+  /** Paga un plan de una vez en vez de la prueba gratuita: la empresa empieza en Gratis con la pasarela pendiente. */
+  pagarAhora?: boolean;
 }

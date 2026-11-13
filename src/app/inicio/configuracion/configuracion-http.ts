@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import type { TemaApariencia } from 'src/app/core/tema';
+import type { DatosFormatoDocumentos, FormatoDocumentos } from 'src/app/shared/documentos-pdf/documentos-pdf';
 import { environment } from '@environments/environment';
 import { EstadoRegistro } from 'src/app/shared/crud/crud';
 import { DatosEmpresa, Empresa, Parametro } from './configuracion';
@@ -29,6 +31,9 @@ export function desdeApi(e: EmpresaApi): Empresa {
  * | guardarEmpresa  | `PUT /empresas/actual {nombre, direccion, ciudad, telefono, email, logoUrl}` (`configuracion.gestionar`; no cambia NIT ni estado) |
  * | parametros      | `GET /configuracion` → `Parametro[]` (`configuracion.gestionar`) |
  * | guardarParametro| `PUT /configuracion/{clave} {valor}` (422 fuera de `minimo`–`maximo`) |
+ * | formatoDocumentos | `GET /configuracion/documentos` → `FormatoDocumentos` (cualquier usuario de la empresa) |
+ * | guardarFormatoDocumentos | `PUT /configuracion/documentos` (`configuracion.gestionar`; 400 logo > 300 KB o no imagen, color no #RRGGBB, sin nombre) |
+ * | tema / guardarTema | `GET/PUT /empresas/actual/tema {tema: OSCURO|CLARO}` → `{tema}`; la sesión de cada usuario trae `empresa.tema` |
  *
  * Los parámetros los usa el servidor en reportes, portal, tablero, notificaciones y conductores.
  */
@@ -47,6 +52,22 @@ export class ConfiguracionHttp extends ConfiguracionRepositorio {
 
   parametros(): Observable<Parametro[]> {
     return this.http.get<Parametro[]>(`${this.url}/configuracion`);
+  }
+
+  formatoDocumentos(): Observable<FormatoDocumentos> {
+    return this.http.get<FormatoDocumentos>(`${this.url}/configuracion/documentos`);
+  }
+
+  guardarFormatoDocumentos(datos: DatosFormatoDocumentos): Observable<FormatoDocumentos> {
+    return this.http.put<FormatoDocumentos>(`${this.url}/configuracion/documentos`, datos);
+  }
+
+  tema(): Observable<TemaApariencia> {
+    return this.http.get<{ tema: TemaApariencia }>(`${this.url}/empresas/actual/tema`).pipe(map((r) => r.tema));
+  }
+
+  guardarTema(tema: TemaApariencia): Observable<TemaApariencia> {
+    return this.http.put<{ tema: TemaApariencia }>(`${this.url}/empresas/actual/tema`, { tema }).pipe(map((r) => r.tema));
   }
 
   guardarParametro(clave: string, valor: string): Observable<Parametro> {

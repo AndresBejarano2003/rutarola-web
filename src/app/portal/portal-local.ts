@@ -26,6 +26,20 @@ import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repos
 import { FILTROS_ESTUDIANTE_VACIOS } from 'src/app/personas/estudiantes/estudiante';
 import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
 import { CLAVE_RECORRIDOS, vigenteEn } from 'src/app/ruta-del-dia/recorridos-local';
+import {
+  AvisoAusencia,
+  AvisoGuardado,
+  CLAVE_AVISOS_AUSENCIA,
+  DIAS_MAXIMOS_AVISO,
+  SolicitudAvisoAusencia,
+  escribirAvisos,
+  leerAvisos,
+  ordenarAvisos,
+  publico,
+} from 'src/app/ruta-del-dia/avisos-ausencia';
+import { Recorrido } from 'src/app/ruta-del-dia/recorrido';
+import { LATENCIA_LOCAL, responderLocal } from 'src/app/shared/crud/repositorio-local';
+import { sumarDias } from 'src/app/shared/fechas/fechas';
 import { GRADOS } from 'src/app/shared/catalogos/catalogos';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
 import { FuenteLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
@@ -54,6 +68,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
   private readonly cotizaciones = inject(CotizacionesRepositorio);
   private readonly recorridos = inject(HistorialRecorridosRepositorio);
   private readonly configuracion = inject(ConfiguracionRepositorio);
+  private readonly latenciaMs = inject(LATENCIA_LOCAL);
 
   obtener(): Observable<PortalAcudiente> {
     return defer(() => {
@@ -80,6 +95,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
           const vehiculoPorId = new Map(d.vehiculos.items.map((v) => [v.id, v]));
           const empleadoPorId = new Map(d.empleados.items.map((e) => [e.id, e]));
 
+          const avisos = leerAvisos().filter((a) => a.fecha >= hoy);
           const estudiantes = d.estudiantes.items.map((e): EstudiantePortal => {
             const colegio = colegioPorId.get(e.colegioId);
             const curso = colegio?.cursos.find((c) => c.grado === e.grado);
@@ -122,6 +138,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
                   }
                 : null,
               hoy: hoyRecorridos,
+              avisos: ordenarAvisos(avisos.filter((a) => a.estudianteId === e.id).map(publico)),
             };
           });
 
@@ -151,8 +168,90 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
     });
   }
 
-  /** Otra pestaña cambió los recorridos (la Ruta del día), o pasó el intervalo de consulta. */
+  /** Otra pestaña cambió los recorridos (la Ruta del día) o los avisos, o pasó el intervalo de consulta. */
   observarCambios(): Observable<unknown> {
-    return merge(fromEvent<StorageEvent>(window, 'storage').pipe(filter((e) => e.key === CLAVE_RECORRIDOS)), interval(30_000));
+    return merge(
+      fromEvent<StorageEvent>(window, 'storage').pipe(filter((e) => e.key === CLAVE_RECORRIDOS || e.key === CLAVE_AVISOS_AUSENCIA)),
+      interval(30_000),
+    );
+  }
+
+  /** Mismas reglas que `ServicioAvisosAusencia.CrearAsync`. */
+  crearAviso(s: SolicitudAvisoAusencia): Observable<AvisoAusencia> {
+    return defer(() => {
+      const acudienteId = this.auth.sesion()?.acudienteId;
+      if (!acudienteId) throw new ErrorCrud('Inicia sesión como acudiente para avisar una ausencia.', 'VALIDACION');
+      return forkJoin({
+        acudiente: this.acudientes.obtener(acudienteId),
+        estudiantes: this.estudiantes.listar({ ...FILTROS_ESTUDIANTE_VACIOS, acudienteId }, SIN_PAGINAR),
+        rutas: this.rutas.listar({ ...FILTROS_RUTA_VACIOS, estado: 'ACTIVO' }, SIN_PAGINAR),
+      }).pipe(
+        map(({ acudiente, estudiantes, rutas }) => {
+          const estudiante = estudiantes.items.find((e) => e.id === s.estudianteId);
+          if (!estudiante) throw new ErrorCrud('El estudiante no existe.', 'NO_ENCONTRADO');
+          const hoy = fechaIso();
+          if (!s.fecha || s.fecha < hoy || s.fecha > sumarDias(hoy, DIAS_MAXIMOS_AVISO)) {
+            throw new ErrorCrud(`Puedes avisar desde hoy y hasta ${DIAS_MAXIMOS_AVISO} días adelante.`, 'VALIDACION');
+          }
+          if (s.nota.length > 300) throw new ErrorCrud('La nota admite máximo 300 caracteres.', 'VALIDACION');
+          const trayecto = s.motivo === 'NO_ASISTE' ? '' : (s.trayecto ?? '');
+          const todos = leerAvisos();
+          if (todos.some((a) => a.estudianteId === s.estudianteId && a.fecha === s.fecha && (!a.trayecto || !trayecto || a.trayecto === trayecto))) {
+            throw new ErrorCrud('Ya hay un aviso para ese día. Cancélalo si quieres cambiarlo.', 'DUPLICADO');
+          }
+          const terminados = new Set(
+            this.recorridosGuardados()
+              .filter((r) => r.fecha === s.fecha && r.estado === 'FINALIZADO' && (!trayecto || r.trayecto === trayecto) && r.paradas.some((p) => p.estudianteId === s.estudianteId))
+              .map((r) => r.trayecto),
+          );
+          if (trayecto ? terminados.size > 0 : terminados.size >= 2) {
+            throw new ErrorCrud('Ese recorrido ya terminó: no se puede avisar.', 'VALIDACION');
+          }
+          const ruta = rutas.items.find((r) => r.estudianteIds.includes(estudiante.id));
+          const nuevo: AvisoGuardado = {
+            id: crypto.randomUUID(),
+            estudianteId: estudiante.id,
+            estudiante: nombreCompleto(estudiante),
+            fecha: s.fecha,
+            trayecto,
+            motivo: s.motivo,
+            nota: s.nota.trim(),
+            acudienteId,
+            acudiente: nombreCompleto(acudiente),
+            telefonoAcudiente: acudiente.telefono,
+            ruta: ruta ? etiquetaRuta(ruta) : '',
+            confirmado: false,
+            confirmadoPorId: '',
+            confirmadoPor: '',
+            fechaConfirmacion: null,
+            fechaCreacion: new Date().toISOString(),
+          };
+          escribirAvisos([...todos, nuevo]);
+          return publico(nuevo);
+        }),
+      );
+    });
+  }
+
+  cancelarAviso(id: string): Observable<void> {
+    return defer(() =>
+      responderLocal(() => {
+        const acudienteId = this.auth.sesion()?.acudienteId;
+        const todos = leerAvisos();
+        const aviso = todos.find((a) => a.id === id && a.acudienteId === acudienteId);
+        if (!aviso) throw new ErrorCrud('El aviso no existe.', 'NO_ENCONTRADO');
+        if (aviso.confirmado) throw new ErrorCrud('La ruta ya confirmó este aviso. Si sí viaja, llama a la monitora o al conductor.', 'VALIDACION');
+        if (aviso.fecha < fechaIso()) throw new ErrorCrud('Ese aviso es de un día que ya pasó.', 'VALIDACION');
+        escribirAvisos(todos.filter((a) => a.id !== id));
+      }, this.latenciaMs),
+    );
+  }
+
+  private recorridosGuardados(): Recorrido[] {
+    try {
+      return JSON.parse(localStorage.getItem(CLAVE_RECORRIDOS) ?? '[]') as Recorrido[];
+    } catch {
+      return [];
+    }
   }
 }

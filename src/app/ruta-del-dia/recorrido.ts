@@ -1,3 +1,4 @@
+import type { AvisoParada } from './avisos-ausencia';
 import { Entidad } from 'src/app/shared/crud/crud';
 
 /**
@@ -63,6 +64,8 @@ export interface Parada {
   horaEntrega: string | null;
   /** Solo si `estado` es AUSENTE. */
   motivoAusencia: MotivoAusencia | '';
+  /** El acudiente avisó desde su portal que no viaja (lo confirma quien lo marca AUSENTE). */
+  aviso?: AvisoParada | null;
 }
 
 export type EstadoRecorrido = 'EN_CURSO' | 'FINALIZADO';
@@ -135,6 +138,8 @@ export interface RutaAsignada {
   /** La otra persona del vehículo (monitora del conductor o viceversa). */
   companero: { nombre: string; telefono: string; rol: 'CONDUCTOR' | 'MONITORA'; /** Foto de perfil (`''` = iniciales). */ foto?: string } | null;
   estudiantes: number;
+  /** Estudiantes de la ruta con aviso de ausencia del acudiente en la fecha. */
+  avisosAusencia?: number;
   /** Recorridos de la fecha consultada. */
   recorridos: ResumenRecorrido[];
 }

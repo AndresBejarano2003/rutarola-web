@@ -1,3 +1,4 @@
+import type { AvisoAusencia } from 'src/app/ruta-del-dia/avisos-ausencia';
 import { EstadoCotizacion } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { MedioPago } from 'src/app/finanzas/recibos/recibo';
 import { EstadoParada, MotivoAusencia, Trayecto, nombreAusencia } from 'src/app/ruta-del-dia/recorrido';
@@ -111,6 +112,8 @@ export interface EstudiantePortal {
   /** Ruta activa con su asignación vigente; `null` si no tiene ruta. */
   transporte: TransporteEstudiante | null;
   hoy: RecorridoHoy[];
+  /** Avisos de ausencia de hoy en adelante que dio el acudiente. */
+  avisos: AvisoAusencia[];
 }
 
 export interface CotizacionPortal {

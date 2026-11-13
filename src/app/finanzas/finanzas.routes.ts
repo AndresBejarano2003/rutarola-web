@@ -1,3 +1,4 @@
+import { conFuncion } from 'src/app/core/plan-empresa';
 import { Routes } from '@angular/router';
 
 // Los repositorios (local / API) se eligen en `core/repositorios.ts`.
@@ -31,6 +32,7 @@ export default [
   },
   {
     path: 'reportes-financieros',
+    canActivate: [conFuncion('REPORTES')],
     children: [
       {
         path: 'ingresos',

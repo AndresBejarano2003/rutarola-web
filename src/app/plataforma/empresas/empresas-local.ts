@@ -4,7 +4,7 @@ import { Empresa } from 'src/app/inicio/configuracion/configuracion';
 import { ErrorCrud, Pagina, Paginacion } from 'src/app/shared/crud/crud';
 import { FuenteLocal, LATENCIA_LOCAL, responderLocal } from 'src/app/shared/crud/repositorio-local';
 import { normalizar } from 'src/app/shared/formularios/formularios';
-import { AdministradorEmpresa, FiltrosEmpresa, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
+import { AdministradorEmpresa, FiltrosEmpresa, ResumenMembresias, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
 import { EmpresasRepositorio } from './empresas-repositorio';
 
 const CLAVE = 'rutarola.empresas';
@@ -37,9 +37,20 @@ export class EmpresasLocal extends EmpresasRepositorio implements FuenteLocal {
         const texto = normalizar(f.texto);
         const todas = this.leer()
           .filter((e) => (!texto || normalizar(e.nombre).includes(texto) || e.nit.includes(texto)) && (!f.estado || e.estado === f.estado))
+          // Sin el API no hay suscripciones de otras empresas: los filtros de membresía no dejan ninguna.
+          .filter(() => !f.membresia && !f.plan)
           .sort((a, b) => a.nombre.localeCompare(b.nombre));
         return { items: todas.slice((pagina - 1) * tamano, pagina * tamano), total: todas.length, pagina, tamano };
       }, this.latenciaMs),
+    );
+  }
+
+  resumenMembresias(): Observable<ResumenMembresias> {
+    return defer(() =>
+      responderLocal(
+        () => ({ total: this.leer().length, prueba: 0, pruebaPorVencer: 0, activa: 0, porVencer: 0, vencida: 0, gratis: 0 }),
+        this.latenciaMs,
+      ),
     );
   }
 

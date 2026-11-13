@@ -6,6 +6,7 @@ import { Trayecto } from 'src/app/ruta-del-dia/recorrido';
 import { diasEntre, fechaCorta, fechaIso, nombrePeriodo } from 'src/app/shared/fechas/fechas';
 import { EstudiantePortal, situacionRecorrido } from '../portal';
 import { PortalEstado } from '../portal-estado';
+import { AvisarAusencia } from '../avisar-ausencia/avisar-ausencia';
 import { MapaRuta } from '../mapa-ruta/mapa-ruta';
 import { Avatar } from 'src/app/shared/foto/avatar';
 
@@ -13,7 +14,7 @@ import { Avatar } from 'src/app/shared/foto/avatar';
 @Component({
   selector: 'app-portal-inicio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, RouterLink, MapaRuta, Avatar],
+  imports: [CurrencyPipe, RouterLink, MapaRuta, Avatar, AvisarAusencia],
   templateUrl: './portal-inicio-page.html',
 })
 export default class PortalInicioPage {

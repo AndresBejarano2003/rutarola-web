@@ -1,4 +1,4 @@
-<section class="card bg-base-200 border border-base-300 shadow-xl max-w-4xl">
+<section class="card bg-base-200 border border-base-300 shadow-xl" [class.max-w-4xl]="seccion() !== 'DOCUMENTOS'">
   <div class="card-body gap-4">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div>
@@ -8,9 +8,24 @@
             <span class="badge badge-soft badge-warning badge-sm">Modo local</span>
           }
         </h2>
-        <p class="text-sm text-base-content/70">Datos de contacto y parámetros que usan los reportes, el portal y las alertas.</p>
+        <p class="text-sm text-base-content/70">Datos de contacto, parámetros, formato de tus PDF y apariencia del sistema.</p>
       </div>
     </div>
+
+    <div role="tablist" aria-label="Secciones de la configuración" class="flex flex-wrap gap-1 border-b border-base-300">
+      @for (s of secciones; track s.id) {
+        <button type="button" role="tab" class="btn btn-ghost btn-sm rounded-b-none border-b-2" [attr.aria-selected]="seccion() === s.id"
+          [class.border-primary]="seccion() === s.id" [class.border-transparent]="seccion() !== s.id" (click)="seccion.set(s.id)">
+          <i [class]="s.icono" aria-hidden="true"></i> {{ s.nombre }}
+        </button>
+      }
+    </div>
+
+    @if (seccion() === 'DOCUMENTOS') {
+      <app-formato-documentos />
+    } @else if (seccion() === 'APARIENCIA') {
+      <app-apariencia />
+    } @else {
 
     @if (cargando()) {
       <div class="grid md:grid-cols-2 gap-4">
@@ -90,6 +105,7 @@
           </button>
         </div>
       </form>
+    }
     }
   </div>
 </section>

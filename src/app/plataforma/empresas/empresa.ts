@@ -1,12 +1,37 @@
 import { Empresa } from 'src/app/inicio/configuracion/configuracion';
 import { EstadoRegistro } from 'src/app/shared/crud/crud';
+import { PlanSuscripcion, SituacionMembresia } from 'src/app/sistema/membresias/suscripcion';
 
 export interface FiltrosEmpresa {
   texto: string;
   estado: EstadoRegistro | '';
+  /** Situación de la membresía (prueba, al día, se pasó el pago…). */
+  membresia: SituacionMembresia | '';
+  /** Plan vigente. */
+  plan: PlanSuscripcion | '';
 }
 
-export const FILTROS_EMPRESA_VACIOS: FiltrosEmpresa = { texto: '', estado: '' };
+export const FILTROS_EMPRESA_VACIOS: FiltrosEmpresa = { texto: '', estado: '', membresia: '', plan: '' };
+
+/** `GET /empresas/resumen-membresias`: cuántas empresas hay en cada situación. */
+export interface ResumenMembresias {
+  total: number;
+  prueba: number;
+  pruebaPorVencer: number;
+  activa: number;
+  porVencer: number;
+  vencida: number;
+  gratis: number;
+}
+
+export const CLAVE_RESUMEN: Record<SituacionMembresia, keyof ResumenMembresias> = {
+  PRUEBA: 'prueba',
+  PRUEBA_POR_VENCER: 'pruebaPorVencer',
+  ACTIVA: 'activa',
+  POR_VENCER: 'porVencer',
+  VENCIDA: 'vencida',
+  GRATIS: 'gratis',
+};
 
 /** Primer administrador de la empresa (opcional, solo al crearla). */
 export interface AdministradorInicial {

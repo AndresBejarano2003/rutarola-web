@@ -157,7 +157,11 @@
       </div>
       <div>
         <h4 class="text-sm font-semibold uppercase tracking-wide text-info mb-2 border-b border-base-300 pb-1">Trayecto</h4>
-        <app-mapa-trayecto [recorridoId]="r.id" [enCurso]="r.estado === 'EN_CURSO'" />
+        @if (gpsDisponible()) {
+          <app-mapa-trayecto [recorridoId]="r.id" [enCurso]="r.estado === 'EN_CURSO'" />
+        } @else {
+          <p class="text-sm text-base-content/70"><i class="fa-solid fa-lock" aria-hidden="true"></i> El trayecto en el mapa está disponible desde el plan Profesional (GPS en vivo).</p>
+        }
       </div>
       <div>
         <h4 class="text-sm font-semibold uppercase tracking-wide text-info mb-2 border-b border-base-300 pb-1">

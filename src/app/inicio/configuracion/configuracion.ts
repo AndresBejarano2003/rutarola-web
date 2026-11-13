@@ -1,3 +1,4 @@
+import type { MembresiaEmpresa } from 'src/app/sistema/membresias/suscripcion';
 import { EstadoRegistro } from 'src/app/shared/crud/crud';
 
 /** Empresa de transporte (`GET /empresas/actual`). El NIT y el estado solo los cambia la plataforma. */
@@ -12,6 +13,8 @@ export interface Empresa {
   logoUrl: string;
   estado: EstadoRegistro;
   fechaCreacion: string;
+  /** Plan y situación de la suscripción: solo en `GET /empresas` de la plataforma. */
+  membresia?: MembresiaEmpresa | null;
 }
 
 /** Lo que el administrador puede cambiar de su empresa (`PUT /empresas/actual`). */

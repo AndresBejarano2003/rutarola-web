@@ -3,7 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
 import { ValidacionCodigo } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
-import { AjusteSuscripcion, Checkout, PagoSuscripcion, PeriodoPago, Plan, PlanSuscripcion, Suscripcion } from './suscripcion';
+import {
+  AjusteSuscripcion,
+  Checkout,
+  CondicionesRegistro,
+  DecisionGratis,
+  PagoSuscripcion,
+  ParametroPlataforma,
+  PeriodoPago,
+  Plan,
+  PlanSuscripcion,
+  Suscripcion,
+} from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 
 /**
@@ -23,7 +34,13 @@ import { SuscripcionRepositorio } from './suscripcion-repositorio';
  * - Plataforma (`empresas.gestionar`): `GET/PUT /empresas/{id}/suscripcion` (422 fecha de fin pasada o código que no
  *   aplica; `codigoPromocional` solo con ACTIVA) y
  *   `GET /empresas/{id}/suscripcion/pagos`.
- * Crear o activar vehículos/estudiantes por encima del plan responde 422 con el límite.
+ * - `GET /suscripcion/condiciones` (público) → `{diasPrueba, planPrueba, nombrePlanPrueba}`;
+ * - `POST /suscripcion/continuar-gratis` (`suscripcion.gestionar`) → `DecisionGratis` (inactiva los vehículos y
+ *   estudiantes que superan Gratis, conservando primero los que están en uso); 422 si no hay decisión pendiente;
+ * - Plataforma: `GET /plataforma/parametros`, `PUT /plataforma/parametros/{clave} {valor}` (`empresas.gestionar`;
+ *   400 fuera de rango; `suscripcion.dias_prueba` 1–90).
+ * Crear o activar vehículos/estudiantes por encima del plan responde 422 con el límite. Una función que el plan no
+ * incluye responde 403 con el mensaje (reportes, GPS en vivo, crear recordatorios).
  */
 @Injectable()
 export class SuscripcionHttp extends SuscripcionRepositorio {
@@ -53,6 +70,22 @@ export class SuscripcionHttp extends SuscripcionRepositorio {
 
   verificarPago(referencia: string, idTransaccion: string): Observable<PagoSuscripcion> {
     return this.http.post<PagoSuscripcion>(`${this.url}/pagos/${encodeURIComponent(referencia)}/verificacion`, { idTransaccion });
+  }
+
+  condiciones(): Observable<CondicionesRegistro> {
+    return this.http.get<CondicionesRegistro>(`${this.url}/condiciones`);
+  }
+
+  continuarGratis(): Observable<DecisionGratis> {
+    return this.http.post<DecisionGratis>(`${this.url}/continuar-gratis`, {});
+  }
+
+  parametrosPlataforma(): Observable<ParametroPlataforma[]> {
+    return this.http.get<ParametroPlataforma[]>(`${environment.apiUrl}/plataforma/parametros`);
+  }
+
+  actualizarParametroPlataforma(clave: string, valor: string): Observable<ParametroPlataforma> {
+    return this.http.put<ParametroPlataforma>(`${environment.apiUrl}/plataforma/parametros/${encodeURIComponent(clave)}`, { valor });
   }
 
   deEmpresa(empresaId: string): Observable<Suscripcion> {

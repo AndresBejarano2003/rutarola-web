@@ -2,7 +2,7 @@
   <div class="max-w-5xl mx-auto grid lg:grid-cols-5 gap-8 items-start">
     <aside class="lg:col-span-2 flex flex-col gap-5">
       <a routerLink="/login" aria-label="RutaRola"><img src="logos/logo-oficial-sin-fondo-lb-pequeño.png" alt="RutaRola" class="h-12 w-auto" /></a>
-      <h1 class="text-3xl font-bold leading-tight">Registra tu empresa y usa RutaRola <span class="text-primary">{{ mesesPrueba }} meses gratis</span></h1>
+      <h1 class="text-3xl font-bold leading-tight">Registra tu empresa y usa RutaRola <span class="text-primary">{{ diasPrueba() }} días gratis</span></h1>
       <ul class="flex flex-col gap-3 text-sm">
         <li class="flex gap-3"><i class="fa-solid fa-check text-success mt-1" aria-hidden="true"></i> Todo el plan Profesional durante la prueba: GPS en vivo, mapa para las familias y recordatorios de cobro.</li>
         <li class="flex gap-3"><i class="fa-solid fa-check text-success mt-1" aria-hidden="true"></i> Sin tarjeta de crédito y sin permanencia.</li>
@@ -19,6 +19,41 @@
             <span>Modo local: el registro necesita el servidor. Entra con un usuario de ejemplo desde el inicio de sesión.</span>
           </div>
         }
+        <app-titulo-seccion>¿Cómo quieres empezar?</app-titulo-seccion>
+        <div role="radiogroup" aria-label="Cómo quieres empezar" class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="card bg-base-100 border border-base-300 p-4 gap-1 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+            <input type="radio" name="comienzo" class="sr-only" [checked]="comienzo() === 'PRUEBA'" (change)="comienzo.set('PRUEBA')" />
+            <span class="font-semibold flex items-center gap-2"><i class="fa-solid fa-gift text-success" aria-hidden="true"></i> Probar {{ diasPrueba() }} días gratis</span>
+            <span class="text-xs text-base-content/70">Todo el plan Profesional, sin tarjeta. Al terminar eliges un plan o sigues en Gratis.</span>
+          </label>
+          <label class="card bg-base-100 border border-base-300 p-4 gap-1 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+            <input type="radio" name="comienzo" class="sr-only" [checked]="comienzo() === 'PAGAR'" (change)="comienzo.set('PAGAR')" />
+            <span class="font-semibold flex items-center gap-2"><i class="fa-solid fa-credit-card text-secondary" aria-hidden="true"></i> Pagar un plan ahora</span>
+            <span class="text-xs text-base-content/70">Sin prueba: al crear la cuenta pasas al pago del plan que elijas.</span>
+          </label>
+        </div>
+        @if (comienzo() === 'PAGAR') {
+          <div class="md:col-span-2 flex flex-col gap-3">
+            <div role="radiogroup" aria-label="Plan a pagar" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              @for (p of planesPago; track p.id) {
+                <label class="rounded-box bg-base-100 border border-base-300 px-3 py-2 cursor-pointer text-sm has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+                  <input type="radio" name="plan" class="sr-only" [checked]="planElegido() === p.id" (change)="planElegido.set(p.id)" />
+                  <span class="font-semibold">{{ p.nombre }}</span>
+                  <span class="block text-xs text-base-content/70">{{ p.limites.vehiculos ?? 'Sin límite de' }} vehículos · {{ p.limites.estudiantes ?? 'sin límite de' }} estudiantes</span>
+                </label>
+              }
+            </div>
+            <div role="radiogroup" aria-label="Periodo de pago" class="flex flex-wrap gap-2">
+              <label class="btn btn-sm bg-base-300 border-neutral has-checked:btn-secondary">
+                <input type="radio" name="periodo" class="sr-only" [checked]="periodo() === 'MENSUAL'" (change)="periodo.set('MENSUAL')" /> Mensual
+              </label>
+              <label class="btn btn-sm bg-base-300 border-neutral has-checked:btn-secondary">
+                <input type="radio" name="periodo" class="sr-only" [checked]="periodo() === 'ANUAL'" (change)="periodo.set('ANUAL')" /> Anual · 2 meses gratis
+              </label>
+            </div>
+          </div>
+        }
+
         <app-titulo-seccion>Tu empresa</app-titulo-seccion>
         <ng-container formGroupName="empresa">
           <label app-campo class="md:col-span-2" etiqueta="Nombre de la empresa" requerido [error]="campo('empresa.nombre')">
@@ -82,7 +117,7 @@
             @if (enviando()) {
               <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
             }
-            Crear mi cuenta gratis
+            {{ comienzo() === 'PAGAR' ? 'Crear mi cuenta y pagar' : 'Crear mi cuenta gratis' }}
           </button>
         </div>
       </form>

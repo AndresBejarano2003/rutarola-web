@@ -100,6 +100,19 @@
       </div>
     }
 
+    <!-- Avisos de los acudientes por confirmar -->
+    @if (enCurso() && avisosPorConfirmar().length) {
+      <div role="status" class="alert alert-warning alert-soft items-start">
+        <i class="fa-solid fa-user-slash mt-0.5" aria-hidden="true"></i>
+        <div class="min-w-0">
+          <p class="font-semibold">
+            {{ avisosPorConfirmar().length === 1 ? '1 acudiente avisó' : avisosPorConfirmar().length + ' acudientes avisaron' }} que su estudiante no viaja
+          </p>
+          <p class="text-sm">{{ nombresAviso() }}. Si no sabías, llama o escribe al acudiente; luego toca “Confirmar: no va”.</p>
+        </div>
+      </div>
+    }
+
     <!-- Siguiente paso -->
     @if (paso(); as p) {
       <section class="card bg-base-200 border-2 border-primary/60 shadow-xl" aria-live="polite">
@@ -160,8 +173,9 @@
                 </div>
               </div>
               <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full" [disabled]="procesando()"
-                (click)="marcar(idsCon('PENDIENTE'), 'A_BORDO')">
+                (click)="marcar(idsSinAviso('PENDIENTE'), 'A_BORDO')" [disabled]="procesando() || idsSinAviso('PENDIENTE').length === 0">
                 <i class="fa-solid fa-check-double" aria-hidden="true"></i> Subieron todos
+                @if (idsSinAviso('PENDIENTE').length < idsCon('PENDIENTE').length) { <span class="text-xs font-normal">(menos los que avisaron que no viajan)</span> }
               </button>
             }
             @case ('ENTREGAR') {
@@ -281,12 +295,25 @@
   <div class="min-w-0 flex-1 basis-40">
     <p class="font-medium truncate">{{ e.estudiante }}</p>
     <p class="text-xs text-base-content/70 truncate">{{ e.grado }} · {{ e.direccion }}</p>
+    @if (e.aviso; as a) {
+      <p class="text-xs mt-0.5" [class]="a.confirmado ? 'text-success' : 'text-warning'">
+        <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
+        {{ a.confirmado ? 'Aviso confirmado por ' + (a.confirmadoPor || 'la ruta') : 'El acudiente avisó: ' + textoAvisoParada(e).toLowerCase() }}
+        @if (a.nota) { · “{{ a.nota }}” }
+      </p>
+    }
   </div>
   <span class="badge badge-sm gap-1 shrink-0" [class]="estadoDe(e).badge">
     <i [class]="estadoDe(e).icono" aria-hidden="true"></i> {{ momento(e) }}
   </span>
   @if (enCurso()) {
     <div class="flex flex-wrap gap-1 w-full sm:w-auto justify-end">
+      @if (e.estado === 'PENDIENTE' && e.aviso && !e.aviso.confirmado) {
+        <button type="button" class="btn btn-xs btn-soft btn-warning" [disabled]="procesando()" (click)="confirmarAviso(e)"
+          [attr.aria-label]="'Confirmar que ' + e.estudiante + ' no va'">
+          <i class="fa-solid fa-check" aria-hidden="true"></i> Confirmar: no va
+        </button>
+      }
       @if (e.estado === 'PENDIENTE') {
         <button type="button" class="btn btn-xs btn-soft btn-info" [disabled]="procesando()" (click)="marcar([e.estudianteId], 'A_BORDO')">
           {{ esRecogida() ? 'Recogido' : 'Subió' }}
@@ -340,6 +367,30 @@
       <p class="text-base-content/70">{{ p.grado }}</p>
     </div>
   </div>
+  @if (p.aviso; as a) {
+    <div role="alert" class="rounded-box border-2 p-3 text-sm space-y-2" [class]="a.confirmado ? 'border-success/50 bg-success/10' : 'border-warning bg-warning/15'">
+      <p class="font-semibold text-base flex items-center gap-2" [class]="a.confirmado ? 'text-success' : 'text-warning'">
+        <i class="fa-solid fa-user-slash" aria-hidden="true"></i> {{ a.confirmado ? 'Confirmado: no viaja' : 'El acudiente avisó: ' + textoAvisoParada(p).toLowerCase() }}
+      </p>
+      <p class="text-base-content/80">{{ a.acudiente || 'El acudiente' }} avisó a las {{ hora(a.fecha) }}@if (a.nota) {: “{{ a.nota }}”}.</p>
+      @if (!a.confirmado && enCurso()) {
+        <p class="text-base-content/80">Si no sabías, llama o escribe para confirmarlo.</p>
+        <div class="flex flex-wrap gap-2">
+          @if (p.telefonoAcudiente) {
+            <a class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" [href]="telefono(p.telefonoAcudiente)">
+              <i class="fa-solid fa-phone text-secondary" aria-hidden="true"></i> Llamar
+            </a>
+            <a class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" [href]="whatsappAviso(p)" target="_blank" rel="noopener">
+              <i class="fa-brands fa-whatsapp text-success" aria-hidden="true"></i> Escribir
+            </a>
+          }
+          <button type="button" class="btn btn-sm btn-soft btn-warning" [disabled]="procesando()" (click)="confirmarAviso(p)">
+            <i class="fa-solid fa-check" aria-hidden="true"></i> Confirmar: no va
+          </button>
+        </div>
+      }
+    </div>
+  }
   <div class="rounded-box bg-base-100 p-3 space-y-2 text-sm">
     <p class="flex items-start gap-2"><i class="fa-solid fa-location-dot text-error mt-0.5 w-4" aria-hidden="true"></i><span>{{ p.direccion }}</span></p>
     @if (p.acudiente) {

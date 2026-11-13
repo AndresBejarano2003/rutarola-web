@@ -1,6 +1,7 @@
 <form [id]="idFormulario()" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
   <div class="grid md:grid-cols-2 gap-x-4 gap-y-3">
     <app-titulo-seccion>Identificación del vehículo</app-titulo-seccion>
+    <app-campo-foto class="md:col-span-2" formControlName="foto" etiqueta="Foto del vehículo" [iniciales]="form.controls.placa.value.slice(0, 3) || 'BUS'" />
     <label app-campo etiqueta="Placa" requerido [error]="error('placa')">
       <input type="text" formControlName="placa" maxlength="7"
         class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase tracking-wider"
@@ -34,6 +35,9 @@
     </label>
 
     <app-titulo-seccion>Documentos (fecha de vencimiento)</app-titulo-seccion>
+    <p class="md:col-span-2 text-xs text-base-content/70 -mt-1">
+      Al renovar un documento, regístralo con su PDF en el historial de documentos (abajo, al consultar el vehículo): la fecha se actualiza sola.
+    </p>
     @for (documento of documentos; track documento.campo) {
       <label app-campo [etiqueta]="documento.nombre" requerido [error]="error(documento.campo)">
         <div class="flex items-center gap-2">

@@ -52,7 +52,13 @@ import { MEDIOS_PAGO, Recibo } from '../recibo';
                 </td>
                 <td class="hidden @3xl:table-cell"><app-badge-estado [estado]="r.estado" textoActivo="Válido" textoInactivo="Anulado" /></td>
                 <td class="text-right whitespace-nowrap">
-                  <app-acciones-fila (consultar)="consultar.emit(r)" (editar)="editar.emit(r)" (eliminar)="eliminar.emit(r)" />
+                  <app-acciones-fila (consultar)="consultar.emit(r)" (editar)="editar.emit(r)" (eliminar)="eliminar.emit(r)">
+                    <div class="tooltip tooltip-left" data-tip="Descargar PDF">
+                      <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Descargar PDF" (click)="pdf.emit(r)">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </app-acciones-fila>
                 </td>
               </tr>
             } @empty {
@@ -77,6 +83,8 @@ export class RecibosTabla {
   readonly consultar = output<Recibo>();
   readonly editar = output<Recibo>();
   readonly eliminar = output<Recibo>();
+  /** Descargar el PDF con el formato de la empresa. */
+  readonly pdf = output<Recibo>();
   readonly crear = output<void>();
 
   protected readonly medios = new Map(MEDIOS_PAGO.map((m) => [m.id, m]));

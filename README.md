@@ -191,17 +191,30 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
 - **Colegios:** NIT único; "Agregar cursos" llena los cursos **desde Jardín hasta el curso elegido** con
   la hora de entrada y salida indicadas (cada curso se puede modificar o quitar después). El grado de un
   estudiante se elige entre los cursos activos de su colegio.
-- **Vehículos:** placa e interno únicos; vencimientos de SOAT, tecnomecánica, tarjeta de operación y
-  pólizas con alerta a 30 días (`app-badge-vencimiento`).
+- **Vehículos:** placa e interno únicos; foto opcional (`<app-campo-foto>`, se ve en la tabla); vencimientos de SOAT,
+  tecnomecánica, tarjeta de operación y pólizas con alerta a 30 días (`app-badge-vencimiento`). **Historial de
+  documentos** (`operacion/vehiculos/documentos-vehiculo/`, en el detalle del vehículo): cada SOAT, revisión, tarjeta
+  de operación, póliza u otro documento renovado queda registrado con número, entidad, expedición, vencimiento,
+  observaciones y su PDF o imagen (≤ 2 MB). El de vencimiento más reciente de cada tipo es el **vigente** y fija la
+  fecha del vehículo (alertas, asignaciones); los anteriores se ven como "Reemplazado". Cambiar una fecha en el
+  formulario del vehículo también la agrega al historial. `DocumentosVehiculoRepositorio` (local → HTTP
+  `/vehiculos/{id}/documentos`).
 - **Rutas:** código único; estudiantes del colegio de la ruta; un estudiante no puede estar en dos rutas
   activas de la misma jornada.
 - **Asignaciones (ruta + vehículo + conductor + monitora):** una activa por ruta; conductor de tipo
   conductor con licencia vigente; vehículo activo, con capacidad suficiente y documentos al día; un
-  vehículo o persona no cubre dos rutas de la misma jornada.
+  vehículo o persona no cubre dos rutas de la misma jornada. Arriba de la tabla, **Avisos de ausencia**
+  (`<app-avisos-del-dia>`, fecha elegible, hoy por defecto): estudiantes que su acudiente avisó que no viajan, su
+  ruta, lo que avisó y si la ruta ya lo confirmó.
 - **Conductores:** vista de solo lectura de los empleados conductores con su licencia y ruta asignada;
   se editan en Personas › Empleados y se asignan en Operación › Asignaciones.
 - **Cotizaciones:** acudiente/estudiantes registrados (selectores) o cliente nuevo (texto);
   total = valor por estudiante × estudiantes.
+- **PDF de facturas, recibos y cotizaciones:** "Descargar PDF" en la fila y en el detalle abre "Imprimir / Guardar
+  como PDF" del navegador (`shared/documentos-pdf/`: `htmlDocumento` + `imprimirHtml` en un iframe oculto, sin
+  dependencias) con el **formato de la empresa** (Configuración › Documentos PDF). `GeneradorPdf` (provisto en
+  `proveerRepositorios()`) lee el formato una vez y se refresca al guardarlo. Los textos se escapan y solo se aceptan
+  color `#RRGGBB` y logo en data URL de imagen.
 - **Facturas (contrataciones):** valor **mensual** por estudiante entre un mes inicial y uno final; el
   estudiante debe ser del acudiente; un estudiante no tiene dos facturas vigentes que se crucen.
 - **Recibos:** pagan un mes de una factura vigente; un mes no se paga dos veces.
@@ -218,7 +231,16 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   facturas sin programación), **días de alerta de vencimiento** (1–120, por defecto 30) y el interruptor **"Los
   acudientes ven la ubicación en vivo de la ruta"** (`gps.acudientes_ven_ubicacion`, 1 = sí por defecto; un
   parámetro de 0 a 1 se muestra como interruptor Sí/No). Un solo "Guardar cambios"; con el API los aplica el
-  servidor en reportes, portal, tablero, notificaciones y conductores.
+  servidor en reportes, portal, tablero, notificaciones y conductores. Pestañas (`?seccion=documentos|apariencia`):
+  - **Documentos PDF** (`formato-documentos/`): logo (PNG/JPG/WebP/SVG reducido a 600 × 240 px, ≤ 300 KB),
+    nombre comercial (obligatorio), eslogan, NIT, dirección, ciudad, teléfono, correo, sitio web, color principal,
+    pie de página y una nota por tipo (factura, recibo, cotización), con vista previa en vivo de los tres y "Probar
+    PDF". Sin guardar todavía, parte de los datos de contacto de la empresa (`personalizado` false).
+    `GET/PUT /configuracion/documentos`.
+  - **Apariencia** (`apariencia/`): tema **oscuro (por defecto)** o **claro** para TODOS los usuarios de la empresa;
+    se guarda al elegirlo (`PUT /empresas/actual/tema`) y llega a cada usuario en `Sesion.empresa.tema` al iniciar
+    sesión. `core/tema.ts` (`TemaApp`, iniciado en `App`) pone `data-theme` (`rutarola` / `rutarola-claro`) y
+    recuerda el último en `rutarola.tema` (pantalla de login y modo local).
 - **Ubicación para acudientes:** si el administrador la desactiva, el acudiente NO ve el mapa ni la posición del
   vehículo (el servidor responde 403 a `gps/ultima` y al `Seguir` del hub, y deja de enviarle posiciones aunque ya
   estuviera conectado), pero sí el estado de su estudiante y la hora en que inició la ruta ("la ruta va en camino
@@ -244,9 +266,27 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
 - **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
   (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,
   soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
-  mensualidades. Toda empresa nueva (registro público `/registro` o la plataforma) recibe 3 meses de Profesional;
-  al terminar la prueba o el periodo pagado pasa a Gratis sin perder datos. Los límites solo bloquean crear o
-  activar vehículos o estudiantes por encima del plan; sin GPS el teléfono muestra "Ubicación en pausa". El pago es
+  mensualidades. Toda empresa nueva (registro público `/registro` o la plataforma) recibe una **prueba gratuita del
+  plan Profesional de 15 días**, parametrizable por el SuperAdmin (Plataforma › Ajustes, `suscripcion.dias_prueba`,
+  1–90); **cada prueba conserva los días con que empezó** (`Suscripcion.diasPrueba`): si la plataforma cambia 15 → 20,
+  solo las empresas nuevas reciben 20. En el registro también se puede **pagar un plan de una vez** ("Pagar un plan
+  ahora", `pagarAhora: true`): la empresa empieza en Gratis con la decisión pendiente y se abre el pago del plan
+  elegido (`/registro?plan=&periodo=` desde la página pública de precios).
+  - **Al vencer la prueba o un plan pagado** (`pendienteDecision`): apenas entra el administrador ve la pasarela
+    (`<app-decision-plan>` en el shell, no se cierra sin decidir; no tapa Planes y membresías ni Soporte): elegir
+    plan y periodo → pago, o "No quiero pagar, seguir en Gratis" (con confirmación de lo que se inactiva,
+    `POST /suscripcion/continuar-gratis`).
+  - **Bajar a un plan con menos límite** (Gratis o uno pagado menor) **inactiva lo que sobra** (no se borra): se
+    conservan primero los vehículos con asignación vigente y los estudiantes en rutas activas, luego los más antiguos;
+    un vehículo inactivado también inactiva sus asignaciones. Inactivos no salen en listas de activos, rutas ni
+    asignaciones; para activar otro hay que inactivar primero uno activo (422 por encima del límite) o mejorar el plan.
+  - **Funciones por plan** (`FUNCIONES_PLAN`, `PlanEmpresa` + guardia `conFuncion`): Programación de cobros
+    (RECORDATORIOS: se ve, pero guardar exige el plan; aviso `<app-aviso-funcion>`), Reportes financieros (REPORTES)
+    y Monitoreo en vivo / mapas (GPS_EN_VIVO) se muestran con candado en el menú y llevan a Planes y membresías
+    (`?funcion=`) con el plan desde el que están; el servidor responde 403 con el mismo mensaje. El mapa del
+    acudiente también exige GPS en vivo.
+  Los límites solo bloquean crear o activar vehículos o estudiantes por encima del plan; sin GPS el teléfono muestra
+  "Ubicación en pausa". El pago es
   Wompi Web Checkout y el plan lo activa SOLO la confirmación de Wompi al servidor (evento firmado o consulta), nunca
   el navegador. Pagar durante la prueba suma los días restantes; renovar extiende; cambiar de plan empieza hoy.
   **Hoy Wompi está pausado** (sin llaves en el servidor, `pagosEnLinea` = false): la página ofrece "Solicitar por
@@ -269,6 +309,12 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   elimina (se inactiva); su detalle muestra las empresas que lo usaron.
 - **Administradores de empresa (plataforma):** en Plataforma › Empresas el SuperAdmin ve los administradores de
   cada empresa, los crea, edita, inactiva y les cambia la contraseña (revoca sus sesiones), y ajusta su plan.
+- **Membresías en Plataforma › Empresas:** tarjetas por situación (`GET /empresas/resumen-membresias`) que filtran la
+  tabla, filtros de membresía y plan, y la columna **Membresía**: plan, situación (`SITUACIONES_MEMBRESIA`: En prueba,
+  Prueba por vencer ≤ 3 días, Al día, Por vencer ≤ 7 días, **Se pasó el pago** = venció sin pagar ni elegir Gratis,
+  Gratis), desde cuándo, hasta cuándo y días que quedan, días de la prueba, y el último pago (columna desde 1024 px).
+- **Plataforma › Ajustes (`plataforma/ajustes/`):** parámetros globales (`GET/PUT /plataforma/parametros`); hoy los
+  días de la prueba gratuita.
 
 ### Tipos de usuario y acceso (`core/auth.ts`, `core/guardias.ts`, `autenticacion/`)
 Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar sesión.
@@ -337,6 +383,13 @@ App para el celular del conductor y la monitora, dentro del vehículo.
 - **Rutas de hoy:** las de sus asignaciones ACTIVAS vigentes en la fecha (`fechaInicio ≤ hoy ≤ fechaFin`)
   con ruta activa; muestra colegio, vehículo, número de estudiantes y el compañero (conductor ↔ monitora)
   con botón de llamar. El empleado sale de la sesión/token, nunca de un parámetro.
+- **Avisos de los acudientes:** "Mis rutas" dice cuántos acudientes avisaron que su estudiante no viaja hoy
+  (`RutaAsignada.avisosAusencia`). En el recorrido, cada parada trae su `aviso` (misma fecha; trayecto igual o
+  ambos): alerta arriba con los nombres por confirmar, y en la tarjeta del siguiente paso y en la fila "El acudiente
+  avisó: …" con Llamar, Escribir (WhatsApp "¿confirmas que … no viaja hoy?") y **"Confirmar: no va"**, que lo marca
+  AUSENTE con el motivo avisado (`motivoAlConfirmar`: en la entrega, "No viaja"). Marcarlo AUSENTE confirma el
+  aviso (queda "Confirmado por …" para el acudiente y el administrador); "Deshacer" lo deja sin confirmar.
+  "Subieron todos" no incluye a quien avisó que no viaja.
 - **Trayectos:** `RECOGIDA` (casa → colegio, en el orden de la ruta) y `ENTREGA` (colegio → casa, en orden
   inverso). Un recorrido por asignación, fecha y trayecto; uno solo `EN_CURSO` por asignación. Conductor
   y monitora comparten el mismo recorrido: si uno toca "Iniciar" en un trayecto que el otro ya inició,
@@ -401,8 +454,15 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   y sin toasts por cada marca (solo errores y el cierre).
 
 ### Portal del acudiente (`portal/`)
-Para el celular del acudiente; **solo lectura** (no paga, no edita). El acudiente sale de la
-sesión/token, nunca de un parámetro: solo ve SUS estudiantes, facturas, recibos y cotizaciones.
+Para el celular del acudiente; **solo lectura** (no paga, no edita), salvo los **avisos de ausencia**. El acudiente
+sale de la sesión/token, nunca de un parámetro: solo ve SUS estudiantes, facturas, recibos y cotizaciones.
+- **Avisos de ausencia** (`portal/avisar-ausencia/`, en Estudiantes y en "Hoy en la ruta"): "Avisar que no va" para
+  hoy o hasta 30 días adelante: **No va al colegio** (`NO_ASISTE`, recogida y entrega) o **Va al colegio, pero no en la
+  ruta** (`POR_SU_CUENTA`: ambos trayectos, solo la recogida o solo la entrega), con nota opcional (≤ 300). Un aviso
+  por estudiante y día (409); no se avisa un trayecto que ya terminó (422). Muestra cada aviso "por confirmar" o
+  "Confirmado por …" y permite retirarlo mientras la ruta no lo haya confirmado y no sea de un día pasado.
+  `PortalRepositorio.crearAviso`/`cancelarAviso` (`POST /portal/avisos`, `DELETE /portal/avisos/{id}`); cada
+  estudiante trae sus `avisos`. Modelo y helpers en `ruta-del-dia/avisos-ausencia.ts` (local: `rutarola.avisos-ausencia`).
 - `PortalRepositorio` (`PortalLocal` → `PortalHttp`, `GET /portal` → `PortalAcudiente`), estado
   compartido en `PortalEstado` (provisto en `portal.routes.ts`, botón "Actualizar" en el encabezado).
 - Secciones (pestañas desde `sm`, barra inferior fija en celular): **Inicio** (saldo vencido, próximo
@@ -565,8 +625,12 @@ Las reglas de negocio que cruzan módulos se prueban sobre los repositorios
 
 ## 3. Diseño y colores
 
-El sistema usa **un único tema oscuro, `rutarola`**, definido en `src/styles.css`. Los colores salen del
-logo: **amarillo del bus** (acción principal) y **rojo de las montañas** (acento de marca).
+El sistema usa el tema oscuro **`rutarola`** (por defecto) y, si la empresa lo elige en Configuración › Apariencia,
+el tema claro **`rutarola-claro`**, ambos en `src/styles.css` con los MISMOS tokens (por eso las plantillas nunca usan
+colores fijos). Los colores salen del logo: **amarillo del bus** (acción principal) y **rojo de las montañas**
+(acento de marca). En el claro, info/success/warning/error son tonos oscuros (#0369a1, #15803d, #b45309, #b91c1c) para
+cumplir AA como texto sobre blanco, y `text-primary` se pinta #a16207. Las gráficas toman sus colores del tema activo
+(`COLORES_TEMA` en `dashboard-page.ts`).
 
 **Regla:** en las plantillas se usan las clases semánticas del tema, **nunca grises o azules fijos**
 (`bg-gray-800`, `text-gray-500`, etc.).

@@ -9,6 +9,11 @@ import { mensajeError } from 'src/app/shared/formularios/formularios';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import { DatosEmpresa, Empresa, NOMBRES_PARAMETRO, Parametro, esInterruptor } from './configuracion';
 import { ConfiguracionRepositorio } from './configuracion-repositorio';
+import { FormatoDocumentosConfig } from './formato-documentos/formato-documentos';
+import { Apariencia } from './apariencia/apariencia';
+import { ActivatedRoute } from '@angular/router';
+
+type Seccion = 'EMPRESA' | 'DOCUMENTOS' | 'APARIENCIA';
 
 type CampoEmpresa = keyof DatosEmpresa;
 
@@ -17,11 +22,13 @@ type CampoEmpresa = keyof DatosEmpresa;
  * plataforma) y parámetros del sistema (día límite de pago, días de alerta de vencimiento y si los acudientes
  * ven la ubicación en vivo de la ruta, como interruptor Sí/No).
  * Un solo botón guarda todo; solo se envían los parámetros que cambiaron.
+ * Pestañas "Documentos PDF" (formato de facturas, recibos y cotizaciones) y "Apariencia" (tema claro u oscuro de la
+ * empresa); `?seccion=documentos|apariencia` abre una.
  */
 @Component({
   selector: 'app-configuracion-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Campo, TituloSeccion],
+  imports: [ReactiveFormsModule, Campo, TituloSeccion, FormatoDocumentosConfig, Apariencia],
   templateUrl: './configuracion-page.html',
 })
 export default class ConfiguracionPage implements OnInit {
@@ -33,6 +40,14 @@ export default class ConfiguracionPage implements OnInit {
   protected readonly nombres = NOMBRES_PARAMETRO;
   protected readonly esInterruptor = esInterruptor;
 
+  protected readonly secciones: { id: Seccion; nombre: string; icono: string }[] = [
+    { id: 'EMPRESA', nombre: 'Empresa y parámetros', icono: 'fa-solid fa-building' },
+    { id: 'DOCUMENTOS', nombre: 'Documentos PDF', icono: 'fa-solid fa-file-pdf' },
+    { id: 'APARIENCIA', nombre: 'Apariencia', icono: 'fa-solid fa-circle-half-stroke' },
+  ];
+  protected readonly seccion = signal<Seccion>(
+    (({ documentos: 'DOCUMENTOS', apariencia: 'APARIENCIA' }) as Record<string, Seccion>)[inject(ActivatedRoute).snapshot.queryParamMap.get('seccion') ?? ''] ?? 'EMPRESA',
+  );
   protected readonly empresa = signal<Empresa | null>(null);
   protected readonly parametros = signal<Parametro[]>([]);
   protected readonly cargando = signal(true);

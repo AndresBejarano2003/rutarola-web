@@ -35,6 +35,7 @@ import {
   reordenarParadas,
   resumirRecorrido,
 } from './recorrido';
+import { CLAVE_AVISOS_AUSENCIA, aParada, avisoAplica, escribirAvisos, leerAvisos } from './avisos-ausencia';
 import { INTERVALO_SINCRONIZACION_MS } from './recorridos-http';
 import { RecorridosRepositorio } from './recorridos-repositorio';
 
@@ -73,6 +74,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
       return this.operacion().pipe(
         map(({ asignaciones, rutas, colegios, vehiculos, empleados }) => {
           const recorridos = this.leer().filter((r) => r.fecha === fecha);
+          const conAviso = new Set(leerAvisos().filter((a) => a.fecha === fecha).map((a) => a.estudianteId));
           return asignaciones
             .filter((a) => vigenteEn(a, fecha) && (a.conductorId === empleadoId || a.monitoraId === empleadoId))
             .flatMap((a): RutaAsignada[] => {
@@ -96,6 +98,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                     ? { nombre: nombreCompleto(otro), telefono: otro.telefono, rol: otro.tipoEmpleado, foto: otro.foto ?? '' }
                     : null,
                   estudiantes: ruta.estudianteIds.length,
+                  avisosAusencia: ruta.estudianteIds.filter((id) => conAviso.has(id)).length,
                   recorridos: recorridos
                     .filter((r) => r.asignacionId === a.id)
                     .sort((x, y) => TRAYECTOS.findIndex((t) => t.id === x.trayecto) - TRAYECTOS.findIndex((t) => t.id === y.trayecto))
@@ -119,7 +122,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
   obtener(id: string): Observable<Recorrido> {
     return defer(() => {
       const empleadoId = this.empleadoId();
-      return responderLocal(() => this.buscar(this.leer(), id, empleadoId), this.latenciaMs);
+      return responderLocal(() => this.conAvisos(this.buscar(this.leer(), id, empleadoId)), this.latenciaMs);
     });
   }
 
@@ -148,7 +151,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
           }
           // El compañero ya lo inició: se une al mismo recorrido (no se crea otro ni es un error).
           const existente = this.leer().find((r) => r.asignacionId === asignacionId && r.fecha === fecha && r.trayecto === trayecto);
-          if (existente) return responderLocal(() => existente, this.latenciaMs);
+          if (existente) return responderLocal(() => this.conAvisos(existente), this.latenciaMs);
           // Solo cuenta el de HOY: uno que quedó abierto otro día ya no aparece en la Ruta del día y no debe bloquearla.
           if (this.leer().some((r) => r.asignacionId === asignacionId && r.fecha === fecha && r.estado === 'EN_CURSO')) {
             throw new ErrorCrud(`Hay un recorrido en curso en ${asignada.ruta}. Finalízalo antes de iniciar otro.`, 'DUPLICADO');
@@ -224,7 +227,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
               };
               return responderLocal(() => {
                 this.escribir([nuevo, ...this.leer()]);
-                return nuevo;
+                return this.conAvisos(nuevo);
               }, this.latenciaMs);
             }),
           );
@@ -243,12 +246,48 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
       if (!r.paradas.some((p) => ids.has(p.estudianteId))) {
         throw new ErrorCrud('El estudiante no hace parte de este recorrido.', 'NO_ENCONTRADO');
       }
+      let marcado: Recorrido;
       try {
-        return { ...r, paradas: r.paradas.map((p) => (ids.has(p.estudianteId) ? cambiarEstado(p, estado, ahora, motivo ?? '') : p)) };
+        marcado = { ...r, paradas: r.paradas.map((p) => (ids.has(p.estudianteId) ? cambiarEstado(p, estado, ahora, motivo ?? '') : p)) };
       } catch (error) {
         throw new ErrorCrud((error as Error).message, 'VALIDACION');
       }
+      this.confirmarAvisos(marcado, ids);
+      return marcado;
     });
+  }
+
+  /** Marcado AUSENTE = confirma el aviso del acudiente; "Deshacer" (o si sí viajó) lo deja sin confirmar. */
+  private confirmarAvisos(r: Recorrido, ids: Set<string>): void {
+    const empleadoId = this.empleadoId();
+    const quien = empleadoId === r.conductorId ? r.conductor : r.monitora;
+    let cambio = false;
+    const avisos = leerAvisos().map((a) => {
+      const parada = r.paradas.find((p) => ids.has(p.estudianteId) && avisoAplica(a, p.estudianteId, r.fecha, r.trayecto));
+      if (!parada) return a;
+      if (parada.estado === 'AUSENTE' && !a.confirmado) {
+        cambio = true;
+        return { ...a, confirmado: true, confirmadoPorId: empleadoId, confirmadoPor: quien, fechaConfirmacion: new Date().toISOString() };
+      }
+      if (parada.estado !== 'AUSENTE' && a.confirmado) {
+        cambio = true;
+        return { ...a, confirmado: false, confirmadoPorId: '', confirmadoPor: '', fechaConfirmacion: null };
+      }
+      return a;
+    });
+    if (cambio) escribirAvisos(avisos);
+  }
+
+  /** Cada parada lleva el aviso del acudiente que le aplica (misma fecha; trayecto igual o ambos). */
+  private conAvisos(r: Recorrido): Recorrido {
+    const avisos = leerAvisos().filter((a) => a.fecha === r.fecha);
+    return {
+      ...r,
+      paradas: r.paradas.map((p) => {
+        const a = avisos.find((x) => avisoAplica(x, p.estudianteId, r.fecha, r.trayecto));
+        return { ...p, aviso: a ? aParada(a) : null };
+      }),
+    };
   }
 
   reordenar(id: string, estudianteIds: string[]): Observable<Recorrido> {
@@ -277,13 +316,14 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
     return this.cambios().pipe(
       // Un fallo puntual (sin red) no corta la sincronización: se reintenta en el siguiente aviso.
       switchMap(() => this.obtener(id).pipe(catchError(() => EMPTY))),
-      distinctUntilChanged((a, b) => a.fechaActualizacion === b.fechaActualizacion),
+      // Un aviso nuevo o retirado no cambia la fecha del recorrido: también se compara.
+      distinctUntilChanged((a, b) => a.fechaActualizacion === b.fechaActualizacion && JSON.stringify(a.paradas.map((p) => p.aviso)) === JSON.stringify(b.paradas.map((p) => p.aviso))),
     );
   }
 
   /** Avisos de cambio: otra pestaña escribió los recorridos (al instante) o pasó el intervalo de consulta. */
   private cambios(): Observable<unknown> {
-    const otraPestana = fromEvent<StorageEvent>(window, 'storage').pipe(filter((e) => e.key === this.clave));
+    const otraPestana = fromEvent<StorageEvent>(window, 'storage').pipe(filter((e) => e.key === this.clave || e.key === CLAVE_AVISOS_AUSENCIA));
     return merge(otraPestana, interval(INTERVALO_SINCRONIZACION_MS));
   }
 
@@ -305,9 +345,11 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
         if (actual.estado !== 'EN_CURSO') {
           throw new ErrorCrud('Este recorrido ya fue finalizado y no se puede modificar.', 'VALIDACION');
         }
-        const actualizado = { ...cambio(actual, empleadoId), fechaActualizacion: new Date().toISOString() };
+        const { paradas, ...resto } = { ...cambio(actual, empleadoId), fechaActualizacion: new Date().toISOString() };
+        // El aviso no se guarda en el recorrido: se arma al leerlo.
+        const actualizado: Recorrido = { ...resto, paradas: paradas.map(({ aviso: _, ...p }) => p) };
         this.escribir(registros.map((r) => (r.id === id ? actualizado : r)));
-        return actualizado;
+        return this.conAvisos(actualizado);
       }, this.latenciaMs);
     });
   }

@@ -59,6 +59,50 @@
   --noise: 0;
 }
 
+/*
+ * TEMA RUTAROLA CLARO — opcional por empresa (Inicio › Configuración › Apariencia; `core/tema.ts`).
+ * Mismos tokens que el oscuro; los tonos info/success/warning/error son oscuros para cumplir WCAG AA
+ * como texto sobre blanco (≥ 4.5:1).
+ */
+@plugin "daisyui/theme" {
+  name: "rutarola-claro";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #f3f4f6;
+  --color-base-200: #ffffff;
+  --color-base-300: #e5e7eb;
+  --color-base-content: #111827;
+
+  --color-primary: #facc15;
+  --color-primary-content: #1f2937;
+  --color-secondary: #1d4ed8;
+  --color-secondary-content: #ffffff;
+  --color-accent: #b91c1c;
+  --color-accent-content: #ffffff;
+  --color-neutral: #9ca3af;
+  --color-neutral-content: #111827;
+
+  --color-info: #0369a1;
+  --color-info-content: #ffffff;
+  --color-success: #15803d;
+  --color-success-content: #ffffff;
+  --color-warning: #b45309;
+  --color-warning-content: #ffffff;
+  --color-error: #b91c1c;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* Las páginas públicas hacen scroll normal; el shell (h-dvh) maneja su propio scroll interno. */
 html,
 body {
@@ -99,16 +143,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--color-base-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--color-base-300);
   border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--color-neutral);
+}
+
+/*
+ * Tema claro: el amarillo de marca sirve de fondo (botón principal) pero como TEXTO sobre blanco no llega a 4.5:1;
+ * el texto e íconos `text-primary` usan un amarillo oscuro (#a16207, 4.9:1).
+ */
+[data-theme="rutarola-claro"] .text-primary {
+  color: #a16207;
 }
 /*
  * Tablas: filas de una sola línea; si no caben, la tabla se desplaza en

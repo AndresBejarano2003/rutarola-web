@@ -24,6 +24,9 @@
         </div>
       }
       <app-vehiculo-formulario idFormulario="form-vehiculo" [modo]="modo()" [vehiculo]="seleccionado()" (guardar)="guardar($event)" />
+      @if (modo() !== 'crear' && seleccionado(); as v) {
+        <app-documentos-vehiculo class="block mt-6" [vehiculoId]="v.id" (cambio)="documentosCambiaron()" />
+      }
     </div>
   }
   @if (modalAbierto()) {

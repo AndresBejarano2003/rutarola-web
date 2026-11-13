@@ -5,12 +5,14 @@ import { environment } from '@environments/environment';
 import { Empresa } from 'src/app/inicio/configuracion/configuracion';
 import { desdeApi } from 'src/app/inicio/configuracion/configuracion-http';
 import { Pagina, Paginacion } from 'src/app/shared/crud/crud';
-import { AdministradorEmpresa, FiltrosEmpresa, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
+import { AdministradorEmpresa, FiltrosEmpresa, ResumenMembresias, SolicitudAdministrador, SolicitudEmpresa } from './empresa';
 import { EmpresasRepositorio } from './empresas-repositorio';
 
 /**
  * `empresas.gestionar` (SUPER_ADMIN):
- * - `GET /empresas?texto=&estado=&pagina=&tamano=` → `Pagina<Empresa>` (por nombre);
+ * - `GET /empresas?texto=&estado=&membresia=&plan=&pagina=&tamano=` → `Pagina<Empresa>` (por nombre) con la `membresia`
+ *   de cada una (plan, situación PRUEBA|PRUEBA_POR_VENCER|ACTIVA|POR_VENCER|VENCIDA|GRATIS, fechas, días, último pago);
+ * - `GET /empresas/resumen-membresias` → `ResumenMembresias`;
  * - `POST /empresas` → 201 con la configuración por defecto y, si viene `administrador`, su primer
  *   usuario ADMINISTRADOR (409 NIT repetido o usuario/correo ya en uso);
  * - `PUT /empresas/{id}` (sin `administrador`). No hay DELETE: se inactiva.
@@ -31,6 +33,10 @@ export class EmpresasHttp extends EmpresasRepositorio {
       if (valor !== '') params = params.set(clave, String(valor));
     }
     return this.http.get<Pagina<Parameters<typeof desdeApi>[0]>>(this.url, { params }).pipe(map((p) => ({ ...p, items: p.items.map(desdeApi) })));
+  }
+
+  resumenMembresias(): Observable<ResumenMembresias> {
+    return this.http.get<ResumenMembresias>(`${this.url}/resumen-membresias`);
   }
 
   crear(solicitud: SolicitudEmpresa): Observable<Empresa> {

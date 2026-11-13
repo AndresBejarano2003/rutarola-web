@@ -13,6 +13,8 @@ import { fechaCorta, fechaIso } from 'src/app/shared/fechas/fechas';
 import { emitirEnVivo } from 'src/app/shared/formularios/formularios';
 import { Modal } from 'src/app/shared/modal/modal';
 import { MapaTrayecto } from './mapa-trayecto/mapa-trayecto';
+import { PlanEmpresa } from 'src/app/core/plan-empresa';
+import { computed } from '@angular/core';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import { Paginacion } from 'src/app/shared/paginacion/paginacion';
 import { PanelFiltros } from 'src/app/shared/panel-filtros/panel-filtros';
@@ -45,6 +47,9 @@ export default class RecorridosPage implements OnInit {
   protected readonly store = inject(HistorialRecorridosStore);
   private readonly repositorio = inject(HistorialRecorridosRepositorio);
   private readonly avisos = inject(NotificacionesService);
+  private readonly plan = inject(PlanEmpresa, { optional: true });
+  /** El trayecto en el mapa depende del GPS en vivo del plan. */
+  protected readonly gpsDisponible = computed(() => this.plan?.tiene('GPS_EN_VIVO') ?? true);
 
   protected readonly rutas = toSignal(inject(RutasRepositorio).opciones(), { initialValue: [] });
   protected readonly trayectos = TRAYECTOS;
