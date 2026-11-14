@@ -26,7 +26,7 @@ export interface RespuestaLogin {
  * 400 nueva < 6) y revoca las demás sesiones del usuario.
  *
  * `POST {apiUrl}/auth/registro {empresa, administrador, aceptaTerminos}` (público, limitado por IP) → 201
- * `{ sesion, tokens }`: crea la empresa con los días de prueba del plan Profesional que fija la plataforma (o, con `pagarAhora: true`, en Gratis con el pago pendiente). 400 validación; 409 NIT,
+ * `{ sesion, tokens }`: crea la empresa según `comienzo`: `GRATIS` (plan Gratis sin vencimiento), `PRUEBA` (días del plan Profesional que fija la plataforma) o `PAGAR` (en Gratis con el pago pendiente). 400 validación; 409 NIT,
  * usuario o correo ya registrados.
  *
  * `GET {apiUrl}/auth/perfil` → `PerfilUsuario`; `PUT {apiUrl}/auth/perfil {nombre, correo, telefono, foto}` →

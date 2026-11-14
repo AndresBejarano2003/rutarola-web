@@ -1,12 +1,16 @@
 /**
  * Planes y suscripción de la empresa (contrato: `Application/Suscripciones` del API).
- * Quien se registra tiene los días de prueba del plan Profesional que fija la plataforma (15 por defecto; cada
- * empresa conserva los que recibió). Al vencer la prueba o el plan pagado, al entrar el administrador elige pagar
- * o seguir en Gratis; en Gratis (o al bajar de plan) se inactiva lo que supere los límites. El anual = 10 meses.
+ * Quien se registra elige cómo empezar (`ComienzoRegistro`): el plan Gratis (no vence: sigue en Gratis hasta que pague
+ * un plan o inicie la prueba), la prueba del plan Profesional con los días que fija la plataforma (15 por defecto; cada
+ * empresa conserva los que recibió) o pagar un plan de una vez. Al vencer la prueba o el plan pagado, al entrar el
+ * administrador elige pagar o seguir en Gratis; en Gratis (o al bajar de plan) se inactiva lo que supere los límites.
+ * El anual = 10 meses.
  */
 export type PlanSuscripcion = 'GRATIS' | 'ESENCIAL' | 'PROFESIONAL' | 'EMPRESARIAL';
 export type EstadoSuscripcion = 'PRUEBA' | 'ACTIVA' | 'GRATIS';
 export type PeriodoPago = 'MENSUAL' | 'ANUAL';
+/** Registro: `GRATIS` (plan Gratis sin vencimiento), `PRUEBA` (días de Profesional) o `PAGAR` (Gratis + pago del plan elegido). */
+export type ComienzoRegistro = 'GRATIS' | 'PRUEBA' | 'PAGAR';
 export type EstadoPagoSuscripcion = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'ANULADO' | 'ERROR';
 
 /** Funciones que dependen del plan. */
@@ -295,4 +299,46 @@ export function leerRetornoPago(pago: string | null, id: string | null): { refer
   const [referencia, resto = ''] = pago.split('?');
   const idPegado = /(?:^|&)id=([^&]+)/.exec(resto)?.[1] ?? '';
   return { referencia, idTransaccion: id ?? decodeURIComponent(idPegado) };
+}
+
+/** Desde este porcentaje de un límite se avisa que está cerca. */
+export const PORCENTAJE_CERCA_DEL_LIMITE = 80;
+export type NivelUso = 'NORMAL' | 'CERCA' | 'LLENO';
+
+/** Qué tan lleno está un límite del plan (`null` = sin límite → NORMAL). */
+export function nivelUso(usados: number, limite: number | null): NivelUso {
+  if (!limite) return 'NORMAL';
+  const porcentaje = (usados / limite) * 100;
+  return porcentaje >= 100 ? 'LLENO' : porcentaje >= PORCENTAJE_CERCA_DEL_LIMITE ? 'CERCA' : 'NORMAL';
+}
+
+/** Empresa en Gratis que nunca usó la prueba (se registró en Gratis): puede iniciarla (`POST /suscripcion/prueba`). */
+export function puedeIniciarPrueba(s: Pick<Suscripcion, 'estado' | 'pruebaUsada'> | null): boolean {
+  return !!s && s.estado === 'GRATIS' && !s.pruebaUsada;
+}
+
+/**
+ * Recordatorio del plan Gratis para el shell del administrador (aviso, insignia FREE y menú): el nivel lo da el límite
+ * más lleno, para que "Llegaste al límite" se vea antes que el recordatorio general. null fuera de Gratis o con la
+ * decisión pendiente (allí manda `<app-decision-plan>`).
+ */
+export function recordatorioGratis(s: Suscripcion | null): { nivel: NivelUso; texto: string } | null {
+  if (!s || s.estado !== 'GRATIS' || s.pendienteDecision) return null;
+  const limites = [
+    { nivel: nivelUso(s.uso.vehiculos, s.limites.vehiculos), texto: `${s.uso.vehiculos} de ${s.limites.vehiculos} vehículo(s)` },
+    { nivel: nivelUso(s.uso.estudiantes, s.limites.estudiantes), texto: `${s.uso.estudiantes} de ${s.limites.estudiantes} estudiantes` },
+  ];
+  const llenos = limites.filter((l) => l.nivel === 'LLENO');
+  if (llenos.length) {
+    return { nivel: 'LLENO', texto: `Llegaste al límite del plan Gratis (${llenos.map((l) => l.texto).join(' y ')}). Mejora tu plan para registrar más.` };
+  }
+  const cerca = limites.filter((l) => l.nivel === 'CERCA');
+  if (cerca.length) {
+    return { nivel: 'CERCA', texto: `Estás cerca del límite del plan Gratis: usas ${cerca.map((l) => l.texto).join(' y ')}.` };
+  }
+  const extra = puedeIniciarPrueba(s) ? ` o prueba el plan Profesional gratis` : '';
+  return {
+    nivel: 'NORMAL',
+    texto: `Estás en el plan Gratis (hasta ${s.limites.vehiculos} vehículo(s) y ${s.limites.estudiantes} estudiantes). Mejora tu plan${extra} para tener GPS en vivo, recordatorios de cobro y reportes.`,
+  };
 }

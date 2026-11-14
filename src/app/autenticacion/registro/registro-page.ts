@@ -8,7 +8,7 @@ import { Campo, TituloSeccion } from 'src/app/shared/campo/campo';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { mensajeError, nit } from 'src/app/shared/formularios/formularios';
-import { DIAS_PRUEBA_POR_DEFECTO, PLANES, PeriodoPago } from 'src/app/sistema/membresias/suscripcion';
+import { ComienzoRegistro, DIAS_PRUEBA_POR_DEFECTO, PLANES, PeriodoPago } from 'src/app/sistema/membresias/suscripcion';
 import { SuscripcionRepositorio } from 'src/app/sistema/membresias/suscripcion-repositorio';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,8 +16,9 @@ import { AutenticacionRepositorio } from '../autenticacion-repositorio';
 
 /**
  * Registro público de una empresa de transporte (`/registro`): datos de la empresa y de su administrador.
- * El servidor crea la empresa con los días de prueba del plan Profesional que fije la plataforma (`GET /suscripcion/condiciones`)
- * y deja la sesión iniciada. Con "Pagar ahora" no hay prueba: la empresa empieza en Gratis y se abre el pago del plan elegido.
+ * Se elige cómo empezar: el plan Gratis (no vence: sigue allí hasta que pague o inicie la prueba), la prueba del plan
+ * Profesional con los días que fije la plataforma (`GET /suscripcion/condiciones`; al vencer sin pago queda en Gratis) o
+ * "Pagar ahora" (empieza en Gratis y se abre el pago del plan elegido). El servidor deja la sesión iniciada.
  */
 @Component({
   selector: 'app-registro-page',
@@ -35,8 +36,8 @@ export default class RegistroPage {
   private readonly suscripciones = inject(SuscripcionRepositorio);
   protected readonly diasPrueba = signal(DIAS_PRUEBA_POR_DEFECTO);
   protected readonly planesPago = PLANES.filter((p) => p.precioMensual > 0);
-  /** `PRUEBA` = días gratis del plan Profesional; `PAGAR` = paga de una vez el plan elegido. */
-  protected readonly comienzo = signal<'PRUEBA' | 'PAGAR'>('PRUEBA');
+  protected readonly gratis = PLANES.find((p) => p.id === 'GRATIS')!;
+  protected readonly comienzo = signal<ComienzoRegistro>('PRUEBA');
   protected readonly planElegido = signal('PROFESIONAL');
   protected readonly periodo = signal<PeriodoPago>('MENSUAL');
   protected readonly enviando = signal(false);
@@ -76,6 +77,8 @@ export default class RegistroPage {
       this.planElegido.set(plan);
     }
     if (q.get('periodo') === 'ANUAL') this.periodo.set('ANUAL');
+    // Desde la tarjeta del plan Gratis (`/registro?comienzo=GRATIS`).
+    if (q.get('comienzo') === 'GRATIS') this.comienzo.set('GRATIS');
   }
 
   protected campo(ruta: string): string | null {
@@ -100,7 +103,7 @@ export default class RegistroPage {
           empresa: { nombre: v.empresa.nombre.trim(), nit: v.empresa.nit.trim(), ciudad: v.empresa.ciudad.trim(), telefono: v.empresa.telefono.trim() },
           administrador: { nombre: v.administrador.nombre.trim(), email: v.administrador.email.trim(), usuario: v.administrador.usuario.trim(), contrasena: v.contrasena },
           aceptaTerminos: v.aceptaTerminos,
-          pagarAhora: this.comienzo() === 'PAGAR',
+          comienzo: this.comienzo(),
         }),
       );
       this.auth.abrirSesion(sesion, true);

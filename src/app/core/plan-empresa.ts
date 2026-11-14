@@ -48,6 +48,13 @@ export class PlanEmpresa {
     return decision;
   }
 
+  /** Se registró en Gratis y quiere probar: inicia los días de Profesional. */
+  async iniciarPrueba(): Promise<Suscripcion> {
+    const s = await firstValueFrom(this.repositorio.iniciarPrueba());
+    this.establecer(s);
+    return s;
+  }
+
   /** Sin datos todavía cuenta como disponible (el servidor decide). */
   tiene(funcion: FuncionPlan): boolean {
     const s = this._suscripcion();

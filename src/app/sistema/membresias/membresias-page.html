@@ -4,7 +4,7 @@
     <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-crown" aria-hidden="true"></i> Planes y membresías</span>
     <h1 class="text-2xl sm:text-4xl font-bold mt-3">Transporte escolar organizado, <span class="text-primary">cobros a tiempo</span> y familias tranquilas</h1>
     <p class="text-base-content/70 mt-3">
-      Empieza con {{ diasPrueba() }} días gratis del plan Profesional. Sin tarjeta, sin permanencia: si no eliges un plan, sigues en Gratis con todos tus datos.
+      Mejora tu plan cuando lo necesites. Sin permanencia: si un plan pagado vence, sigues en Gratis con todos tus datos.
     </p>
   </header>
 
@@ -75,7 +75,7 @@
               @switch (s.estado) {
                 @case ('PRUEBA') { <span class="badge badge-soft badge-info">Prueba gratuita</span> }
                 @case ('ACTIVA') { <span class="badge badge-soft badge-success">Activo · {{ s.periodo === 'ANUAL' ? 'anual' : 'mensual' }}</span> }
-                @default { <span class="badge bg-base-300">Sin costo</span> }
+                @default { <span class="badge badge-outline border-primary text-primary font-bold tracking-wide gap-1"><i class="fa-solid fa-seedling" aria-hidden="true"></i>FREE</span> }
               }
               @if (modoLocal) {
                 <span class="badge badge-soft badge-warning">Modo local</span>
@@ -89,7 +89,21 @@
               <p class="text-sm">Vigente hasta el <span class="font-semibold">{{ s.fechaFin | date: 'd MMM y' }}</span> ({{ s.diasRestantes }} días).</p>
               <p class="text-xs text-base-content/70">Renueva antes de esa fecha para no bajar al plan Gratis; los días que te queden se conservan.</p>
             } @else {
-              <p class="text-sm">Estás en el plan Gratis. Tus datos siguen guardados; solo se limita crear por encima de los límites.</p>
+              <p class="text-sm">Estás en el plan Gratis, sin fecha de vencimiento. Tus datos siguen guardados; solo se limita crear por encima de los límites.</p>
+              <p class="text-xs text-base-content/70">
+                @if (s.pagosEnLinea) { Para mejorarlo, elige un plan abajo y págalo: se activa de una vez. } @else { Para mejorarlo, elige un plan abajo y solicítalo por Soporte: lo activamos apenas confirmemos el pago. }
+              </p>
+              @if (puedeProbar()) {
+                <button type="button" class="btn btn-sm btn-secondary self-start" [disabled]="iniciandoPrueba()" (click)="probarProfesional()">
+                  @if (iniciandoPrueba()) {
+                    <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+                  } @else {
+                    <i class="fa-solid fa-gift" aria-hidden="true"></i>
+                  }
+                  Probar Profesional {{ diasPrueba() }} días gratis
+                </button>
+                <p class="text-xs text-base-content/70">Una sola vez, sin tarjeta. Si al terminar no pagas, vuelves al plan Gratis.</p>
+              }
             }
             @if (s.nota) {
               <p class="text-xs text-base-content/70"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i> {{ s.nota }}</p>

@@ -36,6 +36,11 @@ export default class PlanesPublicosPage {
     void this.router.navigateByUrl('/registro');
   }
 
+  /** Se registra en el plan Gratis (no vence). */
+  protected empezarGratis(): void {
+    void this.router.navigate(['/registro'], { queryParams: { comienzo: 'GRATIS' } });
+  }
+
   /** Paga ese plan de una vez, sin prueba. */
   protected pagarAhora(p: Plan): void {
     void this.router.navigate(['/registro'], { queryParams: { plan: p.id, periodo: this.periodo() } });

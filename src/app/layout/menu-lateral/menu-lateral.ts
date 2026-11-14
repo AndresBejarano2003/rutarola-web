@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PlanEmpresa } from 'src/app/core/plan-empresa';
-import { planDesdeConFuncion } from 'src/app/sistema/membresias/suscripcion';
+import { planDesdeConFuncion, puedeIniciarPrueba, recordatorioGratis } from 'src/app/sistema/membresias/suscripcion';
 import { MENU_OPERATIVO, MENU_SISTEMA, OpcionMenu } from './opciones-menu';
 
 const CLAVE_MENUS_ABIERTOS = 'menusAbiertos';
@@ -19,6 +19,13 @@ export class MenuLateral {
 
   private readonly menusAbiertos = signal(new Set<string>(leerMenusAbiertos()));
   private readonly plan = inject(PlanEmpresa, { optional: true });
+
+  /** Plan Gratis: tarjeta al final del menú con el uso y el enlace para mejorar el plan. */
+  protected readonly gratis = computed(() => {
+    const s = this.plan?.suscripcion() ?? null;
+    const r = recordatorioGratis(s);
+    return s && r ? { suscripcion: s, nivel: r.nivel, probar: puedeIniciarPrueba(s) } : null;
+  });
 
   /** "Esencial" si el plan de la empresa no incluye la función de la opción; null si está disponible. */
   protected bloqueo(opcion: OpcionMenu): string | null {

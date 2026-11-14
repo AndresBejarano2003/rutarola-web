@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { Credenciales, Sesion } from 'src/app/core/auth';
+import { ComienzoRegistro } from 'src/app/sistema/membresias/suscripcion';
 
 /**
  * Valida credenciales y devuelve la sesión con el TIPO DE USUARIO, que decide a qué
@@ -45,6 +46,9 @@ export interface SolicitudRegistro {
   empresa: { nombre: string; nit: string; ciudad: string; telefono: string };
   administrador: { nombre: string; usuario: string; email: string; contrasena: string };
   aceptaTerminos: boolean;
-  /** Paga un plan de una vez en vez de la prueba gratuita: la empresa empieza en Gratis con la pasarela pendiente. */
-  pagarAhora?: boolean;
+  /**
+   * `GRATIS`: plan Gratis sin vencimiento. `PRUEBA`: días de Profesional (al vencer sin pago, Gratis). `PAGAR`: empieza
+   * en Gratis con la pasarela pendiente para pagar el plan elegido.
+   */
+  comienzo: ComienzoRegistro;
 }

@@ -29,8 +29,8 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
       @for (p of planes; track p.id) {
-        <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [textoBoton]="p.precioMensual === 0 ? 'Probar ' + diasPrueba() + ' días gratis' : 'Pagar ahora, sin prueba'"
-          (elegir)="p.precioMensual === 0 ? registrarse() : pagarAhora(p)" />
+        <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [textoBoton]="p.precioMensual === 0 ? 'Empezar gratis' : 'Pagar ahora, sin prueba'"
+          (elegir)="p.precioMensual === 0 ? empezarGratis() : pagarAhora(p)" />
       }
     </div>
     <p class="text-center text-sm text-base-content/70">

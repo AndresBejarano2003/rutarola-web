@@ -23,6 +23,24 @@
       </li>
     }
   </ul>
+
+  @if (gratis(); as g) {
+    <a routerLink="/sistema/membership" (click)="cerrarEnMovil()"
+      class="card mx-3 sm:mx-4 mb-4 p-3 gap-2 bg-base-200 border border-base-300 hover:border-primary text-sm"
+      [class.border-error]="g.nivel === 'LLENO'" [class.border-warning]="g.nivel === 'CERCA'">
+      <span class="flex items-center justify-between gap-2">
+        <span class="font-semibold">Tu plan</span>
+        <span class="badge badge-sm badge-outline border-primary text-primary font-bold tracking-wide gap-1"><i class="fa-solid fa-seedling" aria-hidden="true"></i>FREE</span>
+      </span>
+      <span class="text-xs text-base-content/70">
+        <i class="fa-solid fa-van-shuttle w-4" aria-hidden="true"></i> {{ g.suscripcion.uso.vehiculos }} / {{ g.suscripcion.limites.vehiculos }} vehículos ·
+        <i class="fa-solid fa-children w-4" aria-hidden="true"></i> {{ g.suscripcion.uso.estudiantes }} / {{ g.suscripcion.limites.estudiantes }} estudiantes
+      </span>
+      <span class="text-info font-medium flex items-center gap-1">
+        <i class="fa-solid fa-arrow-up-right-dots" aria-hidden="true"></i> {{ g.probar ? 'Mejorar o probar Profesional' : 'Mejorar mi plan' }}
+      </span>
+    </a>
+  }
 </nav>
 
 <!-- Ítem recursivo: grupo desplegable si tiene hijos, enlace si no -->

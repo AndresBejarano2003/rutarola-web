@@ -80,6 +80,10 @@ export class SuscripcionHttp extends SuscripcionRepositorio {
     return this.http.post<DecisionGratis>(`${this.url}/continuar-gratis`, {});
   }
 
+  iniciarPrueba(): Observable<Suscripcion> {
+    return this.http.post<Suscripcion>(`${this.url}/prueba`, {});
+  }
+
   parametrosPlataforma(): Observable<ParametroPlataforma[]> {
     return this.http.get<ParametroPlataforma[]>(`${environment.apiUrl}/plataforma/parametros`);
   }

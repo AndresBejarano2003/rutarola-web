@@ -27,6 +27,7 @@ import {
   leerRetornoPago,
   nombrePlan,
   planDesdeConFuncion,
+  puedeIniciarPrueba,
 } from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 import { TarjetaPlan } from './tarjeta-plan/tarjeta-plan';
@@ -115,6 +116,9 @@ export default class MembresiasPage {
   /** Wompi configurado en el servidor; si no, el plan se solicita por Soporte y lo activa la plataforma. */
   protected readonly pagoEnLinea = computed(() => this.suscripcion()?.pagosEnLinea ?? false);
   protected readonly enPrueba = computed(() => this.suscripcion()?.estado === 'PRUEBA');
+  /** Se registró en Gratis y nunca usó la prueba. */
+  protected readonly puedeProbar = computed(() => puedeIniciarPrueba(this.suscripcion()));
+  protected readonly iniciandoPrueba = signal(false);
   protected readonly progresoPrueba = computed(() => {
     const s = this.suscripcion();
     const dias = s?.diasRestantes ?? 0;
@@ -191,6 +195,20 @@ export default class MembresiasPage {
       this.avisos.error(mensajeDeError(e));
     } finally {
       this.pasandoAGratis.set(false);
+    }
+  }
+
+  /** Inicia la prueba del plan Profesional (una sola vez). */
+  protected async probarProfesional(): Promise<void> {
+    this.iniciandoPrueba.set(true);
+    try {
+      const s = await this.planEmpresa.iniciarPrueba();
+      this.suscripcion.set(s);
+      this.avisos.exito(`Tu prueba del plan ${s.nombrePlan} empezó: tienes ${s.diasRestantes ?? this.diasPrueba()} días con todas sus funciones.`);
+    } catch (e) {
+      this.avisos.error(mensajeDeError(e));
+    } finally {
+      this.iniciandoPrueba.set(false);
     }
   }
 

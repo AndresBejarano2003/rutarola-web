@@ -27,6 +27,8 @@ export abstract class SuscripcionRepositorio {
   abstract condiciones(): Observable<CondicionesRegistro>;
   /** Venció y no quiere pagar: sigue en Gratis e inactiva lo que supere sus límites (422 si no hay decisión pendiente). */
   abstract continuarGratis(): Observable<DecisionGratis>;
+  /** En Gratis sin haber usado la prueba: inicia los días de Profesional que fija la plataforma (422 si ya la usó o tiene un plan). */
+  abstract iniciarPrueba(): Observable<Suscripcion>;
   // Plataforma: parámetros globales (días de prueba)
   abstract parametrosPlataforma(): Observable<ParametroPlataforma[]>;
   abstract actualizarParametroPlataforma(clave: string, valor: string): Observable<ParametroPlataforma>;

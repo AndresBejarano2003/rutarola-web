@@ -266,11 +266,14 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
 - **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
   (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,
   soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
-  mensualidades. Toda empresa nueva (registro público `/registro` o la plataforma) recibe una **prueba gratuita del
-  plan Profesional de 15 días**, parametrizable por el SuperAdmin (Plataforma › Ajustes, `suscripcion.dias_prueba`,
+  mensualidades. En el registro público (`/registro`, `comienzo`) la empresa **elige cómo empezar**: **plan Gratis**
+  (no vence ni pide decidir: se queda en Gratis hasta que pague un plan —se activa al pagar— o inicie la prueba desde
+  Planes y membresías, una sola vez, `POST /suscripcion/prueba`), **prueba gratuita** o **pagar un plan ahora**. La
+  tarjeta Gratis de la página pública lleva a `/registro?comienzo=GRATIS`. La prueba (elegida en el registro, iniciada
+  desde Gratis o de una empresa creada por la plataforma) es del **plan Profesional por 15 días**, parametrizable por el SuperAdmin (Plataforma › Ajustes, `suscripcion.dias_prueba`,
   1–90); **cada prueba conserva los días con que empezó** (`Suscripcion.diasPrueba`): si la plataforma cambia 15 → 20,
   solo las empresas nuevas reciben 20. En el registro también se puede **pagar un plan de una vez** ("Pagar un plan
-  ahora", `pagarAhora: true`): la empresa empieza en Gratis con la decisión pendiente y se abre el pago del plan
+  ahora", `comienzo: 'PAGAR'`): la empresa empieza en Gratis con la decisión pendiente y se abre el pago del plan
   elegido (`/registro?plan=&periodo=` desde la página pública de precios).
   - **Al vencer la prueba o un plan pagado** (`pendienteDecision`): apenas entra el administrador ve la pasarela
     (`<app-decision-plan>` en el shell, no se cierra sin decidir; no tapa Planes y membresías ni Soporte): elegir
@@ -292,7 +295,13 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   **Hoy Wompi está pausado** (sin llaves en el servidor, `pagosEnLinea` = false): la página ofrece "Solicitar por
   Soporte" y la plataforma activa el plan en Empresas › Plan; el correo también está simulado (avisos solo por
   la campana). `suscripcion.ts` debe coincidir con `CatalogoPlanes.cs`. `/offline-membership` es la página pública de precios y
-  `<app-aviso-plan>` avisa en el shell 15 días antes del fin o en Gratis.
+  `<app-aviso-plan>` avisa en el shell 15 días antes del fin.
+  - **Recordatorios del plan Gratis** (puros en `suscripcion.ts`: `recordatorioGratis`, `nivelUso` —cerca ≥ 80 %, lleno
+    100 %— y `puedeIniciarPrueba`): insignia **FREE** (`<app-insignia-plan>`, icono de brote, borde `primary`; punto
+    rojo/amarillo en el límite o cerca; durante la prueba `PRUEBA · N d`; nada en planes pagados) en la barra superior,
+    tarjeta "Tu plan · FREE" con el uso al final del menú, `<app-aviso-plan>` (primero el límite alcanzado o cercano;
+    "Ocultar" guarda el tipo de aviso en `rutarola.aviso-plan.oculto`: el recordatorio general 7 días, los demás hasta
+    el día siguiente) y en Planes y membresías la insignia FREE con "Probar Profesional N días gratis".
 - **Códigos promocionales (`plataforma/codigos-promocionales/`, Plataforma › Promociones):** el SuperAdmin crea
   códigos que genera el sistema (aleatorios y únicos, con un prefijo opcional: `REGRESO-7KQ9M2XT` o `7KQ9-M2XT`, sin
   0/O ni 1/I/L) o que escribe él mismo (letras, números y guiones, 4–30, únicos sin importar mayúsculas; botón "Sugerir") con descuento en **porcentaje** (1–100)

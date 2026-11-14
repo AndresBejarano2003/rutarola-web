@@ -23,7 +23,9 @@ import {
 } from './suscripcion';
 import { SuscripcionRepositorio } from './suscripcion-repositorio';
 
-const CLAVE = 'rutarola.suscripcion';
+/** Suscripción local (exportada para las pruebas). */
+export const CLAVE_SUSCRIPCION_LOCAL = 'rutarola.suscripcion';
+const CLAVE = CLAVE_SUSCRIPCION_LOCAL;
 const CLAVE_PARAMETROS = 'rutarola.parametros-plataforma';
 
 /** Igual que `ServicioParametrosPlataforma`: los días de prueba de las empresas nuevas. */
@@ -122,6 +124,18 @@ export class SuscripcionLocal extends SuscripcionRepositorio implements FuenteLo
     );
   }
 
+  iniciarPrueba(): Observable<Suscripcion> {
+    return defer(() =>
+      responderLocal(() => {
+        const s = this.leer();
+        if (s.estado !== 'GRATIS') throw new ErrorCrud('Tu empresa ya tiene un plan vigente.', 'VALIDACION');
+        if (s.pruebaUsada) throw new ErrorCrud('Tu empresa ya usó la prueba gratuita. Elige un plan para mejorar tu membresía.', 'VALIDACION');
+        this.guardar(nuevaPrueba(s.uso));
+        return this.leer();
+      }, this.latenciaMs),
+    );
+  }
+
   parametrosPlataforma(): Observable<ParametroPlataforma[]> {
     return defer(() => responderLocal(() => [parametroDiasPrueba(String(leerDiasPrueba()))], this.latenciaMs));
   }
@@ -182,30 +196,7 @@ export class SuscripcionLocal extends SuscripcionRepositorio implements FuenteLo
       s = null;
     }
     if (!s) {
-      const ahora = new Date();
-      const fin = new Date(ahora);
-      const diasPrueba = leerDiasPrueba();
-      fin.setDate(fin.getDate() + diasPrueba);
-      const plan = PLANES.find((p) => p.id === 'PROFESIONAL')!;
-      s = {
-        plan: plan.id,
-        nombrePlan: plan.nombre,
-        estado: 'PRUEBA',
-        periodo: '',
-        fechaInicio: ahora.toISOString(),
-        fechaFin: fin.toISOString(),
-        diasRestantes: null,
-        pruebaUsada: true,
-        limites: plan.limites,
-        uso: { vehiculos: 0, estudiantes: 0 },
-        funciones: plan.funciones,
-        pagosEnLinea: false,
-        nota: '',
-        pendienteDecision: false,
-        planVencido: '',
-        fechaVencimiento: null,
-        diasPrueba,
-      };
+      s = nuevaPrueba();
       this.guardar(s);
     }
     // Venció: pasa a Gratis y al entrar el administrador decide si paga o sigue en Gratis.
@@ -273,4 +264,32 @@ function contar(clave: string): number {
   } catch {
     return 0;
   }
+}
+
+/** Prueba del plan Profesional desde hoy con los días que fija la plataforma. */
+function nuevaPrueba(uso: Suscripcion['uso'] = { vehiculos: 0, estudiantes: 0 }): Suscripcion {
+  const ahora = new Date();
+  const fin = new Date(ahora);
+  const diasPrueba = leerDiasPrueba();
+  fin.setDate(fin.getDate() + diasPrueba);
+  const plan = PLANES.find((p) => p.id === 'PROFESIONAL')!;
+  return {
+    plan: plan.id,
+    nombrePlan: plan.nombre,
+    estado: 'PRUEBA',
+    periodo: '',
+    fechaInicio: ahora.toISOString(),
+    fechaFin: fin.toISOString(),
+    diasRestantes: null,
+    pruebaUsada: true,
+    limites: plan.limites,
+    uso,
+    funciones: plan.funciones,
+    pagosEnLinea: false,
+    nota: '',
+    pendienteDecision: false,
+    planVencido: '',
+    fechaVencimiento: null,
+    diasPrueba,
+  };
 }
