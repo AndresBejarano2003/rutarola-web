@@ -78,11 +78,15 @@ export function mensajeDeError(error: unknown): string {
   return ERROR_GENERICO;
 }
 
-/** Siguiente consecutivo legible, p. ej. `siguienteConsecutivo('FAC', ['FAC-0007'])` → `'FAC-0008'`. */
-export function siguienteConsecutivo(prefijo: string, existentes: string[]): string {
+/**
+ * Siguiente consecutivo legible, p. ej. `siguienteConsecutivo('FAC', ['FAC-0007'])` → `'FAC-0008'` (rutas:
+ * `siguienteConsecutivo('R', ['R-05'], 2)` → `'R-06'`). Igual que `Consecutivos.SiguienteAsync` del API.
+ */
+export function siguienteConsecutivo(prefijo: string, existentes: string[], digitos = 4): string {
   const maximo = existentes
     .filter((n) => n.startsWith(`${prefijo}-`))
-    .map((n) => Number(n.slice(prefijo.length + 1)) || 0)
+    .map((n) => n.slice(prefijo.length + 1))
+    .map((n) => (/^\d+$/.test(n) ? Number(n) : 0))
     .reduce((a, b) => Math.max(a, b), 0);
-  return `${prefijo}-${String(maximo + 1).padStart(4, '0')}`;
+  return `${prefijo}-${String(maximo + 1).padStart(digitos, '0')}`;
 }

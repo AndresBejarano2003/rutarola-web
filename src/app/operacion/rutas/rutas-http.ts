@@ -6,9 +6,11 @@ import { RutasRepositorio } from './rutas-repositorio';
 /**
  * Conexión al API: `{apiUrl}/rutas` (filtros `texto`, `colegioId`,
  * `jornada`, `estado`, `estudianteId`).
- * Reglas del API: código único sin distinguir mayúsculas (409); colegio y
- * estudiantes deben existir (404) y los estudiantes ser del colegio de la ruta
- * (422); un estudiante solo puede estar en una ruta activa por jornada (422);
+ * Reglas del API: el código lo asigna el servidor al crear (`R-01`, `R-02`…,
+ * el que se envíe se ignora y no cambia al editar); colegio y estudiantes
+ * deben existir (404) y los estudiantes ser del colegio y de la jornada de la
+ * ruta (422; los que ya iban se conservan); un estudiante solo puede estar en
+ * una ruta activa por jornada (422);
  * `DELETE` responde 409 si la ruta tiene asignaciones.
  */
 @Injectable()

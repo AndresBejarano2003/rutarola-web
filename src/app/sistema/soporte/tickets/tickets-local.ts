@@ -30,6 +30,7 @@ import {
   nombrePrioridad,
   requiereCalidad,
   requiereComentario,
+  esTerminacion,
   siguientesEstados,
   vencido,
 } from './tickets';
@@ -192,7 +193,12 @@ export class TicketsLocal extends TicketsRepositorio implements FuenteLocal {
         );
       }
       if (!comentario.trim() && requiereComentario(t.estado, hacia)) {
-        throw new ErrorCrud('Explica el motivo del cambio: la empresa lo verá en el historial.', 'VALIDACION');
+        throw new ErrorCrud(
+          esTerminacion(t.estado, hacia)
+            ? 'Justifica por qué terminas el ticket: la empresa lo verá en el historial.'
+            : 'Explica el motivo del cambio: la empresa lo verá en el historial.',
+          'VALIDACION',
+        );
       }
       this.cambiar(t, hacia, comentario.trim(), true);
       return true;

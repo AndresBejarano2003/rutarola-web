@@ -23,7 +23,7 @@
         </div>
       }
       <app-recibo-formulario idFormulario="form-recibo" [modo]="modo()" [recibo]="seleccionado()"
-        [facturas]="facturas()" [factura]="detalleFactura().factura" [periodosPagados]="detalleFactura().pagados"
+        [facturas]="facturas()" [factura]="detalleFactura().factura" [cuotas]="detalleFactura().cuotas"
         (facturaCambiada)="facturaFormulario.set($event)" (guardar)="guardar($event)" />
     </div>
   }

@@ -5,7 +5,9 @@
         <i class="fa-solid fa-circle-info"></i>
         <span>
           Al guardar se valida que el vehículo tenga puestos para todos los estudiantes de la ruta, que la licencia y los
-          documentos estén vigentes y que nadie quede en dos rutas de la misma jornada.
+          documentos estén vigentes y que no se cruce con otra asignación activa de la ruta, del vehículo o del personal.
+          Una ruta puede tener varias asignaciones en fechas distintas (p. ej. una por semana) o el mismo día en horarios
+          distintos.
         </span>
       </div>
     }
@@ -27,7 +29,7 @@
       <app-selector-busqueda formControlName="monitoraId" [opciones]="monitoras()" etiqueta="Monitora" />
     </div>
 
-    <app-titulo-seccion>Vigencia</app-titulo-seccion>
+    <app-titulo-seccion>Vigencia y horario</app-titulo-seccion>
     <label app-campo etiqueta="Fecha de inicio" requerido [error]="error('fechaInicio')">
       <input type="date" formControlName="fechaInicio" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('fechaInicio')" />
@@ -35,6 +37,14 @@
     <label app-campo etiqueta="Fecha de fin" [error]="error('fechaFin')" ayuda="Vacía = sin fecha de fin.">
       <input type="date" formControlName="fechaFin" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('fechaFin')" />
+    </label>
+    <label app-campo etiqueta="Hora de inicio" [error]="error('horaInicio')" ayuda="Vacías = toda la jornada de la ruta.">
+      <input type="time" formControlName="horaInicio" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('horaInicio')" />
+    </label>
+    <label app-campo etiqueta="Hora de fin" [error]="error('horaFin')">
+      <input type="time" formControlName="horaFin" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('horaFin')" />
     </label>
     <div app-campo etiqueta="Estado" requerido [error]="error('estado')">
       <app-selector-busqueda formControlName="estado" [opciones]="estados" etiqueta="Estado" [invalido]="!!error('estado')" />

@@ -76,7 +76,12 @@
               <h2 class="text-lg font-bold">{{ ruta.ruta }}</h2>
               <p class="text-sm text-base-content/70">{{ ruta.sector }}</p>
             </div>
-            <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-sun" aria-hidden="true"></i> Jornada {{ ruta.jornada }}</span>
+            <div class="flex flex-wrap justify-end gap-1">
+              <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-sun" aria-hidden="true"></i> Jornada {{ ruta.jornada }}</span>
+              @if (ruta.horario) {
+                <span class="badge badge-soft badge-warning gap-1"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ ruta.horario }}</span>
+              }
+            </div>
           </div>
 
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -160,4 +165,16 @@
       </article>
     }
   }
+
+  <!-- Acceso rápido: novedades del vehículo -->
+  <a routerLink="/ruta-del-dia/novedades" class="card bg-base-200 border border-base-300 p-4 flex-row items-center gap-4 hover:bg-base-300/50 transition">
+    <div class="w-12 h-12 rounded-full bg-warning/15 text-warning grid place-items-center shrink-0">
+      <i class="fa-solid fa-screwdriver-wrench text-xl" aria-hidden="true"></i>
+    </div>
+    <div class="min-w-0 flex-1">
+      <p class="font-semibold">Novedades del vehículo</p>
+      <p class="text-sm text-base-content/70">¿Una avería, un daño o una llanta baja? Repórtalo con foto.</p>
+    </div>
+    <i class="fa-solid fa-chevron-right text-base-content/60" aria-hidden="true"></i>
+  </a>
 </section>

@@ -33,20 +33,49 @@
       </label>
     }
 
+    <app-titulo-seccion>Servicio</app-titulo-seccion>
+    <label app-campo etiqueta="Mes inicial del servicio" requerido [error]="error('periodoInicio')">
+      <input type="month" formControlName="periodoInicio" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="error('periodoInicio')" />
+    </label>
+    <label app-campo etiqueta="Mes final del servicio" requerido [error]="errorMeses()">
+      <input type="month" formControlName="periodoFin" class="input input-bordered bg-base-100 border-neutral w-full"
+        [class.input-error]="errorMeses()" />
+    </label>
+
     <app-titulo-seccion>Estudiantes a cotizar</app-titulo-seccion>
     @if (!soloLectura()) {
-      <div class="md:col-span-2 flex flex-col sm:flex-row gap-2">
+      <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_1.2fr_auto] gap-2 items-start">
         @if (registrados()) {
-          <app-selector-busqueda class="flex-1" [opciones]="disponibles()" etiqueta="Estudiante"
+          <app-selector-busqueda [opciones]="disponibles()" etiqueta="Estudiante"
             [placeholder]="form.controls.acudienteId.value ? 'Estudiante del acudiente...' : 'Elige primero el acudiente'"
             [ngModel]="estudianteElegido()" (ngModelChange)="estudianteElegido.set($event)" [ngModelOptions]="{ standalone: true }" />
+          <div class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2 text-base-content/70" aria-live="polite">
+            <i class="fa-solid fa-school text-info" aria-hidden="true"></i>
+            <span class="truncate">{{ colegioDelElegido() || 'El colegio sale del registro del estudiante' }}</span>
+          </div>
         } @else {
-          <input type="text" class="input input-bordered bg-base-100 border-neutral flex-1" placeholder="Nombre del estudiante"
+          <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" placeholder="Nombre del estudiante"
             aria-label="Nombre del estudiante" [ngModel]="nombreNuevo()" (ngModelChange)="nombreNuevo.set($event)"
             [ngModelOptions]="{ standalone: true }" (keydown.enter)="$event.preventDefault(); agregar()" />
+          <div class="flex flex-col gap-2">
+            <app-selector-busqueda [opciones]="opcionesColegio()" etiqueta="Colegio" placeholder="Colegio del estudiante..."
+              [ngModel]="colegioElegido()" (ngModelChange)="colegioElegido.set($event)" [ngModelOptions]="{ standalone: true }" />
+            @if (colegioElegido() === otroColegio) {
+              <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" placeholder="Nombre del colegio"
+                aria-label="Nombre del colegio" maxlength="150" [ngModel]="colegioEscrito()" (ngModelChange)="colegioEscrito.set($event)"
+                [ngModelOptions]="{ standalone: true }" />
+            }
+          </div>
         }
+        <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2">
+          <span class="text-base-content/70">$</span>
+          <input type="number" min="1" step="1000" class="grow min-w-0" placeholder="Valor mensual" aria-label="Valor mensual del estudiante"
+            [ngModel]="valorNuevo()" (ngModelChange)="valorNuevo.set($event)" [ngModelOptions]="{ standalone: true }"
+            (keydown.enter)="$event.preventDefault(); agregar()" />
+        </label>
         <button type="button" class="btn btn-secondary" (click)="agregar()">
-          <i class="fa-solid fa-plus"></i> Agregar estudiante
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar
         </button>
       </div>
       @if (errorAgregar(); as mensaje) {
@@ -54,16 +83,17 @@
       }
     }
 
-    <div class="md:col-span-2 overflow-x-auto rounded-box border border-base-300" [class.border-error]="errorLista()">
+    <div class="md:col-span-2 @container overflow-x-auto rounded-box border border-base-300" [class.border-error]="errorLista()">
       <table class="table table-sm">
         <thead>
           <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
             <th>#</th>
             <th>Estudiante</th>
-            <th>Tipo</th>
-            <th class="text-right">Valor</th>
+            <th>Colegio</th>
+            <th class="hidden @xl:table-cell">Tipo</th>
+            <th class="text-right">Valor mensual</th>
             @if (!soloLectura()) {
-              <th></th>
+              <th><span class="sr-only">Quitar</span></th>
             }
           </tr>
         </thead>
@@ -72,25 +102,34 @@
             <tr class="border-base-300">
               <td class="text-base-content/70">{{ $index + 1 }}</td>
               <td class="font-medium">{{ estudiante.nombre }}</td>
-              <td>
+              <td class="text-base-content/80">{{ estudiante.nombreColegio || '—' }}</td>
+              <td class="hidden @xl:table-cell">
                 @if (estudiante.estudianteId) {
                   <span class="badge badge-info badge-soft badge-xs">Registrado</span>
                 } @else {
                   <span class="badge badge-warning badge-soft badge-xs">Nuevo</span>
                 }
               </td>
-              <td class="text-right">{{ form.controls.valorPorEstudiante.value ?? 0 | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+              <td class="text-right">
+                @if (soloLectura()) {
+                  {{ estudiante.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                } @else {
+                  <input type="number" min="1" step="1000" class="input input-sm input-bordered bg-base-100 border-neutral w-32 text-right"
+                    [class.input-error]="!(estudiante.valor >= 1)" [attr.aria-label]="'Valor mensual de ' + estudiante.nombre"
+                    [ngModel]="estudiante.valor" (ngModelChange)="cambiarValor($index, $event)" [ngModelOptions]="{ standalone: true }" />
+                }
+              </td>
               @if (!soloLectura()) {
                 <td class="text-right">
                   <button type="button" class="btn btn-ghost btn-xs btn-square text-error" [attr.aria-label]="'Quitar ' + estudiante.nombre"
-                    (click)="quitar($index)"><i class="fa-solid fa-xmark"></i></button>
+                    (click)="quitar($index)"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                 </td>
               }
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="soloLectura() ? 4 : 5" class="text-center text-base-content/70 py-5">
-                <i class="fa-solid fa-circle-info text-info"></i> Agrega los estudiantes que se van a cotizar.
+              <td [attr.colspan]="soloLectura() ? 5 : 6" class="text-center text-base-content/70 py-5">
+                <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i> Agrega los estudiantes que se van a cotizar, cada uno con su colegio y valor.
               </td>
             </tr>
           }
@@ -101,22 +140,19 @@
       <span class="md:col-span-2 text-xs text-error -mt-1">{{ mensaje }}</span>
     }
 
-    <app-titulo-seccion>Valores</app-titulo-seccion>
-    <div app-campo etiqueta="Valor cotización por estudiante" requerido [error]="error('valorPorEstudiante')">
-      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2"
-        [class.input-error]="error('valorPorEstudiante')">
-        <span class="text-base-content/70">$</span>
-        <input type="number" formControlName="valorPorEstudiante" min="1" step="1000" class="grow" placeholder="Ej. 400000"
-          aria-label="Valor cotización por estudiante" />
-      </label>
-    </div>
-    <div class="flex flex-col justify-end">
-      <div class="rounded-box bg-primary/10 border border-primary/40 px-4 py-3">
+    <div class="md:col-span-2 rounded-box bg-primary/10 border border-primary/40 px-4 py-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div>
+        <div class="text-xs uppercase tracking-wide text-base-content/80">Valor mensual</div>
+        <div class="text-lg font-semibold">{{ calculo().valorMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
+        <div class="text-xs text-base-content/70">{{ lista().length }} estudiante(s)</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-base-content/80">Meses del servicio</div>
+        <div class="text-lg font-semibold">{{ calculo().meses }}</div>
+      </div>
+      <div>
         <div class="text-xs uppercase tracking-wide text-base-content/80">Valor total de la cotización</div>
-        <div class="text-2xl font-bold text-primary">{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
-        <div class="text-xs text-base-content/70">
-          {{ form.controls.valorPorEstudiante.value ?? 0 | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} × {{ lista().length }} estudiante(s)
-        </div>
+        <div class="text-2xl font-bold text-primary">{{ calculo().valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
       </div>
     </div>
 

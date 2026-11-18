@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { NovedadesVehiculoRepositorio } from 'src/app/operacion/vehiculos/novedades-vehiculo/novedades-vehiculo-repositorio';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { FILTROS_COTIZACION_VACIOS } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { CotizacionesRepositorio } from 'src/app/finanzas/cotizaciones/cotizaciones-repositorio';
@@ -52,6 +53,7 @@ export class NotificacionesLocal extends NotificacionesRepositorio implements Fu
   private readonly cotizaciones = inject(CotizacionesRepositorio);
   private readonly programaciones = inject(ProgramacionesRepositorio);
   private readonly reportes = inject(ReportesRepositorio);
+  private readonly novedades = inject(NovedadesVehiculoRepositorio);
   private readonly suscripcion = inject(SuscripcionRepositorio);
 
   private ultimaRevision = 0;
@@ -161,6 +163,7 @@ export class NotificacionesLocal extends NotificacionesRepositorio implements Fu
       cotizaciones: this.cotizaciones.listar(FILTROS_COTIZACION_VACIOS, SIN_PAGINAR).pipe(map((p) => p.items)),
       envios,
       morosos: this.reportes.morosos({ texto: '', diasMinimos: 0 }),
+      novedades: this.novedades.listar({ abiertas: true }).pipe(catchError(() => of([]))),
       suscripcion: this.suscripcion.actual().pipe(catchError(() => of(null))),
       diasAvisoVencimiento: this.suscripcion.condiciones().pipe(
         map((c) => c.diasAvisoVencimiento),

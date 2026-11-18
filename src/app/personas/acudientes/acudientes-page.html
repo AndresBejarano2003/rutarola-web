@@ -42,7 +42,12 @@
         <h4 class="text-sm font-semibold uppercase tracking-wide text-info mt-6 mb-3 border-b border-base-300 pb-1">
           Estudiantes a cargo
         </h4>
-        <app-estudiantes-a-cargo [acudienteId]="acudiente.id" />
+        <app-estudiantes-a-cargo [acudienteId]="acudiente.id" permitirAgregar [nombreAcudiente]="describirNombre(acudiente)" />
+      } @else if (modo() === 'crear') {
+        <p class="text-sm text-base-content/70 mt-6">
+          <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+          Al registrar el acudiente podrás agregarle sus estudiantes aquí mismo.
+        </p>
       }
     </div>
   }
@@ -57,7 +62,7 @@
 <!-- Estudiantes a cargo -->
 <app-modal [(abierto)]="estudiantesAbierto" titulo="Estudiantes a cargo" [subtitulo]="nombreAcudienteEstudiantes()">
   @if (estudiantesAbierto() && acudienteEstudiantes(); as acudiente) {
-    <app-estudiantes-a-cargo [acudienteId]="acudiente.id" />
+    <app-estudiantes-a-cargo [acudienteId]="acudiente.id" permitirAgregar [nombreAcudiente]="describirNombre(acudiente)" />
   }
   @if (estudiantesAbierto()) {
     <div pie class="flex justify-end">

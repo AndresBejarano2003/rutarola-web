@@ -17,7 +17,7 @@ import { Cotizacion, ESTADOS_COTIZACION } from '../cotizacion';
             <th>Cotización</th>
             <th>Acudiente</th>
             <th class="hidden @3xl:table-cell">Estudiantes</th>
-            <th class="hidden @5xl:table-cell text-right">Valor c/u</th>
+            <th class="hidden @5xl:table-cell text-right">Mensual</th>
             <th class="text-right">Total</th>
             <th>Estado</th>
             <th class="text-right">Acciones</th>
@@ -52,11 +52,19 @@ import { Cotizacion, ESTADOS_COTIZACION } from '../cotizacion';
                   <div class="font-medium">{{ c.estudiantes.length }}</div>
                   <div class="text-xs text-base-content/70 truncate">{{ nombres(c) }}</div>
                 </td>
-                <td class="hidden @5xl:table-cell text-right whitespace-nowrap">{{ c.valorPorEstudiante | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+                <td class="hidden @5xl:table-cell text-right whitespace-nowrap">
+                  <div>{{ c.valorMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
+                  <div class="text-xs text-base-content/70">{{ c.meses }} {{ c.meses === 1 ? 'mes' : 'meses' }}</div>
+                </td>
                 <td class="text-right whitespace-nowrap font-semibold">{{ c.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
-                <td><span class="badge badge-soft badge-sm" [class]="estado?.clase">{{ estado?.nombre }}</span></td>
+                <td>
+                  <span class="badge badge-soft badge-sm" [class]="estado?.clase">{{ estado?.nombre }}</span>
+                  @if (c.facturas.length) {
+                    <span class="badge badge-soft badge-sm badge-info ml-1" title="Ya se convirtió en facturas">Facturada</span>
+                  }
+                </td>
                 <td class="text-right whitespace-nowrap">
-                  <app-acciones-fila (consultar)="consultar.emit(c)" (editar)="editar.emit(c)" (eliminar)="eliminar.emit(c)">
+                  <app-acciones-fila [editable]="!c.facturas.length" (consultar)="consultar.emit(c)" (editar)="editar.emit(c)" (eliminar)="eliminar.emit(c)">
                     <div class="tooltip tooltip-left" data-tip="Descargar PDF">
                       <button type="button" class="btn btn-sm btn-ghost btn-square text-info hover:bg-info/15" aria-label="Descargar PDF" (click)="pdf.emit(c)">
                         <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
@@ -94,6 +102,6 @@ export class CotizacionesTabla {
   protected readonly estados = new Map(ESTADOS_COTIZACION.map((e) => [e.id, e]));
   protected readonly fechaCorta = fechaCorta;
   protected nombres(c: Cotizacion): string {
-    return c.estudiantes.map((e) => e.nombre).join(', ');
+    return c.estudiantes.map((e) => (e.nombreColegio ? `${e.nombre} (${e.nombreColegio})` : e.nombre)).join(', ');
   }
 }

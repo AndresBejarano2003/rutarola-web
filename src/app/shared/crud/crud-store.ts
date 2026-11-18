@@ -26,6 +26,11 @@ export abstract class CrudStore<T extends Entidad, F extends object> extends Lis
   private readonly notificaciones = inject(NotificacionesService);
   private readonly cambios = inject(CambiosDatos);
   private readonly _guardando = signal(false);
+
+  /** No se recarga solo mientras se guarda o elimina. */
+  protected override puedeRecargarSolo(): boolean {
+    return !this._guardando();
+  }
   readonly guardando = this._guardando.asReadonly();
 
   /** Obtiene el registro completo (para consultar/editar). `null` si falla. */
@@ -40,16 +45,25 @@ export abstract class CrudStore<T extends Entidad, F extends object> extends Lis
 
   /** Crea (`id === null`) o actualiza. Devuelve `true` si se guardó. */
   async guardar(datos: DatosRegistro<T>, id: string | null): Promise<boolean> {
+    return (await this.guardarRegistro(datos, id)) !== null;
+  }
+
+  /** Crea y devuelve el registro guardado (con su id), o `null` si falló. */
+  crear(datos: DatosRegistro<T>): Promise<T | null> {
+    return this.guardarRegistro(datos, null);
+  }
+
+  private async guardarRegistro(datos: DatosRegistro<T>, id: string | null): Promise<T | null> {
     this._guardando.set(true);
     try {
-      await firstValueFrom(id ? this.repositorio.actualizar(id, datos) : this.repositorio.crear(datos));
+      const registro = await firstValueFrom(id ? this.repositorio.actualizar(id, datos) : this.repositorio.crear(datos));
       this.notificaciones.exito(id ? this.textos.actualizado : this.textos.creado);
       this.cambios.notificar();
       this.recargar();
-      return true;
+      return registro;
     } catch (error) {
       this.notificaciones.error(mensajeDeError(error));
-      return false;
+      return null;
     } finally {
       this._guardando.set(false);
     }

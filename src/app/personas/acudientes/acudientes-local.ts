@@ -1,9 +1,10 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, forkJoin, map, tap } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { CONTRASENA_DEMO, borrarCredencial, guardarCredencial, prepararAcceso, usuarioDemo, validarAcceso, validarUsuarioLibre } from 'src/app/autenticacion/credenciales-local';
 import { FILTROS_EMPLEADO_VACIOS } from '../empleados/empleado';
 import { EmpleadosRepositorio } from '../empleados/empleados-repositorio';
 import { FILTROS_FACTURA_VACIOS } from 'src/app/finanzas/facturas/factura';
+import { FacturasLocal } from 'src/app/finanzas/facturas/facturas-local';
 import { FacturasRepositorio } from 'src/app/finanzas/facturas/facturas-repositorio';
 import { DatosRegistro } from 'src/app/shared/crud/crud';
 import { RepositorioLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
@@ -22,6 +23,19 @@ export class AcudientesLocal
   protected readonly clave = 'rutarola.acudientes';
   protected readonly filtrosVacios = FILTROS_ACUDIENTE_VACIOS;
   private readonly injector = inject(Injector);
+
+  /** Retiro: al inactivarlo, sus facturas vigentes dejan de cobrar los meses que faltan (con el API lo hace el servidor). */
+  override actualizar(id: string, datos: DatosRegistro<Acudiente>): Observable<Acudiente> {
+    const antes = this.leer().find((r) => r.id === id);
+    return super.actualizar(id, datos).pipe(
+      switchMap((r) => {
+        const facturas = this.injector.get(FacturasRepositorio);
+        return antes?.estado === 'ACTIVO' && r.estado === 'INACTIVO' && facturas instanceof FacturasLocal
+          ? facturas.retirarDe({ acudienteId: id }, 'Retiro del acudiente (quedó inactivo).').pipe(map(() => r))
+          : of(r);
+      }),
+    );
+  }
 
   protected coincide(a: Acudiente, f: FiltrosAcudiente): boolean {
     return coincideTexto(a, f.texto) && (!f.estado || a.estado === f.estado);

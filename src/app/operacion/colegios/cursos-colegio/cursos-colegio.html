@@ -1,14 +1,37 @@
 @if (!deshabilitado()) {
   <div class="rounded-box border border-base-300 bg-base-100/40 p-4 mb-3" [formGroup]="generador">
-    <p class="text-sm text-base-content/70 mb-3">
-      <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
-      Elige hasta qué curso llega el colegio y el horario: se llenan <b class="text-base-content">desde Jardín</b>
-      hasta ese curso con las horas indicadas. Luego puedes modificar cada curso.
-    </p>
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-      <div class="flex flex-col sm:col-span-2">
-        <span class="label-text text-base-content/90 mb-1">Hasta el curso <span class="text-error">*</span></span>
-        <app-selector-busqueda formControlName="hasta" [opciones]="grados" etiqueta="Hasta el curso" placeholder="Ej. 11° · Once" />
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <p class="text-sm text-base-content/70">
+        <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+        @if (modoAgregar() === 'UNO') {
+          Agrega <b class="text-base-content">un curso</b> en una jornada con su horario.
+        } @else {
+          Agrega <b class="text-base-content">varios cursos</b> seguidos (por defecto desde Jardín) con el mismo horario.
+        }
+        Un grado puede estar en varias jornadas con horarios distintos.
+      </p>
+      <div class="join" role="group" aria-label="Cómo agregar cursos">
+        <button type="button" class="btn btn-xs join-item" [class.btn-secondary]="modoAgregar() === 'UNO'"
+          [attr.aria-pressed]="modoAgregar() === 'UNO'" (click)="cambiarModo('UNO')">Un curso</button>
+        <button type="button" class="btn btn-xs join-item" [class.btn-secondary]="modoAgregar() === 'VARIOS'"
+          [attr.aria-pressed]="modoAgregar() === 'VARIOS'" (click)="cambiarModo('VARIOS')">Varios cursos</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+      @if (modoAgregar() === 'VARIOS') {
+        <div class="flex flex-col xl:col-span-1">
+          <span class="label-text text-base-content/90 mb-1">Desde <span class="text-error">*</span></span>
+          <app-selector-busqueda formControlName="desde" [opciones]="grados" etiqueta="Desde el curso" placeholder="Ej. Jardín" />
+        </div>
+      }
+      <div class="flex flex-col" [class.xl:col-span-2]="modoAgregar() === 'UNO'">
+        <span class="label-text text-base-content/90 mb-1">{{ modoAgregar() === 'UNO' ? 'Curso' : 'Hasta' }} <span class="text-error">*</span></span>
+        <app-selector-busqueda formControlName="hasta" [opciones]="grados" [etiqueta]="modoAgregar() === 'UNO' ? 'Curso' : 'Hasta el curso'"
+          placeholder="Ej. 11° · Once" />
+      </div>
+      <div class="flex flex-col">
+        <span class="label-text text-base-content/90 mb-1">Jornada <span class="text-error">*</span></span>
+        <app-selector-busqueda formControlName="jornada" [opciones]="jornadas" etiqueta="Jornada del curso" />
       </div>
       <label class="flex flex-col">
         <span class="label-text text-base-content/90 mb-1">Hora entrada <span class="text-error">*</span></span>
@@ -23,11 +46,11 @@
       @if (errorGenerador(); as mensaje) {
         <span class="text-xs text-error">{{ mensaje }}</span>
       } @else {
-        <span></span>
+        <span class="text-xs text-base-content/70">Si el curso ya existe en esa jornada, se actualiza su horario.</span>
       }
       <button type="button" class="btn btn-secondary btn-sm" (click)="agregarCursos()">
-        <i class="fa-solid fa-layer-group"></i>
-        Agregar cursos
+        <i class="fa-solid" [class.fa-plus]="modoAgregar() === 'UNO'" [class.fa-layer-group]="modoAgregar() === 'VARIOS'"></i>
+        {{ modoAgregar() === 'UNO' ? 'Agregar curso' : 'Agregar cursos' }}
       </button>
     </div>
   </div>
@@ -38,6 +61,7 @@
     <thead>
       <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
         <th>Curso</th>
+        <th>Jornada</th>
         <th>Hora ingreso</th>
         <th>Hora salida</th>
         <th>Estado</th>
@@ -47,10 +71,11 @@
       </tr>
     </thead>
     <tbody>
-      @for (curso of cursos(); track curso.grado) {
-        @if (editando() === curso.grado) {
+      @for (curso of cursos(); track claveCurso(curso)) {
+        @if (editando() === claveCurso(curso)) {
           <tr class="border-base-300 bg-base-300/40" [formGroup]="edicion">
             <td class="font-medium">{{ nombresGrado.get(curso.grado) ?? curso.grado }}</td>
+            <td>{{ curso.jornada }}</td>
             <td><input type="time" formControlName="horaEntrada" aria-label="Hora ingreso"
                 class="input input-sm input-bordered bg-base-100 border-neutral w-32" /></td>
             <td><input type="time" formControlName="horaSalida" aria-label="Hora salida"
@@ -72,6 +97,9 @@
         } @else {
           <tr class="border-base-300 hover:bg-base-300/50">
             <td class="font-medium">{{ nombresGrado.get(curso.grado) ?? curso.grado }}</td>
+            <td>
+              <span class="badge badge-soft badge-sm" [class.badge-info]="variasJornadas()">{{ curso.jornada }}</span>
+            </td>
             <td>{{ horaLegible(curso.horaEntrada) }}</td>
             <td>{{ horaLegible(curso.horaSalida) }}</td>
             <td><app-badge-estado [estado]="curso.estado" /></td>
@@ -91,7 +119,7 @@
         }
       } @empty {
         <tr>
-          <td [attr.colspan]="deshabilitado() ? 4 : 5" class="text-center text-base-content/70 py-6">
+          <td [attr.colspan]="deshabilitado() ? 5 : 6" class="text-center text-base-content/70 py-6">
             <i class="fa-solid fa-circle-info text-info"></i>
             Aún no hay cursos parametrizados.
           </td>

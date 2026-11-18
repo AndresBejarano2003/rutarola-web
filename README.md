@@ -76,6 +76,12 @@ Comportamiento obligatorio:
 - Mientras se guarda, los botones se deshabilitan y muestran un spinner.
 - Los campos obligatorios se marcan con `*` y cada error se explica debajo del campo.
 - Listado vacío: mensaje claro (y botón de crear si no hay filtros activos).
+- **Recarga automática:** toda tabla se actualiza sola cada 60 s (`INTERVALO_RECARGA`, `0` = nunca; las pruebas lo
+  apagan) **solo mientras la pantalla está visible** (`shared/crud/recarga-automatica.ts`): con la pestaña oculta,
+  otra app al frente o el teléfono bloqueado no consulta, y al volver recarga enseguida si ya pasó el intervalo. Es
+  silenciosa: sin "cargando", conserva la página, los filtros y lo que se ve si falla, y se salta el turno mientras se
+  guarda o ya hay una carga. `ListadoStore`/`CrudStore` la traen (arranca con la primera carga); las pantallas sin
+  store (reportes con `reporteEnVivo`, Cronograma, Avisos del día, Plataforma › Ingresos) llaman a `recargaAutomatica()`.
 
 ### Datos temporales y conexión al API
 
@@ -188,9 +194,15 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
 
 ### Reglas de cada módulo
 
-- **Colegios:** NIT único; "Agregar cursos" llena los cursos **desde Jardín hasta el curso elegido** con
-  la hora de entrada y salida indicadas (cada curso se puede modificar o quitar después). El grado de un
-  estudiante se elige entre los cursos activos de su colegio.
+- **Colegios:** NIT único. Cada curso es **grado + jornada** (Mañana, Tarde o Única) con su horario, así un colegio
+  puede tener el mismo grado en varias jornadas. "Agregar cursos" agrega **un solo curso** (desde = hasta) o un rango
+  **desde un grado hasta el más alto elegido** en la jornada indicada con la hora de entrada y salida (los que ya
+  existen en ese rango y jornada toman el nuevo horario; los de otras jornadas no cambian). El grado de un estudiante
+  se elige entre los cursos activos de su colegio **en su jornada**.
+- **Personas (estudiantes ↔ acudientes):** desde el formulario del estudiante se crea el acudiente que falta
+  (`personas/acudientes/alta-acudiente/`) y desde el del acudiente sus estudiantes (`personas/estudiantes/alta-estudiante/`)
+  en un modal encima, **sin perder lo ya escrito**: al guardar, el nuevo queda elegido. Inactivar a un estudiante o
+  acudiente registra el **retiro** en sus facturas vigentes (ver Facturas).
 - **Vehículos:** placa e interno únicos; foto opcional (`<app-campo-foto>`, se ve en la tabla); vencimientos de SOAT,
   tecnomecánica, tarjeta de operación y pólizas con alerta a 30 días (`app-badge-vencimiento`). **Historial de
   documentos** (`operacion/vehiculos/documentos-vehiculo/`, en el detalle del vehículo): cada SOAT, revisión, tarjeta
@@ -199,11 +211,27 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   fecha del vehículo (alertas, asignaciones); los anteriores se ven como "Reemplazado". Cambiar una fecha en el
   formulario del vehículo también la agrega al historial. `DocumentosVehiculoRepositorio` (local → HTTP
   `/vehiculos/{id}/documentos`).
-- **Rutas:** código único; estudiantes del colegio de la ruta; un estudiante no puede estar en dos rutas
-  activas de la misma jornada.
-- **Asignaciones (ruta + vehículo + conductor + monitora):** una activa por ruta; conductor de tipo
-  conductor con licencia vigente; vehículo activo, con capacidad suficiente y documentos al día; un
-  vehículo o persona no cubre dos rutas de la misma jornada. Arriba de la tabla, **Avisos de ausencia**
+  - **Novedades del vehículo** (`operacion/vehiculos/novedades-vehiculo/`): el conductor o la monitora reporta desde la
+    Ruta del día › "Novedades del vehículo" (`/ruta-del-dia/novedades`, solo vehículos de sus asignaciones vigentes o
+    próximas) una avería, daño, llantas, mantenimiento, limpieza, documentos u otro, con gravedad (ALTA = no debería
+    salir), descripción ≥ 10 caracteres y foto o PDF opcional (≤ 2 MB); llega a la campana de los administradores
+    (crítica si es ALTA). En el detalle del vehículo el administrador la pasa PENDIENTE → EN_PROCESO → RESUELTA (con
+    respuesta obligatoria); abiertas y graves primero.
+  - **Gastos** (`operacion/vehiculos/gastos-vehiculo/`, `/gastos`): historial de combustible (con galones),
+    mantenimiento, repuestos, llantas, lavado, peajes, parqueadero, seguros y otros: fecha (no futura), valor > 0,
+    kilometraje opcional, proveedor, factura/comprobante y soporte (PDF/imagen ≤ 2 MB). El botón "Gastos" de
+    Vehículos (o "Ver gastos" en el detalle de uno) abre un modal con totales por tipo y por vehículo, promedio mensual, costo por km y km por galón
+    (`ReglasGastos.Resumir` = `resumirGastos`), rangos rápidos y exportación. Un vehículo con gastos no se elimina.
+- **Rutas:** el **código es un consecutivo automático** (`R-01`, `R-02`…, lo asigna el servidor y no se edita);
+  solo se pueden agregar estudiantes **del colegio y la jornada de la ruta** (los de otra jornada no aparecen); un
+  estudiante no puede estar en dos rutas activas de la misma jornada.
+- **Asignaciones (ruta + vehículo + conductor + monitora):** cubren un **rango de fechas** (fin opcional) y,
+  opcionalmente, un **horario** (hora inicio–fin). Una ruta puede tener varias asignaciones mientras **no se crucen**:
+  se cruzan si se tocan en fechas Y en horario (con horas en las dos se comparan las horas; si una no tiene, ocupa
+  toda la jornada). Así, en el mismo rango de fechas puede haber dos equipos en horas distintas. Lo mismo vale para
+  un vehículo, un conductor o una monitora en dos rutas. Conductor de tipo conductor con licencia vigente; vehículo
+  activo, con capacidad suficiente y documentos al día. La asignación del momento es la del turno en curso
+  (`asignacionVigente` = `ReglasAsignacion.Vigente`). Arriba de la tabla, **Avisos de ausencia**
   (`<app-avisos-del-dia>`, fecha elegible, hoy por defecto): estudiantes que su acudiente avisó que no viajan, su
   ruta, lo que avisó y si la ruta ya lo confirmó.
 - **Cronograma (`operacion/cronograma/`, Operación › Cronograma, planes con CRONOGRAMA = Profesional y Empresarial,
@@ -215,25 +243,51 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   rojo = vencido, amarillo = por atender). El detalle del día (`GET /cronograma/dia?fecha=`) lista cada ruta con
   colegio, vehículo, conductor/monitora, estudiantes (−N ausentes) y la recogida y la entrega (Programado, En curso,
   Finalizado o Sin registro si el día pasó), los avisos de ausencia (qué avisó, nota, quién avisó, si la ruta lo
-  confirmó) y la agenda con enlace a la pantalla que lo resuelve. Reglas puras en `calcular-cronograma.ts`, iguales a
-  `Cronograma.cs`.
+  confirmó) y la agenda con enlace a la pantalla que lo resuelve. **Al tocar una ruta** se abre su detalle
+  (`detalle-ruta-dia/`): colegio, jornada, vehículo, sector, conductor y monitora, cada trayecto con su estado y horas
+  y, si ya se hizo, cada estudiante con su estado y la hora en que subió y llegó (de `GET /recorridos?rutaId=&desde=&hasta=`);
+  si aún no, los estudiantes programados con sus avisos; más los avisos de esa ruta y accesos a Monitoreo (en curso),
+  Historial (filtrado por ruta y fecha, `?rutaId=&desde=&hasta=`) y Asignaciones. Reglas puras en
+  `calcular-cronograma.ts`, iguales a `Cronograma.cs`.
 - **Conductores:** vista de solo lectura de los empleados conductores con su licencia y ruta asignada;
   se editan en Personas › Empleados y se asignan en Operación › Asignaciones.
-- **Cotizaciones:** acudiente/estudiantes registrados (selectores) o cliente nuevo (texto);
-  total = valor por estudiante × estudiantes.
+- **Cotizaciones:** acudiente/estudiantes registrados (selectores) o cliente nuevo (texto). Cada estudiante lleva
+  **su colegio** (registrados: el de su registro; nuevos: uno de la lista u "Otro colegio" escrito) y **su propio
+  valor mensual**, así una cotización junta hermanos de colegios distintos. Tiene **mes inicial y final** como las
+  facturas: valor mensual = suma de los estudiantes, total = mensual × meses (`calcularValores`). En el detalle:
+  **WhatsApp** (`wa.me` con el resumen) y **Correo** (abre el correo del equipo con el texto; el envío desde el servidor
+  está en pausa) y **"Convertir en facturas"** (`POST /cotizaciones/{id}/facturar`, solo acudiente y estudiantes
+  registrados): la aprueba y crea en una transacción **una factura vigente por estudiante** con su valor y los meses
+  de la cotización (si una falla no se crea ninguna). Una cotización facturada queda **de solo lectura** (sin Editar,
+  409 al modificarla o facturarla otra vez) y no se elimina; cada factura muestra "Generada desde la cotización".
 - **PDF de facturas, recibos y cotizaciones:** "Descargar PDF" en la fila y en el detalle abre "Imprimir / Guardar
   como PDF" del navegador (`shared/documentos-pdf/`: `htmlDocumento` + `imprimirHtml` en un iframe oculto, sin
   dependencias) con el **formato de la empresa** (Configuración › Documentos PDF). `GeneradorPdf` (provisto en
   `proveerRepositorios()`) lee el formato una vez y se refresca al guardarlo. Los textos se escapan y solo se aceptan
   color `#RRGGBB` y logo en data URL de imagen.
 - **Facturas (contrataciones):** valor **mensual** por estudiante entre un mes inicial y uno final; el
-  estudiante debe ser del acudiente; un estudiante no tiene dos facturas vigentes que se crucen.
-- **Recibos:** pagan un mes de una factura vigente; un mes no se paga dos veces.
+  estudiante debe ser del acudiente; un estudiante no tiene dos facturas vigentes que se crucen. El detalle muestra el
+  **estado de cuenta** (`cuenta-factura/`, `GET /facturas/{id}/cuotas`): cada mes con lo pagado, el saldo y su estado
+  (Pagada, Vencida, Pendiente, Programada; "Abono" si está pagado en parte) y el total, pagado y saldo.
+  **Retiro** del estudiante o del acudiente (`PUT /facturas/{id}/retiro {periodoRetiro, motivo}`; `''` lo quita):
+  desde el mes elegido la factura **deja de cobrar los meses que faltan** (no aparecen en cuotas, reportes, mora,
+  recordatorios, portal ni tablero; el total del contrato se recalcula); no puede empezar en un mes con pagos ni en el
+  primero (422). Se registra solo al **inactivar al estudiante o al acudiente**: desde el mes siguiente a hoy (o al
+  último mes con pagos) con el motivo "Retiro del estudiante/acudiente (quedó inactivo)".
+- **Recibos:** pagan una factura vigente de dos formas (`aplicacion`): **"Pagar meses"** — uno o **varios meses**
+  elegidos (`periodos`) — o **"Abonar al saldo de la factura"** (`SALDO`), que se aplica a los meses más antiguos con
+  saldo. El valor se reparte en orden: completa los meses más antiguos y lo que sobra queda como **abono** del
+  siguiente (`meses` = lo aplicado a cada mes, tabla `pagos_detalle`). Un mes queda **pagado solo si lo aplicado
+  cubre su valor**; si no, sigue **pendiente con su saldo** (p. ej. 130.000 de 230.000 deja 100.000). Antes de guardar
+  el formulario sugiere el saldo de lo elegido y, si el valor no alcanza, avisa: "Quedarían canceladas N mensualidades
+  (…) y se abonan $X a {mes}; quedan pendientes de pago: …". No se puede pagar más que el saldo elegido ni un mes ya
+  pagado (409). Reglas puras en `finanzas/cuotas.ts` (`cuotasFactura`, `distribuir`, `simularPago`) = `Cuotas.cs`.
 - **Programación de facturación:** una por factura; día límite (1–31) y días previos (1–10); por cada canal
   activo (WhatsApp / correo) hay mensajes predefinidos y **exactamente uno "En uso"**; los envíos los
   hace el servidor y se ven en el historial.
-- **Reportes:** ingresos (recibos válidos por fecha de pago), facturas pendientes (meses sin recibo hasta
-  el mes en curso) y morosos (cuotas vencidas según el día límite de la programación, o el día 5).
+- **Reportes:** ingresos (recibos válidos por fecha de pago), facturas pendientes (meses con saldo hasta el mes en
+  curso, con lo abonado) y morosos (saldo de las cuotas vencidas según el día límite de la programación, o el día 5).
+  Los meses desde un retiro no cuentan.
 - **Mensajes de WhatsApp (`finanzas/mensajes-whatsapp`):** registro de solo lectura de los recordatorios que
   envió el servidor (fecha, acudiente, estudiante, teléfono, texto, estado y respuesta del proveedor), con filtros
   por texto, acudiente, estado y fechas. En modo local está vacío: los envía el proceso del servidor.
@@ -271,8 +325,11 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   baja 7 días (la empresa no elige crítica). La empresa ve "Mis solicitudes" (En curso/Todas), responde con
   adjuntos, valida ("Sí funciona" / "No, sigue fallando"), confirma con calificación 1–5, reabre o cancela; un
   Resuelto sin respuesta se cierra solo a los 7 días. La plataforma (`plataforma/soporte`) filtra, avanza estados,
-  responde (pública o nota interna, que la empresa nunca ve), asigna responsable y prioridad, y agenda reuniones
-  (virtual con enlace; realizada con acta). El servidor envía correo al equipo y al solicitante y una notificación
+  deja **seguimientos** (avances o preguntas, públicos o nota interna que la empresa nunca ve) **sin cambiar el
+  estado** (pestaña Seguimiento o "Solo dejar un seguimiento" en Avanzar), asigna responsable y prioridad, y agenda
+  reuniones (virtual con enlace; realizada con acta). Puede **terminar** (CERRADO) un ticket abierto en cualquier
+  etapa con **justificación obligatoria** que la empresa ve en el historial; si el ticket lleva **15 días o más**
+  esperando a la empresa (`DIAS_SIN_RESPUESTA`), el detalle lo avisa con "Terminar por falta de respuesta". El servidor envía correo al equipo y al solicitante y una notificación
   de campana por cada respuesta pública.
 - **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
   (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,

@@ -7,7 +7,7 @@ import { normalizar } from 'src/app/shared/formularios/formularios';
 import { FILTROS_ESTUDIANTE_VACIOS } from 'src/app/personas/estudiantes/estudiante';
 import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
 import { RutasRepositorio } from '../rutas/rutas-repositorio';
-import { Colegio, Curso, FILTROS_COLEGIO_VACIOS, FiltrosColegio, generarCursos } from './colegio';
+import { Colegio, Curso, FILTROS_COLEGIO_VACIOS, FiltrosColegio, claveCurso, generarCursos } from './colegio';
 import { ColegiosRepositorio } from './colegios-repositorio';
 
 /** Almacenamiento TEMPORAL en `localStorage` mientras se construye el API. */
@@ -38,7 +38,11 @@ export class ColegiosLocal extends RepositorioLocal<Colegio, FiltrosColegio> imp
     }
     const invalido = datos.cursos.find((c) => c.horaSalida <= c.horaEntrada);
     if (invalido) {
-      throw new ErrorCrud(`En ${invalido.grado} la hora de salida debe ser posterior a la de entrada.`, 'VALIDACION');
+      throw new ErrorCrud(`En ${invalido.grado} (${invalido.jornada}) la hora de salida debe ser posterior a la de entrada.`, 'VALIDACION');
+    }
+    const claves = datos.cursos.map(claveCurso);
+    if (new Set(claves).size !== claves.length) {
+      throw new ErrorCrud('Cada grado puede aparecer una sola vez por jornada en los cursos.', 'VALIDACION');
     }
   }
 
@@ -62,8 +66,9 @@ export class ColegiosLocal extends RepositorioLocal<Colegio, FiltrosColegio> imp
   }
 
   protected datosIniciales(): Colegio[] {
-    const todos = (entrada: string, salida: string, hasta = GRADOS[GRADOS.length - 1].id): Curso[] =>
-      generarCursos([], hasta, entrada, salida);
+    const ultimo = GRADOS[GRADOS.length - 1].id;
+    const cursos = (jornada: string, entrada: string, salida: string, desde = GRADOS[0].id, hasta = ultimo): Curso[] =>
+      generarCursos([], hasta, entrada, salida, jornada, desde);
     const colegio = (id: string, nit: string, razonSocial: string, direccion: string, telefono: string, cursos: Curso[]) => ({
       id,
       nit,
@@ -77,14 +82,18 @@ export class ColegiosLocal extends RepositorioLocal<Colegio, FiltrosColegio> imp
     });
     // Los ids coinciden con los `colegioId` de los estudiantes de ejemplo.
     return [
-      colegio('col-1', '891180123-4', 'Colegio San Cayetano', 'Carrera 5 # 12-40, Neiva', '6088712345', todos('06:30', '13:00')),
-      colegio('col-2', '891180234-5', 'Colegio Matre Paula', 'Calle 21 # 8-15, Neiva', '6088723456', [
-        ...todos('06:45', '12:45', '5°'),
-        ...generarCursos([], '11°', '12:30', '18:00').slice(7),
+      colegio('col-1', '891180123-4', 'Colegio San Cayetano', 'Carrera 5 # 12-40, Neiva', '6088712345', [
+        ...cursos('Mañana', '06:30', '13:00'),
+        ...cursos('Tarde', '12:30', '18:00', '1°'),
       ]),
-      colegio('col-3', '891180345-6', 'Colegio La Gaitana', 'Avenida La Toma # 3-20, Neiva', '6088734567', todos('07:00', '14:00')),
-      colegio('col-4', '891180456-7', 'Colegio Enrique Olaya Herrera', 'Calle 7 # 30-11, Neiva', '6088745678', todos('06:30', '12:30', '5°')),
-      colegio('col-5', '891180567-8', 'Colegio San José', 'Carrera 16 # 18-02, Neiva', '6088756789', todos('06:20', '13:20')),
+      colegio('col-2', '891180234-5', 'Colegio Matre Paula', 'Calle 21 # 8-15, Neiva', '6088723456', [
+        ...cursos('Mañana', '06:45', '12:45', GRADOS[0].id, '5°'),
+        ...cursos('Tarde', '12:30', '18:00', '6°'),
+      ]),
+      colegio('col-3', '891180345-6', 'Colegio La Gaitana', 'Avenida La Toma # 3-20, Neiva', '6088734567', cursos('Única', '07:00', '14:00')),
+      colegio('col-4', '891180456-7', 'Colegio Enrique Olaya Herrera', 'Calle 7 # 30-11, Neiva', '6088745678',
+        cursos('Mañana', '06:30', '12:30', GRADOS[0].id, '5°')),
+      colegio('col-5', '891180567-8', 'Colegio San José', 'Carrera 16 # 18-02, Neiva', '6088756789', cursos('Mañana', '06:20', '13:20')),
     ];
   }
 }

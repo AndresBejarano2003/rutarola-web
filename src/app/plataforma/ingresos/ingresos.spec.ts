@@ -62,7 +62,12 @@ describe('Ingresos de la plataforma', () => {
       localStorage.clear();
       simularDialogos();
       TestBed.configureTestingModule({ providers: [provideRouter([]), ...repositoriosDePrueba()] });
+      // ApexCharts dibuja en requestAnimationFrame: en jsdom ese cuadro puede llegar cuando la prueba ya desmontó el
+      // DOM ("Cannot read properties of null (reading 'node')"). La prueba no mira el gráfico, así que no se anima.
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 0);
     });
+
+    afterEach(() => vi.restoreAllMocks());
 
     it('el valor recibido al activar un plan a mano cuenta como ingreso', async () => {
       const suscripcion = TestBed.inject(SuscripcionRepositorio);

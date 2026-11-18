@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AccionesFormulario } from 'src/app/shared/acciones-formulario/acciones-formulario';
+import { DatosRegistro } from 'src/app/shared/crud/crud';
 import { PaginaCrud } from 'src/app/shared/crud/pagina-crud';
 import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-listado';
 import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo-confirmacion';
@@ -41,6 +42,23 @@ export default class AcudientesPage extends PaginaCrud<Acudiente, FiltrosAcudien
     const acudiente = this.acudienteEstudiantes();
     return acudiente ? nombreCompleto(acudiente) : '';
   });
+
+  protected readonly describirNombre = nombreCompleto;
+
+  /**
+   * Al registrar un acudiente el modal sigue abierto con su detalle, para agregarle sus estudiantes sin salir
+   * (luego se cierra con "Cerrar"). Editar cierra el modal como siempre.
+   */
+  protected override async guardar(datos: DatosRegistro<Acudiente>): Promise<void> {
+    if (this.modo() !== 'crear') {
+      return super.guardar(datos);
+    }
+    const creado = await this.store.crear(datos);
+    if (creado) {
+      this.seleccionado.set(creado);
+      this.modo.set('consultar');
+    }
+  }
 
   protected describir(a: Acudiente): string {
     return `${nombreCompleto(a)} (${a.tipoDocumento} ${a.numeroDocumento})`;

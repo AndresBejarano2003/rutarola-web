@@ -1,6 +1,6 @@
 import { PanelFiltros } from 'src/app/shared/panel-filtros/panel-filtros';
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { descargarCsv } from 'src/app/shared/exportar/csv';
 import { nombrePeriodo } from 'src/app/shared/fechas/fechas';
@@ -44,9 +44,10 @@ export default class ReporteMorososPage {
     emitirEnVivo(this.form, {
       emit: (v: { texto: string; diasMinimos: string }) => this.filtros.set({ texto: v.texto, diasMinimos: Number(v.diasMinimos) || 0 }),
     });
+    // Página 1 al cambiar los filtros (no en la recarga automática, que conserva la página).
     effect(() => {
-      this.reporte();
-      this.paginacion.reiniciar();
+      this.filtros();
+      untracked(() => this.paginacion.reiniciar());
     });
   }
 

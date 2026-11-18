@@ -1,8 +1,9 @@
 import { Factura } from 'src/app/finanzas/facturas/factura';
 import { Programacion } from 'src/app/finanzas/programacion/programacion';
+import { cuotasFactura, pagosDeRecibos, ultimoMesCobrable } from 'src/app/finanzas/cuotas';
 import { Recibo } from 'src/app/finanzas/recibos/recibo';
 import { fechaLimiteCuota } from 'src/app/finanzas/reportes/reportes';
-import { Asignacion } from 'src/app/operacion/asignaciones/asignacion';
+import { Asignacion, asignacionVigente, cubreFecha } from 'src/app/operacion/asignaciones/asignacion';
 import { Colegio } from 'src/app/operacion/colegios/colegio';
 import { Ruta } from 'src/app/operacion/rutas/ruta';
 import { Vehiculo } from 'src/app/operacion/vehiculos/vehiculo';
@@ -48,7 +49,7 @@ const DOCUMENTOS = [
   { campo: 'vencimientoPolizas', nombre: 'Pólizas' },
 ] as const;
 
-const cubre = (a: Asignacion, d: string) => a.fechaInicio <= d && (!a.fechaFin || a.fechaFin >= d);
+const cubre = (a: Asignacion, d: string) => cubreFecha(a, d);
 const activas = (d: DatosCronograma) => d.rutas.filter((r) => r.estado === 'ACTIVO');
 const asignacionesActivas = (d: DatosCronograma) => d.asignaciones.filter((a) => a.estado === 'ACTIVO');
 
@@ -71,26 +72,29 @@ function eventos(datos: DatosCronograma, fecha: string): EventoCronograma[] {
   for (const c of datos.empleados.filter((e) => e.estado === 'ACTIVO' && e.tipoEmpleado === 'CONDUCTOR' && e.vencimientoLicencia === fecha)) {
     lista.push({ tipo: 'LICENCIA', nivel: nivelVence, titulo: 'Vence licencia de conducción', detalle: nombreCompleto(c), enlace: '/operacion/conductores' });
   }
-  // Fecha límite de pago de cada mensualidad.
+  // Fecha límite de pago de cada mensualidad (sin los meses desde el retiro; un abono deja pendiente solo el saldo).
   const periodo = fecha.slice(0, 7);
   const vigentes = datos.facturas.filter((f) => f.estado === 'ACTIVO');
-  const cuotas = vigentes.filter((f) => {
-    if (periodo < f.periodoInicio || periodo > f.periodoFin) return false;
+  const cuotas = vigentes.flatMap((f) => {
     const dia = datos.programaciones.find((p) => p.facturaId === f.id)?.diaLimitePago;
-    return fechaLimiteCuota(periodo, dia || undefined) === fecha;
+    if (fechaLimiteCuota(periodo, dia || undefined) !== fecha) return [];
+    const cuota = cuotasFactura(f, pagosDeRecibos(datos.recibos.filter((r) => r.facturaId === f.id))).find((c) => c.periodo === periodo);
+    return cuota ? [cuota] : [];
   });
   if (cuotas.length) {
-    const pendientes = cuotas.filter((f) => !datos.recibos.some((r) => r.estado === 'ACTIVO' && r.facturaId === f.id && r.periodo === periodo));
+    const pendientes = cuotas.filter((c) => c.saldo > 0);
     lista.push({
       tipo: 'PAGO',
       nivel: pendientes.length === 0 ? 'INFORMATIVA' : fecha < datos.hoy ? 'CRITICA' : 'ADVERTENCIA',
       titulo: 'Fecha límite de pago',
-      detalle: `${plural(cuotas.length, 'cuota', 'cuotas')} · ${plural(pendientes.length, 'pendiente', 'pendientes')} · ${pesos.format(pendientes.reduce((s, f) => s + f.valorContratacion, 0))}`,
+      detalle: `${plural(cuotas.length, 'cuota', 'cuotas')} · ${plural(pendientes.length, 'pendiente', 'pendientes')} · ${pesos.format(pendientes.reduce((s, c) => s + c.saldo, 0))}`,
       enlace: '/finanzas/reportes-financieros/facturas-pendientes',
     });
   }
-  for (const f of vigentes.filter((x) => diaDelPeriodo(x.periodoFin, 31) === fecha)) {
-    lista.push({ tipo: 'CONTRATO', nivel: 'INFORMATIVA', titulo: `Termina contrato ${f.numero}`, detalle: `${f.nombreEstudiante} · ${nombrePeriodo(f.periodoFin)}`, enlace: '/finanzas/facturas' });
+  for (const f of vigentes) {
+    const ultimo = ultimoMesCobrable(f);
+    if (!ultimo || diaDelPeriodo(ultimo, 31) !== fecha) continue;
+    lista.push({ tipo: 'CONTRATO', nivel: 'INFORMATIVA', titulo: `Termina contrato ${f.numero}`, detalle: `${f.nombreEstudiante} · ${nombrePeriodo(ultimo)}`, enlace: '/finanzas/facturas' });
   }
   for (const a of asignacionesActivas(datos).filter((x) => x.fechaFin === fecha)) {
     const ruta = activas(datos).find((r) => r.id === a.rutaId);
@@ -143,7 +147,7 @@ export function calcularDiaCronograma(datos: DatosCronograma, fecha: string): De
   const rutas = unicas
     .sort((a, b) => a.jornada.localeCompare(b.jornada) || a.codigo.localeCompare(b.codigo))
     .map((r): RutaCronograma => {
-      const asignacion = asignacionesActivas(datos).find((a) => a.rutaId === r.id && cubre(a, fecha));
+      const asignacion = asignacionVigente(asignacionesActivas(datos), r.id, fecha);
       const estudiantes = new Set(r.estudianteIds);
       const trayectos = (['RECOGIDA', 'ENTREGA'] as Trayecto[]).map((t) => {
         const rec = recorridos.find((x) => x.rutaId === r.id && x.trayecto === t);

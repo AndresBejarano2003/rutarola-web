@@ -1,5 +1,5 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { DatosRegistro, ErrorCrud } from 'src/app/shared/crud/crud';
 import { RepositorioLocal } from 'src/app/shared/crud/repositorio-local';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
@@ -8,6 +8,8 @@ import { FILTROS_ASIGNACION_VACIOS } from '../asignaciones/asignacion';
 import { AsignacionesRepositorio } from '../asignaciones/asignaciones-repositorio';
 import { FILTROS_VEHICULO_VACIOS, FiltrosVehiculo, Vehiculo, etiquetaVehiculo } from './vehiculo';
 import { VehiculosRepositorio } from './vehiculos-repositorio';
+import { FILTROS_GASTO_VACIOS } from './gastos-vehiculo/gasto-vehiculo';
+import { GastosVehiculoRepositorio } from './gastos-vehiculo/gastos-vehiculo-repositorio';
 
 /** Almacenamiento TEMPORAL en `localStorage` mientras se construye el API. */
 @Injectable()
@@ -48,10 +50,19 @@ export class VehiculosLocal extends RepositorioLocal<Vehiculo, FiltrosVehiculo> 
       .get(AsignacionesRepositorio)
       .listar({ ...FILTROS_ASIGNACION_VACIOS, vehiculoId: id }, { pagina: 1, tamano: 1 })
       .pipe(
-        map(({ total }) =>
+        switchMap(({ total }) =>
           total
-            ? `No se puede eliminar: el vehículo tiene ${total} asignación(es) de ruta. Cámbialo a Inactivo para conservar el historial.`
-            : null,
+            ? of(`No se puede eliminar: el vehículo tiene ${total} asignación(es) de ruta. Cámbialo a Inactivo para conservar el historial.`)
+            : this.injector
+                .get(GastosVehiculoRepositorio)
+                .listar({ ...FILTROS_GASTO_VACIOS, vehiculoId: id }, { pagina: 1, tamano: 1 })
+                .pipe(
+                  map(({ total: gastos }) =>
+                    gastos
+                      ? `No se puede eliminar: el vehículo tiene ${gastos} gasto(s) registrado(s). Cámbialo a Inactivo para conservar el historial.`
+                      : null,
+                  ),
+                ),
         ),
       );
   }

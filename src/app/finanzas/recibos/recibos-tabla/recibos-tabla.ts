@@ -4,7 +4,7 @@ import { AccionesFila } from 'src/app/shared/acciones-fila/acciones-fila';
 import { BadgeEstado } from 'src/app/shared/badge-estado/badge-estado';
 import { EstadoVacio } from 'src/app/shared/estado-vacio/estado-vacio';
 import { fechaCorta, nombrePeriodo } from 'src/app/shared/fechas/fechas';
-import { MEDIOS_PAGO, Recibo } from '../recibo';
+import { MEDIOS_PAGO, Recibo, mesesRecibo } from '../recibo';
 
 @Component({
   selector: 'app-recibos-tabla',
@@ -45,7 +45,12 @@ import { MEDIOS_PAGO, Recibo } from '../recibo';
                   <div class="font-medium">{{ r.nombreEstudiante }}</div>
                   <div class="text-xs text-base-content/70">{{ r.numeroFactura }} · {{ r.nombreAcudiente }}</div>
                 </td>
-                <td class="hidden @3xl:table-cell whitespace-nowrap capitalize">{{ nombrePeriodo(r.periodo, true) }}</td>
+                <td class="hidden @3xl:table-cell whitespace-nowrap">
+                  <span class="capitalize">{{ meses(r) }}</span>
+                  @if (r.aplicacion === 'SALDO') {
+                    <span class="badge badge-soft badge-info badge-xs ml-1">Abono al saldo</span>
+                  }
+                </td>
                 <td class="text-right whitespace-nowrap font-semibold">{{ r.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
                 <td class="hidden @5xl:table-cell whitespace-nowrap">
                   <i class="text-xs text-base-content/70" [class]="medio?.icono"></i> {{ medio?.nombre }}
@@ -90,4 +95,12 @@ export class RecibosTabla {
   protected readonly medios = new Map(MEDIOS_PAGO.map((m) => [m.id, m]));
   protected readonly fechaCorta = fechaCorta;
   protected readonly nombrePeriodo = nombrePeriodo;
+
+  /** "feb. 2026" o "feb. 2026 – abr. 2026 (3)" cuando paga varios meses. */
+  protected meses(r: Recibo): string {
+    const lista = mesesRecibo(r).map((m) => m.periodo);
+    if (lista.length <= 1) return nombrePeriodo(lista[0] ?? r.periodo, true);
+    return `${nombrePeriodo(lista[0])} – ${nombrePeriodo(lista[lista.length - 1])} (${lista.length})`;
+  }
+
 }

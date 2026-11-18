@@ -10,7 +10,7 @@ import { FILTROS_RUTA_VACIOS, Ruta, etiquetaRuta } from '../rutas/ruta';
 import { RutasRepositorio } from '../rutas/rutas-repositorio';
 import { documentosVencidos } from '../vehiculos/vehiculo';
 import { VehiculosRepositorio } from '../vehiculos/vehiculos-repositorio';
-import { Asignacion, FILTROS_ASIGNACION_VACIOS, FiltrosAsignacion } from './asignacion';
+import { Asignacion, FILTROS_ASIGNACION_VACIOS, FiltrosAsignacion, cubreFecha, seCruzan, textoHorario, textoPeriodo } from './asignacion';
 import { AsignacionesRepositorio } from './asignaciones-repositorio';
 
 /** Almacenamiento TEMPORAL en `localStorage` mientras se construye el API. */
@@ -25,21 +25,29 @@ export class AsignacionesLocal extends RepositorioLocal<Asignacion, FiltrosAsign
       (!f.rutaId || a.rutaId === f.rutaId) &&
       (!f.vehiculoId || a.vehiculoId === f.vehiculoId) &&
       (!f.empleadoId || a.conductorId === f.empleadoId || a.monitoraId === f.empleadoId) &&
-      (!f.estado || a.estado === f.estado)
+      (!f.estado || a.estado === f.estado) &&
+      (!f.fecha || cubreFecha(a, f.fecha))
     );
   }
 
   protected etiquetaOpcion(a: Asignacion): string {
-    return `${a.rutaId} · ${a.fechaInicio}`;
+    const horario = textoHorario(a);
+    return horario ? `${a.rutaId} · ${a.fechaInicio} · ${horario}` : `${a.rutaId} · ${a.fechaInicio}`;
   }
 
   protected override ordenar(a: Asignacion, b: Asignacion): number {
-    return a.estado.localeCompare(b.estado) || b.fechaInicio.localeCompare(a.fechaInicio);
+    return a.estado.localeCompare(b.estado) || b.fechaInicio.localeCompare(a.fechaInicio) || (a.horaInicio ?? '').localeCompare(b.horaInicio ?? '');
   }
 
   protected override validar(datos: DatosRegistro<Asignacion>): void {
     if (datos.fechaFin && datos.fechaFin < datos.fechaInicio) {
       throw new ErrorCrud('La fecha de fin no puede ser anterior a la de inicio.', 'VALIDACION');
+    }
+    if (!!datos.horaInicio !== !!datos.horaFin) {
+      throw new ErrorCrud('Ingresa la hora de inicio y la de fin del horario (o deja las dos vacías para toda la jornada).', 'VALIDACION');
+    }
+    if (datos.horaInicio && datos.horaFin <= datos.horaInicio) {
+      throw new ErrorCrud('La hora de fin debe ser posterior a la de inicio.', 'VALIDACION');
     }
   }
 
@@ -82,7 +90,10 @@ export class AsignacionesLocal extends RepositorioLocal<Asignacion, FiltrosAsign
     );
   }
 
-  /** Una asignación activa por ruta; nadie (ni el vehículo) en dos rutas activas de la misma jornada. */
+  /**
+   * Ninguna otra asignación activa de la ruta se cruza en fechas y horario, y el vehículo, el conductor y la monitora
+   * no están en otra asignación activa que se cruce (`ServicioAsignaciones.ValidarCrucesAsync`).
+   */
   private validarCruces(
     datos: DatosRegistro<Asignacion>,
     idActual: string | null,
@@ -91,21 +102,29 @@ export class AsignacionesLocal extends RepositorioLocal<Asignacion, FiltrosAsign
     conductor: Empleado,
     monitora: Empleado | null,
   ): void {
-    const jornadas = new Map(rutas.map((r) => [r.id, r]));
-    const activas = this.leer().filter((a) => a.id !== idActual && a.estado === 'ACTIVO');
-    if (activas.some((a) => a.rutaId === datos.rutaId)) {
-      throw new ErrorCrud(`La ruta ${etiquetaRuta(ruta)} ya tiene una asignación activa. Inactívala primero.`, 'DUPLICADO');
+    const porId = new Map(rutas.map((r) => [r.id, r]));
+    const cruzadas = this.leer()
+      .filter((a) => a.id !== idActual && a.estado === 'ACTIVO')
+      .filter((a) => seCruzan(datos, ruta.jornada, a, porId.get(a.rutaId)?.jornada ?? ''))
+      .sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio));
+    const misma = cruzadas.find((a) => a.rutaId === datos.rutaId);
+    if (misma) {
+      throw new ErrorCrud(
+        `La ruta ${etiquetaRuta(ruta)} ya tiene una asignación activa ${textoPeriodo(misma)} que se cruza. ` +
+          'Cambia las fechas o el horario, o inactívala primero.',
+        'DUPLICADO',
+      );
     }
-    for (const otra of activas.filter((a) => jornadas.get(a.rutaId)?.jornada === ruta.jornada)) {
-      const otraRuta = etiquetaRuta(jornadas.get(otra.rutaId) ?? { codigo: '', nombre: otra.rutaId });
+    for (const otra of cruzadas) {
+      const donde = `la ruta ${etiquetaRuta(porId.get(otra.rutaId) ?? { codigo: '', nombre: otra.rutaId })} ${textoPeriodo(otra)}`;
       if (otra.vehiculoId === datos.vehiculoId) {
-        throw new ErrorCrud(`El vehículo ya cubre la ruta ${otraRuta} en la jornada ${ruta.jornada}.`, 'DUPLICADO');
+        throw new ErrorCrud(`El vehículo ya cubre ${donde}.`, 'DUPLICADO');
       }
       if ([otra.conductorId, otra.monitoraId].includes(datos.conductorId)) {
-        throw new ErrorCrud(`${nombreCompleto(conductor)} ya está asignado a la ruta ${otraRuta} en la jornada ${ruta.jornada}.`, 'DUPLICADO');
+        throw new ErrorCrud(`${nombreCompleto(conductor)} ya está asignado a ${donde}.`, 'DUPLICADO');
       }
       if (monitora && [otra.conductorId, otra.monitoraId].includes(datos.monitoraId)) {
-        throw new ErrorCrud(`${nombreCompleto(monitora)} ya está asignada a la ruta ${otraRuta} en la jornada ${ruta.jornada}.`, 'DUPLICADO');
+        throw new ErrorCrud(`${nombreCompleto(monitora)} ya está asignada a ${donde}.`, 'DUPLICADO');
       }
     }
   }
@@ -118,7 +137,10 @@ export class AsignacionesLocal extends RepositorioLocal<Asignacion, FiltrosAsign
       conductorId,
       monitoraId,
       fechaInicio: '2026-02-02',
-      fechaFin: '2026-11-30',
+      // Indefinida (como la demo del API): los ejemplos siguen vigentes.
+      fechaFin: '',
+      horaInicio: '',
+      horaFin: '',
       estado: 'ACTIVO',
       observaciones: '',
       fechaCreacion: '2026-01-20T08:00:00.000Z',

@@ -7,7 +7,8 @@ import { ArchivoAdjunto } from 'src/app/shared/archivo-adjunto/archivo-adjunto';
  * con ESPERANDO_CLIENTE (se pidió información; responder lo devuelve a revisión), devoluciones a una etapa
  * anterior, RECHAZADO (no procede) y CANCELADO (la empresa desiste mientras no esté resuelto).
  * Errores y mejoras pasan SIEMPRE por QA, pruebas y la validación del cliente. Un RESUELTO sin respuesta se
- * cierra solo a los 7 días.
+ * cierra solo a los 7 días. La plataforma puede TERMINAR (CERRADO) cualquier ticket abierto con una justificación
+ * (p. ej. la empresa no responde en `DIAS_SIN_RESPUESTA` días) y dejar seguimientos sin cambiar el estado.
  */
 export type TipoTicket = 'ERROR' | 'CONSULTA' | 'MEJORA' | 'CAPACITACION';
 export type PrioridadTicket = 'BAJA' | 'MEDIA' | 'ALTA' | 'CRITICA';
@@ -168,6 +169,8 @@ export interface SolicitudReunion {
 export const MAXIMO_ADJUNTOS_TICKET = 3;
 export const TAMANO_MAXIMO_ADJUNTO_MB = 1;
 export const DIAS_CIERRE_AUTOMATICO = 7;
+/** Días esperando a la empresa desde los que se sugiere terminar el ticket por falta de seguimiento. */
+export const DIAS_SIN_RESPUESTA = 15;
 
 const HORA = 3_600_000;
 /** Tiempo objetivo de solución (SLA) desde la creación. */
@@ -190,13 +193,13 @@ export function requiereCalidad(tipo: TipoTicket): boolean {
 }
 
 const TRANSICIONES: Record<EstadoTicket, EstadoTicket[]> = {
-  NUEVO: ['EN_REVISION', 'RECHAZADO'],
-  EN_REVISION: ['EN_PROCESO', 'ESPERANDO_CLIENTE', 'RESUELTO', 'RECHAZADO'],
-  ESPERANDO_CLIENTE: ['EN_REVISION', 'EN_PROCESO'],
-  EN_PROCESO: ['EN_QA', 'ESPERANDO_CLIENTE', 'EN_REVISION', 'RESUELTO'],
-  EN_QA: ['EN_PRUEBAS', 'EN_PROCESO'],
-  EN_PRUEBAS: ['VALIDACION_CLIENTE', 'EN_PROCESO'],
-  VALIDACION_CLIENTE: ['RESUELTO', 'EN_PROCESO'],
+  NUEVO: ['EN_REVISION', 'RECHAZADO', 'CERRADO'],
+  EN_REVISION: ['EN_PROCESO', 'ESPERANDO_CLIENTE', 'RESUELTO', 'RECHAZADO', 'CERRADO'],
+  ESPERANDO_CLIENTE: ['EN_REVISION', 'EN_PROCESO', 'CERRADO'],
+  EN_PROCESO: ['EN_QA', 'ESPERANDO_CLIENTE', 'EN_REVISION', 'RESUELTO', 'CERRADO'],
+  EN_QA: ['EN_PRUEBAS', 'EN_PROCESO', 'CERRADO'],
+  EN_PRUEBAS: ['VALIDACION_CLIENTE', 'EN_PROCESO', 'CERRADO'],
+  VALIDACION_CLIENTE: ['RESUELTO', 'EN_PROCESO', 'CERRADO'],
   RESUELTO: ['CERRADO', 'EN_REVISION'],
   CERRADO: [],
   RECHAZADO: [],
@@ -221,9 +224,21 @@ function etapa(e: EstadoTicket): number {
   return etapas[e] ?? 7;
 }
 
-/** Rechazar, pedir información, resolver o devolver a una etapa anterior exige explicar por qué. */
+/** Terminar = cerrar un ticket que no está resuelto (exige justificación). */
+export function esTerminacion(desde: EstadoTicket, hacia: EstadoTicket): boolean {
+  return hacia === 'CERRADO' && desde !== 'RESUELTO';
+}
+
+/** Rechazar, pedir información, resolver, terminar o devolver a una etapa anterior exige explicar por qué. */
 export function requiereComentario(desde: EstadoTicket, hacia: EstadoTicket): boolean {
-  return hacia === 'RECHAZADO' || hacia === 'ESPERANDO_CLIENTE' || hacia === 'RESUELTO' || etapa(hacia) < etapa(desde);
+  return (
+    hacia === 'RECHAZADO' || hacia === 'ESPERANDO_CLIENTE' || hacia === 'RESUELTO' || esTerminacion(desde, hacia) || etapa(hacia) < etapa(desde)
+  );
+}
+
+/** Días completos desde la última actividad (para "la empresa no responde hace N días"). */
+export function diasSinActividad(fechaUltimaActividad: string, ahora = new Date()): number {
+  return Math.max(0, Math.floor((ahora.getTime() - new Date(fechaUltimaActividad).getTime()) / (24 * HORA)));
 }
 
 export function accionesCliente(estado: EstadoTicket): AccionesCliente {

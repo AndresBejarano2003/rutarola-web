@@ -50,6 +50,11 @@ import { TIPOS_VEHICULO, Vehiculo, estadoDocumentos } from '../vehiculo';
                     <div class="min-w-0">
                       <div class="font-semibold truncate">{{ vehiculo.marca }} {{ vehiculo.linea }}</div>
                       <div class="text-xs text-base-content/70">Modelo {{ vehiculo.modelo }} · {{ vehiculo.color }}</div>
+                      @if (novedadesAbiertas().get(vehiculo.id); as n) {
+                        <span class="badge badge-soft badge-warning badge-xs mt-0.5">
+                          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ n }} novedad(es)
+                        </span>
+                      }
                     </div>
                   </div>
                 </td>
@@ -59,7 +64,14 @@ import { TIPOS_VEHICULO, Vehiculo, estadoDocumentos } from '../vehiculo';
                 <td><app-badge-vencimiento [estadoFijo]="estadoDocumentos(vehiculo)" [mostrarFecha]="false" textoVigente="Al día" /></td>
                 <td><app-badge-estado [estado]="vehiculo.estado" /></td>
                 <td class="text-right whitespace-nowrap">
-                  <app-acciones-fila (consultar)="consultar.emit(vehiculo)" (editar)="editar.emit(vehiculo)" (eliminar)="eliminar.emit(vehiculo)" />
+                  <app-acciones-fila (consultar)="consultar.emit(vehiculo)" (editar)="editar.emit(vehiculo)" (eliminar)="eliminar.emit(vehiculo)">
+                    <div class="tooltip" data-tip="Gastos">
+                      <button type="button" class="btn btn-sm btn-ghost btn-square text-secondary hover:bg-secondary/15" aria-label="Gastos"
+                        (click)="gastos.emit(vehiculo)">
+                        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </app-acciones-fila>
                 </td>
               </tr>
             } @empty {
@@ -80,11 +92,14 @@ export class VehiculosTabla {
   readonly vehiculos = input.required<Vehiculo[]>();
   readonly cargando = input(false);
   readonly hayFiltros = input(false);
+  /** Novedades abiertas (pendientes o en proceso) por vehículo. */
+  readonly novedadesAbiertas = input<ReadonlyMap<string, number>>(new Map());
 
   readonly consultar = output<Vehiculo>();
   readonly editar = output<Vehiculo>();
   readonly eliminar = output<Vehiculo>();
   readonly crear = output<void>();
+  readonly gastos = output<Vehiculo>();
 
   protected readonly nombresTipo = aMapa(TIPOS_VEHICULO);
   protected readonly estadoDocumentos = estadoDocumentos;

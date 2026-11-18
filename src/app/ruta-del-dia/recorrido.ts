@@ -142,6 +142,8 @@ export interface RutaAsignada {
   avisosAusencia?: number;
   /** Recorridos de la fecha consultada. */
   recorridos: ResumenRecorrido[];
+  /** Horario del turno (`06:00–09:30`); `''` = toda la jornada. */
+  horario?: string;
 }
 
 export function contarParadas(paradas: Parada[]): ConteoParadas {

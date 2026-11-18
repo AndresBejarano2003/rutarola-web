@@ -1,11 +1,11 @@
 import { Injectable, Injector, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { DatosRegistro, ErrorCrud } from 'src/app/shared/crud/crud';
+import { DatosRegistro, ErrorCrud, siguienteConsecutivo } from 'src/app/shared/crud/crud';
 import { RepositorioLocal } from 'src/app/shared/crud/repositorio-local';
 import { normalizar } from 'src/app/shared/formularios/formularios';
 import { FILTROS_ASIGNACION_VACIOS } from '../asignaciones/asignacion';
 import { AsignacionesRepositorio } from '../asignaciones/asignaciones-repositorio';
-import { FILTROS_RUTA_VACIOS, FiltrosRuta, Ruta, etiquetaRuta } from './ruta';
+import { FILTROS_RUTA_VACIOS, FiltrosRuta, PREFIJO_CODIGO_RUTA, Ruta, etiquetaRuta } from './ruta';
 import { RutasRepositorio } from './rutas-repositorio';
 
 /** Almacenamiento TEMPORAL en `localStorage` mientras se construye el API. */
@@ -34,11 +34,16 @@ export class RutasLocal extends RepositorioLocal<Ruta, FiltrosRuta> implements R
     return a.codigo.localeCompare(b.codigo, 'es', { numeric: true });
   }
 
+  /** El código es un consecutivo del sistema (`R-01`, `R-02`…) que no cambia al editar. */
+  protected override preparar(datos: DatosRegistro<Ruta>, idActual: string | null, registros: Ruta[]): DatosRegistro<Ruta> {
+    const actual = registros.find((r) => r.id === idActual);
+    return actual
+      ? { ...datos, codigo: actual.codigo }
+      : { ...datos, codigo: siguienteConsecutivo(PREFIJO_CODIGO_RUTA, registros.map((r) => r.codigo), 2) };
+  }
+
   protected override validar(datos: DatosRegistro<Ruta>, idActual: string | null, registros: Ruta[]): void {
     const otras = registros.filter((r) => r.id !== idActual);
-    if (otras.some((r) => r.codigo.toUpperCase() === datos.codigo.toUpperCase())) {
-      throw new ErrorCrud(`Ya existe una ruta con el código ${datos.codigo}.`, 'DUPLICADO');
-    }
     if (datos.estado === 'ACTIVO') {
       // Un estudiante no puede estar en dos rutas activas de la misma jornada.
       const choque = otras.find(

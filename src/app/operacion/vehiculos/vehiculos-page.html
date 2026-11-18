@@ -4,11 +4,15 @@
   <div class="card-body">
     <app-encabezado-listado titulo="Lista de vehículos" descripcion="Flota de transporte escolar y vencimiento de sus documentos."
       [cargando]="store.cargando()" [total]="store.total()" [modoLocal]="store.modoLocal" [error]="store.error()"
-      textoNuevo="Nuevo vehículo" (nuevo)="nuevo()" (reintentar)="store.recargar()" />
+      textoNuevo="Nuevo vehículo" (nuevo)="nuevo()" (reintentar)="store.recargar()">
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="abrirGastos('')">
+        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> Gastos
+      </button>
+    </app-encabezado-listado>
 
     <app-vehiculos-tabla [vehiculos]="store.items()" [cargando]="store.cargando()" [hayFiltros]="store.hayFiltros()"
       (consultar)="abrir('consultar', $event)" (editar)="abrir('editar', $event)" (eliminar)="pedirEliminar($event)"
-      (crear)="nuevo()" />
+      (crear)="nuevo()" [novedadesAbiertas]="novedadesAbiertas()" (gastos)="abrirGastos($event.id)" />
 
     <app-paginacion [pagina]="store.paginacion().pagina" [tamano]="store.paginacion().tamano" [total]="store.total()"
       [totalPaginas]="store.totalPaginas()" (cambiarPagina)="store.irAPagina($event)" (cambiarTamano)="store.cambiarTamano($event)" />
@@ -26,6 +30,16 @@
       <app-vehiculo-formulario idFormulario="form-vehiculo" [modo]="modo()" [vehiculo]="seleccionado()" (guardar)="guardar($event)" />
       @if (modo() !== 'crear' && seleccionado(); as v) {
         <app-documentos-vehiculo class="block mt-6" [vehiculoId]="v.id" (cambio)="documentosCambiaron()" />
+        <app-novedades-vehiculo class="block mt-6" [vehiculoId]="v.id" [resaltada]="novedadResaltada()" (cambio)="cargarNovedades()" />
+        <div class="mt-6 border-t border-base-300 pt-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-info uppercase text-sm font-semibold tracking-wide">Gastos</h3>
+            <p class="text-xs text-base-content/70">Tanqueadas, mantenimientos, repuestos y demás, con su tablero.</p>
+          </div>
+          <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="abrirGastos(v.id)">
+            <i class="fa-solid fa-chart-column" aria-hidden="true"></i> Ver gastos
+          </button>
+        </div>
       }
     </div>
   }
@@ -37,3 +51,5 @@
 
 <app-dialogo-confirmacion [(abierto)]="confirmacionAbierta" titulo="Eliminar vehículo" [mensaje]="mensajeEliminar()"
   [permitirConfirmar]="puedeEliminar()" [procesando]="store.guardando() || verificandoEliminar()" (confirmar)="confirmarEliminar()" />
+
+<app-gastos-vehiculo [(abierto)]="gastosAbierto" [vehiculoId]="gastosVehiculo()" />

@@ -9,7 +9,7 @@ import { FILTROS_PROGRAMACION_VACIOS } from 'src/app/finanzas/programacion/progr
 import { ProgramacionesRepositorio } from 'src/app/finanzas/programacion/programaciones-repositorio';
 import { FILTROS_RECIBO_VACIOS } from 'src/app/finanzas/recibos/recibo';
 import { RecibosRepositorio } from 'src/app/finanzas/recibos/recibos-repositorio';
-import { FILTROS_ASIGNACION_VACIOS } from 'src/app/operacion/asignaciones/asignacion';
+import { FILTROS_ASIGNACION_VACIOS, asignacionVigente } from 'src/app/operacion/asignaciones/asignacion';
 import { AsignacionesRepositorio } from 'src/app/operacion/asignaciones/asignaciones-repositorio';
 import { FILTROS_COLEGIO_VACIOS } from 'src/app/operacion/colegios/colegio';
 import { ColegiosRepositorio } from 'src/app/operacion/colegios/colegios-repositorio';
@@ -25,7 +25,7 @@ import { FILTROS_EMPLEADO_VACIOS } from 'src/app/personas/empleados/empleado';
 import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repositorio';
 import { FILTROS_ESTUDIANTE_VACIOS } from 'src/app/personas/estudiantes/estudiante';
 import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
-import { CLAVE_RECORRIDOS, vigenteEn } from 'src/app/ruta-del-dia/recorridos-local';
+import { CLAVE_RECORRIDOS } from 'src/app/ruta-del-dia/recorridos-local';
 import {
   AvisoAusencia,
   AvisoGuardado,
@@ -98,9 +98,10 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
           const avisos = leerAvisos().filter((a) => a.fecha >= hoy);
           const estudiantes = d.estudiantes.items.map((e): EstudiantePortal => {
             const colegio = colegioPorId.get(e.colegioId);
-            const curso = colegio?.cursos.find((c) => c.grado === e.grado);
+            const curso =
+              colegio?.cursos.find((c) => c.grado === e.grado && c.jornada === e.jornada) ?? colegio?.cursos.find((c) => c.grado === e.grado);
             const ruta = d.rutas.items.find((r) => r.estudianteIds.includes(e.id));
-            const asignacion = ruta ? d.asignaciones.items.find((a) => a.rutaId === ruta.id && vigenteEn(a, hoy)) : undefined;
+            const asignacion = ruta ? asignacionVigente(d.asignaciones.items, ruta.id, hoy, new Date().toTimeString().slice(0, 5)) : undefined;
             const conductor = asignacion ? empleadoPorId.get(asignacion.conductorId) : undefined;
             const monitora = asignacion?.monitoraId ? empleadoPorId.get(asignacion.monitoraId) : undefined;
             const hoyRecorridos = d.recorridos.items
@@ -158,9 +159,12 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
                 numero: c.numero,
                 fecha: c.fecha,
                 estudiantes: c.estudiantes.map((e) => e.nombre),
-                valorPorEstudiante: c.valorPorEstudiante,
+                valorMensual: c.valorMensual,
                 valorTotal: c.valorTotal,
                 estado: c.estado,
+                periodoInicio: c.periodoInicio,
+                periodoFin: c.periodoFin,
+                meses: c.meses,
               })),
           };
         }),

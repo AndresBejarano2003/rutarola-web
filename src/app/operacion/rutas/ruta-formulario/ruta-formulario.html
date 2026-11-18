@@ -1,10 +1,16 @@
 <form [id]="idFormulario()" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
   <div class="grid md:grid-cols-2 gap-x-4 gap-y-3">
     <app-titulo-seccion>Datos de la ruta</app-titulo-seccion>
-    <label app-campo etiqueta="Código" requerido [error]="error('codigo')">
-      <input type="text" formControlName="codigo" class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase"
-        [class.input-error]="error('codigo')" placeholder="Ej. R-05" />
-    </label>
+    <div class="flex flex-col">
+      <span class="label-text text-base-content/90 mb-1">Código</span>
+      @if (ruta()?.codigo; as codigo) {
+        <div class="input input-bordered bg-base-300/40 border-neutral w-full font-mono" aria-readonly="true">{{ codigo }}</div>
+      } @else {
+        <div class="input input-bordered bg-base-300/40 border-neutral w-full text-base-content/70 text-sm" aria-readonly="true">
+          <i class="fa-solid fa-hashtag text-info" aria-hidden="true"></i> Lo asigna el sistema al guardar
+        </div>
+      }
+    </div>
     <label app-campo etiqueta="Nombre" requerido [error]="error('nombre')">
       <input type="text" formControlName="nombre" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('nombre')" placeholder="Ej. Norte" />
@@ -23,11 +29,15 @@
 
     <app-titulo-seccion>Estudiantes de la ruta ({{ form.controls.estudianteIds.value.length }})</app-titulo-seccion>
     <div class="md:col-span-2">
-      @if (form.controls.colegioId.value) {
-        <app-lista-seleccion formControlName="estudianteIds" [opciones]="estudiantes()" etiqueta="Estudiante"
+      @if (form.controls.colegioId.value && form.controls.jornada.value) {
+        <p class="text-xs text-base-content/70 mb-2">
+          <i class="fa-solid fa-filter text-info" aria-hidden="true"></i>
+          Solo aparecen los estudiantes del colegio en la jornada {{ form.controls.jornada.value }}.
+        </p>
+        <app-lista-seleccion formControlName="estudianteIds" [opciones]="opcionesEstudiantes()" etiqueta="Estudiante"
           placeholder="Buscar estudiante del colegio..." textoVacio="La ruta aún no tiene estudiantes." />
       } @else {
-        <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-info text-info"></i> Elige primero el colegio para agregar sus estudiantes.</p>
+        <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-info text-info"></i> Elige primero el colegio y la jornada para agregar sus estudiantes.</p>
       }
     </div>
 

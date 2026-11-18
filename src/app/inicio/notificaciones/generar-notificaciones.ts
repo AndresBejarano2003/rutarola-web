@@ -1,9 +1,11 @@
 import { Cotizacion } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { Factura } from 'src/app/finanzas/facturas/factura';
 import { EnvioProgramado, Programacion } from 'src/app/finanzas/programacion/programacion';
-import { MEDIOS_PAGO, Recibo } from 'src/app/finanzas/recibos/recibo';
+import { unirMeses } from 'src/app/finanzas/cuotas';
+import { MEDIOS_PAGO, Recibo, mesesRecibo } from 'src/app/finanzas/recibos/recibo';
 import { Moroso } from 'src/app/finanzas/reportes/reportes';
 import { TIPOS_VEHICULO, Vehiculo } from 'src/app/operacion/vehiculos/vehiculo';
+import { NovedadVehiculo, TipoNovedadVehiculo } from 'src/app/operacion/vehiculos/novedades-vehiculo/novedad-vehiculo';
 import { nombreCompleto } from 'src/app/personas/compartido/persona';
 import { Empleado } from 'src/app/personas/empleados/empleado';
 import { diasEntre, fechaCorta, fechaIso, nombrePeriodo, periodoDe, sumarMeses } from 'src/app/shared/fechas/fechas';
@@ -27,10 +29,23 @@ export interface DatosNotificables {
   cotizaciones: Cotizacion[];
   envios: { programacion: Programacion; envio: EnvioProgramado }[];
   morosos: Moroso[];
+  /** Novedades de los vehículos (las del personal que siguen abiertas se notifican). */
+  novedades?: NovedadVehiculo[];
   /** Plan de la empresa y desde cuántos días antes de vencer se avisa (parámetro de la plataforma). */
   suscripcion?: Suscripcion | null;
   diasAvisoVencimiento?: number;
 }
+
+/** Nombres cortos para el título (iguales a `GeneradorNotificaciones.NombreNovedad`). */
+const NOMBRES_NOVEDAD: Record<TipoNovedadVehiculo, string> = {
+  AVERIA: 'Avería',
+  DANO: 'Daño',
+  LLANTAS: 'Llantas',
+  MANTENIMIENTO: 'Mantenimiento',
+  LIMPIEZA: 'Aseo',
+  DOCUMENTOS: 'Documentos',
+  OTRO: 'Otra',
+};
 
 const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -57,7 +72,7 @@ export function generarNotificaciones(datos: DatosNotificables, ahora = new Date
       categoria: 'PAGOS',
       nivel: 'EXITO',
       titulo: `Pago recibido · ${r.numero}`,
-      mensaje: `${r.nombreAcudiente} pagó ${pesos.format(r.valor)} de ${nombrePeriodo(r.periodo, true)} por ${r.nombreEstudiante} (factura ${r.numeroFactura}). Medio de pago: ${medio}.`,
+      mensaje: `${r.nombreAcudiente} pagó ${pesos.format(r.valor)} de ${unirMeses([...new Set(mesesRecibo(r).map((m) => m.periodo))].sort()) || nombrePeriodo(r.periodo, true)} por ${r.nombreEstudiante} (factura ${r.numeroFactura}). Medio de pago: ${medio}.`,
       fecha,
       enlace: '/finanzas/recibos',
       textoEnlace: 'Ver recibos',
@@ -93,7 +108,8 @@ export function generarNotificaciones(datos: DatosNotificables, ahora = new Date
         textoEnlace: 'Ver facturas',
       });
     }
-    if (f.estado !== 'ACTIVO' || !f.periodoFin) continue;
+    // Con retiro el fin es una decisión ya tomada: no se avisa como contrato por terminar.
+    if (f.estado !== 'ACTIVO' || !f.periodoFin || f.periodoRetiro) continue;
     if (f.periodoFin === periodoActual || f.periodoFin === sumarMeses(periodoActual, 1)) {
       agregar({
         clave: `factura-termina:${f.id}:${f.periodoFin}`,
@@ -148,6 +164,23 @@ export function generarNotificaciones(datos: DatosNotificables, ahora = new Date
         textoEnlace: aprobada ? 'Crear factura' : 'Ver cotizaciones',
       });
     }
+  }
+
+  // Novedades del vehículo reportadas por el conductor o la monitora (las que siguen abiertas)
+  for (const n of datos.novedades ?? []) {
+    if (!n.delPersonal || n.estado === 'RESUELTA' || !reciente(n.fechaCreacion)) continue;
+    const placa = n.vehiculo.split(' · ')[0];
+    const descripcion = n.descripcion.length <= 160 ? n.descripcion : `${n.descripcion.slice(0, 159).trimEnd()}…`;
+    agregar({
+      clave: `novedad-vehiculo:${n.id}`,
+      categoria: 'OPERACION',
+      nivel: n.gravedad === 'ALTA' ? 'CRITICA' : 'ADVERTENCIA',
+      titulo: `Novedad en el vehículo ${placa} · ${NOMBRES_NOVEDAD[n.tipo]}`,
+      mensaje: `${n.reporta} reportó: ${descripcion}${n.gravedad === 'ALTA' ? ' Gravedad alta: revisa si el vehículo puede salir.' : ''}`,
+      fecha: n.fechaCreacion,
+      enlace: `/operacion/vehiculos?novedad=${n.id}`,
+      textoEnlace: 'Ver novedad',
+    });
   }
 
   // Vehículos: registro y documentos

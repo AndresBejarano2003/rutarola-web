@@ -1,7 +1,7 @@
 import { Entidad, EstadoRegistro } from 'src/app/shared/crud/crud';
 
 export interface Ruta extends Entidad {
-  /** Código corto único, p. ej. `R-01`. */
+  /** Consecutivo que asigna el sistema al crear (`R-01`, `R-02`…); no se edita. */
   codigo: string;
   nombre: string;
   colegioId: string;
@@ -25,6 +25,9 @@ export interface FiltrosRuta {
 }
 
 export const FILTROS_RUTA_VACIOS: FiltrosRuta = { texto: '', colegioId: '', jornada: '', estado: '', estudianteId: '' };
+
+/** Prefijo del consecutivo de rutas (`Consecutivos` del API, `ServicioRutas.PrefijoCodigo`). */
+export const PREFIJO_CODIGO_RUTA = 'R';
 
 export function etiquetaRuta(r: Pick<Ruta, 'codigo' | 'nombre'>): string {
   return `${r.codigo} · ${r.nombre}`;

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, catchError, defer, distinctUntilChanged, filter, forkJoin, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { AuthService } from 'src/app/core/auth';
-import { Asignacion, FILTROS_ASIGNACION_VACIOS } from 'src/app/operacion/asignaciones/asignacion';
+import { Asignacion, FILTROS_ASIGNACION_VACIOS, textoHorario } from 'src/app/operacion/asignaciones/asignacion';
 import { AsignacionesRepositorio } from 'src/app/operacion/asignaciones/asignaciones-repositorio';
 import { FILTROS_COLEGIO_VACIOS } from 'src/app/operacion/colegios/colegio';
 import { ColegiosRepositorio } from 'src/app/operacion/colegios/colegios-repositorio';
@@ -99,6 +99,7 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                     : null,
                   estudiantes: ruta.estudianteIds.length,
                   avisosAusencia: ruta.estudianteIds.filter((id) => conAviso.has(id)).length,
+                  horario: textoHorario(a),
                   recorridos: recorridos
                     .filter((r) => r.asignacionId === a.id)
                     .sort((x, y) => TRAYECTOS.findIndex((t) => t.id === x.trayecto) - TRAYECTOS.findIndex((t) => t.id === y.trayecto))
@@ -106,7 +107,13 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                 },
               ];
             })
-            .sort((x, y) => ORDEN_JORNADA.indexOf(x.jornada) - ORDEN_JORNADA.indexOf(y.jornada) || x.ruta.localeCompare(y.ruta));
+            // Turnos con horario en orden de hora; luego por jornada y ruta (como el API).
+            .sort(
+              (x, y) =>
+                (x.horario || '99').localeCompare(y.horario || '99') ||
+                ORDEN_JORNADA.indexOf(x.jornada) - ORDEN_JORNADA.indexOf(y.jornada) ||
+                x.ruta.localeCompare(y.ruta),
+            );
         }),
       );
     });

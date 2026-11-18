@@ -13,6 +13,7 @@ import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-
 import { Modal } from 'src/app/shared/modal/modal';
 import { Paginacion } from 'src/app/shared/paginacion/paginacion';
 import { Factura, FiltrosFactura } from './factura';
+import { CuentaFactura } from './cuenta-factura/cuenta-factura';
 import { FacturaFormulario } from './factura-formulario/factura-formulario';
 import { FacturasFiltros } from './facturas-filtros/facturas-filtros';
 import { FacturasStore } from './facturas-store';
@@ -21,7 +22,7 @@ import { FacturasTabla } from './facturas-tabla/facturas-tabla';
 @Component({
   selector: 'app-facturas-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FacturasFiltros, FacturasTabla, FacturaFormulario, EncabezadoListado, AccionesFormulario, Modal, DialogoConfirmacion, Paginacion],
+  imports: [CuentaFactura, FacturasFiltros, FacturasTabla, FacturaFormulario, EncabezadoListado, AccionesFormulario, Modal, DialogoConfirmacion, Paginacion],
   providers: [FacturasStore],
   templateUrl: './facturas-page.html',
 })
@@ -47,6 +48,12 @@ export default class FacturasPage extends PaginaCrud<Factura, FiltrosFactura> {
     ),
     { initialValue: [] },
   );
+
+  /** Retiro registrado o quitado desde el detalle. */
+  protected retiroCambiado(f: Factura): void {
+    this.seleccionado.set(f);
+    this.store.recargar();
+  }
 
   protected describir(f: Factura): string {
     return `la factura ${f.numero} de ${f.nombreEstudiante}`;

@@ -22,15 +22,37 @@
           <span class="loading loading-spinner loading-lg text-primary"></span>
         </div>
       }
+      @if (modo() === 'consultar' && seleccionado(); as c) {
+        @if (c.facturas.length) {
+          <div role="status" class="alert alert-info alert-soft mb-4 text-sm">
+            <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+            <span>Esta cotización ya se convirtió en facturas: <span class="font-medium">{{ nombresFacturas(c) }}</span>. Queda de solo lectura.</span>
+          </div>
+        }
+      }
       <app-cotizacion-formulario idFormulario="form-cotizacion" [modo]="modo()" [cotizacion]="seleccionado()"
-        [acudientes]="acudientes()" [estudiantesAcudiente]="estudiantesAcudiente()"
+        [acudientes]="acudientes()" [estudiantesAcudiente]="estudiantesAcudiente()" [colegios]="colegios()"
         (acudienteCambiado)="acudienteFormulario.set($event)" (guardar)="guardar($event)" />
     </div>
   }
   @if (modalAbierto()) {
     <app-acciones-formulario pie formulario="form-cotizacion" [modo]="modo()" [guardando]="store.guardando()"
+      [editable]="!seleccionado() || !facturada(seleccionado()!)"
       [bloqueado]="cargandoDetalle()" textoCrear="Registrar cotización" (cancelar)="modalAbierto.set(false)" (editar)="modo.set('editar')">
       @if (modo() === 'consultar' && seleccionado(); as registro) {
+        @if (tieneWhatsapp(registro)) {
+          <a class="btn bg-base-300 border-neutral hover:bg-neutral" [href]="enlaceWhatsapp(registro)" target="_blank" rel="noopener">
+            <i class="fa-brands fa-whatsapp text-success" aria-hidden="true"></i> WhatsApp
+          </a>
+        }
+        <a class="btn bg-base-300 border-neutral hover:bg-neutral" [href]="enlaceCorreo(registro)">
+          <i class="fa-solid fa-envelope text-info" aria-hidden="true"></i> Correo
+        </a>
+        @if (!facturada(registro)) {
+          <button type="button" class="btn btn-secondary" (click)="confirmarFacturar.set(true)">
+            <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i> Convertir en facturas
+          </button>
+        }
         <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="descargarPdf(registro)">
           <i class="fa-solid fa-file-pdf text-info" aria-hidden="true"></i> Descargar PDF
         </button>
@@ -41,3 +63,6 @@
 
 <app-dialogo-confirmacion [(abierto)]="confirmacionAbierta" titulo="Eliminar cotización" [mensaje]="mensajeEliminar()"
   [permitirConfirmar]="puedeEliminar()" [procesando]="store.guardando() || verificandoEliminar()" (confirmar)="confirmarEliminar()" />
+
+<app-dialogo-confirmacion [(abierto)]="confirmarFacturar" titulo="Convertir en facturas" [mensaje]="mensajeFacturar()"
+  textoConfirmar="Aprobar y facturar" [permitirConfirmar]="puedeFacturar()" [procesando]="facturando()" (confirmar)="facturar()" />

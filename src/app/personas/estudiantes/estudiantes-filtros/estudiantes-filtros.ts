@@ -30,6 +30,7 @@ export class EstudiantesFiltros {
     acudienteId: FILTROS_ESTUDIANTE_VACIOS.acudienteId,
     colegioId: FILTROS_ESTUDIANTE_VACIOS.colegioId,
     grado: FILTROS_ESTUDIANTE_VACIOS.grado,
+    jornada: FILTROS_ESTUDIANTE_VACIOS.jornada,
     estado: FILTROS_ESTUDIANTE_VACIOS.estado as EstadoRegistro | '',
   });
 

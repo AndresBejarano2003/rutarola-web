@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, map, of, startWith, switchMap } from 'rxjs';
+import { catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import { BadgeEstado } from 'src/app/shared/badge-estado/badge-estado';
 import { ColegiosRepositorio } from 'src/app/operacion/colegios/colegios-repositorio';
 import { OpcionCatalogo, aMapa } from 'src/app/shared/catalogos/catalogos';
@@ -8,6 +8,7 @@ import { CeldaPersona } from 'src/app/shared/celda-persona/celda-persona';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { iniciales, nombreCompleto } from '../../compartido/persona';
 import { Estudiante, FILTROS_ESTUDIANTE_VACIOS } from '../../estudiantes/estudiante';
+import { AltaEstudiante } from '../../estudiantes/alta-estudiante/alta-estudiante';
 import { EstudiantesRepositorio } from '../../estudiantes/estudiantes-repositorio';
 
 type Estado =
@@ -15,12 +16,24 @@ type Estado =
   | { tipo: 'listo'; estudiantes: Estudiante[] }
   | { tipo: 'error'; mensaje: string };
 
-/** Lista de los estudiantes asignados a un acudiente (consulta al módulo de estudiantes). */
+/**
+ * Lista de los estudiantes asignados a un acudiente (consulta al módulo de estudiantes). Con `permitirAgregar`
+ * ofrece "Agregar estudiante": registro rápido encima, con el acudiente ya elegido, y la lista se recarga.
+ */
 @Component({
   selector: 'app-estudiantes-a-cargo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CeldaPersona, BadgeEstado],
+  imports: [CeldaPersona, BadgeEstado, AltaEstudiante],
   template: `
+    @if (permitirAgregar()) {
+      <div class="flex justify-end mb-2">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="altaAbierta.set(true)">
+          <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Agregar estudiante
+        </button>
+      </div>
+      <app-alta-estudiante [(abierto)]="altaAbierta" [acudienteId]="acudienteId()" [nombreAcudiente]="nombreAcudiente()"
+        (creado)="recargar()" />
+    }
     @switch (estado().tipo) {
       @case ('cargando') {
         <div class="space-y-2">
@@ -55,6 +68,11 @@ type Estado =
 })
 export class EstudiantesACargo {
   readonly acudienteId = input.required<string>();
+  readonly permitirAgregar = input(false, { transform: booleanAttribute });
+  readonly nombreAcudiente = input('');
+
+  protected readonly altaAbierta = signal(false);
+  private readonly version = signal(0);
 
   private readonly repositorio = inject(EstudiantesRepositorio);
   private readonly colegios = toSignal(inject(ColegiosRepositorio).opciones().pipe(catchError(() => of<OpcionCatalogo[]>([]))), {
@@ -65,8 +83,8 @@ export class EstudiantesACargo {
   protected readonly iniciales = iniciales;
 
   protected readonly estado = toSignal(
-    toObservable(this.acudienteId).pipe(
-      switchMap((acudienteId) =>
+    combineLatest([toObservable(this.acudienteId), toObservable(this.version)]).pipe(
+      switchMap(([acudienteId]) =>
         this.repositorio.listar({ ...FILTROS_ESTUDIANTE_VACIOS, acudienteId }, { pagina: 1, tamano: 100 }).pipe(
           map(({ items }): Estado => ({ tipo: 'listo', estudiantes: items })),
           catchError((error: unknown) => of<Estado>({ tipo: 'error', mensaje: mensajeDeError(error) })),
@@ -76,6 +94,10 @@ export class EstudiantesACargo {
     ),
     { initialValue: { tipo: 'cargando' } as Estado },
   );
+
+  protected recargar(): void {
+    this.version.update((v) => v + 1);
+  }
 
   protected estudiantes(): Estudiante[] {
     const estado = this.estado();

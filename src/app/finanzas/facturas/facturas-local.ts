@@ -1,14 +1,18 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
 import { DatosRegistro, ErrorCrud, siguienteConsecutivo } from 'src/app/shared/crud/crud';
 import { RepositorioLocal } from 'src/app/shared/crud/repositorio-local';
+import { fechaIso, nombrePeriodo, periodoDe, sumarMeses } from 'src/app/shared/fechas/fechas';
 import { normalizar } from 'src/app/shared/formularios/formularios';
+import { SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
+import { cuotasFactura, pagosDeRecibos } from '../cuotas';
+import { fechaLimiteCuota } from '../reportes/reportes';
 import { FILTROS_PROGRAMACION_VACIOS } from '../programacion/programacion';
 import { ProgramacionesRepositorio } from '../programacion/programaciones-repositorio';
 import { FILTROS_RECIBO_VACIOS } from '../recibos/recibo';
 import { RecibosRepositorio } from '../recibos/recibos-repositorio';
-import { FILTROS_FACTURA_VACIOS, Factura, FiltrosFactura, etiquetaFactura } from './factura';
+import { CuotaFactura, FILTROS_FACTURA_VACIOS, Factura, FiltrosFactura, etiquetaFactura } from './factura';
 import { FacturasRepositorio } from './facturas-repositorio';
 
 /** Almacenamiento TEMPORAL en `localStorage` mientras se construye el API. */
@@ -72,8 +76,103 @@ export class FacturasLocal extends RepositorioLocal<Factura, FiltrosFactura> imp
       );
   }
 
+  /** El formulario no trae el retiro ni la cotización: se conservan (y un retiro fuera de los meses nuevos se quita). */
   protected override preparar(datos: DatosRegistro<Factura>, idActual: string | null, registros: Factura[]): DatosRegistro<Factura> {
-    return idActual ? datos : { ...datos, numero: siguienteConsecutivo('FAC', registros.map((r) => r.numero)) };
+    const actual = idActual ? registros.find((r) => r.id === idActual) : undefined;
+    let periodoRetiro = datos.periodoRetiro ?? actual?.periodoRetiro ?? '';
+    let motivoRetiro = datos.motivoRetiro ?? actual?.motivoRetiro ?? '';
+    if (periodoRetiro && (periodoRetiro <= datos.periodoInicio || periodoRetiro > datos.periodoFin)) {
+      periodoRetiro = '';
+      motivoRetiro = '';
+    }
+    return {
+      ...datos,
+      numero: actual?.numero ?? (idActual ? datos.numero : siguienteConsecutivo('FAC', registros.map((r) => r.numero))),
+      periodoRetiro,
+      motivoRetiro,
+      cotizacionId: datos.cotizacionId ?? actual?.cotizacionId ?? '',
+      numeroCotizacion: datos.numeroCotizacion ?? actual?.numeroCotizacion ?? '',
+    };
+  }
+
+  cuotas(id: string, sinRecibo?: string): Observable<CuotaFactura[]> {
+    return forkJoin([
+      this.obtener(id),
+      this.injector.get(RecibosRepositorio).listar({ ...FILTROS_RECIBO_VACIOS, facturaId: id, estado: 'ACTIVO' }, SIN_PAGINAR),
+      this.injector.get(ProgramacionesRepositorio).listar({ ...FILTROS_PROGRAMACION_VACIOS, facturaId: id }, SIN_PAGINAR),
+    ]).pipe(
+      map(([factura, recibos, programaciones]) => {
+        const dia = programaciones.items[0]?.diaLimitePago;
+        const hoy = fechaIso();
+        return cuotasFactura(factura, pagosDeRecibos(recibos.items.filter((r) => r.id !== sinRecibo))).map((c): CuotaFactura => {
+          const fechaLimite = fechaLimiteCuota(c.periodo, dia);
+          const estado = c.saldo <= 0 ? 'PAGADA' : hoy > fechaLimite ? 'VENCIDA' : c.periodo <= periodoDe() ? 'PENDIENTE' : 'PROGRAMADA';
+          return { ...c, fechaLimite, estado };
+        });
+      }),
+    );
+  }
+
+  retiro(id: string, periodoRetiro: string, motivo: string): Observable<Factura> {
+    return this.obtener(id).pipe(
+      switchMap((f) => {
+        if (!periodoRetiro) return of({ ...f, periodoRetiro: '', motivoRetiro: '' });
+        if (f.estado !== 'ACTIVO') throw new ErrorCrud(`La factura ${f.numero} está anulada.`, 'VALIDACION');
+        return this.validarRetiro(f, periodoRetiro).pipe(map(() => ({ ...f, periodoRetiro, motivoRetiro: motivo.trim() })));
+      }),
+      switchMap(({ id: _id, fechaCreacion: _c, fechaActualizacion: _a, ...datos }) => this.actualizar(id, datos)),
+    );
+  }
+
+  /** Igual que `ServicioFacturas.AplicarRetiroAsync`: entre el segundo y el último mes, sin pagos desde ese mes. */
+  private validarRetiro(f: Factura, retiro: string): Observable<void> {
+    if (retiro <= f.periodoInicio || retiro > f.periodoFin) {
+      throw new ErrorCrud(
+        `El retiro debe ser entre ${nombrePeriodo(sumarMeses(f.periodoInicio, 1), true)} y ${nombrePeriodo(f.periodoFin, true)}. ` +
+          'Para no cobrar ningún mes, anula la factura.',
+        'VALIDACION',
+      );
+    }
+    return this.injector
+      .get(RecibosRepositorio)
+      .listar({ ...FILTROS_RECIBO_VACIOS, facturaId: f.id, estado: 'ACTIVO' }, SIN_PAGINAR)
+      .pipe(
+        map(({ items }) => {
+          const meses = [...new Set(pagosDeRecibos(items).map((p) => p.periodo).filter((p) => p >= retiro))].sort();
+          if (meses.length) {
+            throw new ErrorCrud(
+              `La factura ${f.numero} tiene pagos de ${meses.map((m) => nombrePeriodo(m, true)).join(', ')}. ` +
+                'Anula esos recibos o elige un mes de retiro posterior.',
+              'VALIDACION',
+            );
+          }
+        }),
+      );
+  }
+
+  /**
+   * Al inactivar un estudiante o un acudiente (lo llaman sus repositorios locales; con el API lo hace el servidor):
+   * sus facturas vigentes dejan de cobrar desde el mes siguiente (o desde el mes después del último pagado).
+   */
+  retirarDe(filtro: { estudianteId?: string; acudienteId?: string }, motivo: string): Observable<number> {
+    const siguiente = sumarMeses(periodoDe(), 1);
+    return forkJoin([
+      this.listar({ ...FILTROS_FACTURA_VACIOS, ...filtro, estado: 'ACTIVO' }, SIN_PAGINAR),
+      this.injector.get(RecibosRepositorio).listar({ ...FILTROS_RECIBO_VACIOS, estado: 'ACTIVO' }, SIN_PAGINAR),
+    ]).pipe(
+      switchMap(([facturas, recibos]) => {
+        const cambios = facturas.items.flatMap((f) => {
+          if (f.periodoFin < siguiente || (f.periodoRetiro && f.periodoRetiro <= siguiente)) return [];
+          const pagados = pagosDeRecibos(recibos.items.filter((r) => r.facturaId === f.id)).map((p) => p.periodo).sort();
+          const ultimo = pagados[pagados.length - 1];
+          const desde = [siguiente, ultimo ? sumarMeses(ultimo, 1) : siguiente, sumarMeses(f.periodoInicio, 1)].sort().at(-1)!;
+          if (desde > f.periodoFin || (f.periodoRetiro && f.periodoRetiro <= desde)) return [];
+          const { id, fechaCreacion: _c, fechaActualizacion: _a, ...datos } = f;
+          return [this.actualizar(id, { ...datos, periodoRetiro: desde, motivoRetiro: motivo })];
+        });
+        return cambios.length ? forkJoin(cambios).pipe(map((r) => r.length)) : of(0);
+      }),
+    );
   }
 
   override motivoNoEliminar(id: string): Observable<string | null> {

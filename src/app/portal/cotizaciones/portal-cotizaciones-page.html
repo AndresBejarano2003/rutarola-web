@@ -21,7 +21,9 @@
           </div>
           <p class="text-sm"><span class="text-base-content/70">Estudiantes:</span> {{ c.estudiantes.join(', ') }}</p>
           <div class="flex flex-wrap items-end justify-between gap-2 border-t border-base-300 pt-3">
-            <p class="text-sm text-base-content/70">{{ c.valorPorEstudiante | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} por estudiante</p>
+            <p class="text-sm text-base-content/70">
+              {{ c.valorMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} mensuales · {{ c.meses }} {{ c.meses === 1 ? 'mes' : 'meses' }}
+            </p>
             <p class="text-xl font-bold">{{ c.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
           </div>
         </div>

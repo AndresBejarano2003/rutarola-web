@@ -53,7 +53,7 @@ describe('calcularTablero', () => {
           { id: 'r1', codigo: 'R-1', nombre: 'Norte', estudianteIds: ['e1', 'e2'], estado: 'ACTIVO' } as Ruta,
           { id: 'r2', codigo: 'R-2', nombre: 'Sur', estudianteIds: [] as string[], estado: 'ACTIVO' } as Ruta,
         ],
-        asignaciones: [{ rutaId: 'r1', vehiculoId: 'v1', estado: 'ACTIVO' } as Asignacion],
+        asignaciones: [{ rutaId: 'r1', vehiculoId: 'v1', estado: 'ACTIVO', fechaInicio: '2026-01-01', fechaFin: '' } as Asignacion],
         vehiculos: [{ id: 'v1', capacidad: 10, estado: 'ACTIVO', vencimientoSoat: '2030-01-01', vencimientoTecnomecanica: '2030-01-01', vencimientoTarjetaOperacion: '2030-01-01', vencimientoPolizas: '2030-01-01' } as Vehiculo],
       },
       AHORA,

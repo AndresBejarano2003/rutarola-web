@@ -29,7 +29,10 @@ export interface ReporteIngresos {
   recibos: Recibo[];
 }
 
-/** Mensualidad de una factura vigente que aún no tiene recibo válido. */
+/**
+ * Mensualidad de una factura vigente con saldo. `valor` = lo que falta (saldo); `valorMes` = la cuota completa y
+ * `abonado` lo ya pagado con abonos.
+ */
 export interface CuotaPendiente {
   facturaId: string;
   numeroFactura: string;
@@ -43,6 +46,8 @@ export interface CuotaPendiente {
   fechaLimite: string;
   /** Días desde la fecha límite (> 0 = vencida). */
   diasMora: number;
+  valorMes?: number;
+  abonado?: number;
 }
 
 export interface FiltrosPendientes {

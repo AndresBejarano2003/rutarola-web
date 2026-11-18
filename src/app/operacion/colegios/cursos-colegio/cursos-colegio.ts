@@ -1,18 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, forwardRef, inject, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BadgeEstado } from 'src/app/shared/badge-estado/badge-estado';
-import { GRADOS, aMapa } from 'src/app/shared/catalogos/catalogos';
+import { GRADOS, JORNADAS, aMapa } from 'src/app/shared/catalogos/catalogos';
 import { ESTADOS_REGISTRO, EstadoRegistro } from 'src/app/shared/crud/crud';
 import { horaLegible } from 'src/app/shared/fechas/fechas';
 import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busqueda';
-import { Curso, generarCursos, ordenarCursos } from '../colegio';
+import { Curso, GRADO_INICIAL, JORNADA_INICIAL, claveCurso, generarCursos, ordenarCursos } from '../colegio';
+
+/** UN curso suelto o VARIOS (de un grado inicial a uno final). */
+type ModoAgregar = 'UNO' | 'VARIOS';
 
 /**
  * Parametrización de cursos de un colegio (valor: `Curso[]`).
  *
- * "Agregar cursos" llena la tabla desde Jardín hasta el curso elegido con
- * el horario indicado. Cada curso se puede modificar (horario y estado) o
- * quitar. Deshabilitado (consulta) solo muestra la tabla.
+ * Cada curso es un grado en una jornada con su horario (el mismo grado puede
+ * estar en Mañana y Tarde). "Agregar" ofrece un curso suelto o un rango de
+ * grados (por defecto desde Jardín) con el mismo horario. Cada curso se puede
+ * modificar (horario y estado) o quitar. Deshabilitado (consulta) solo
+ * muestra la tabla.
  */
 @Component({
   selector: 'app-cursos-colegio',
@@ -27,19 +32,25 @@ export class CursosColegio implements ControlValueAccessor {
 
   protected readonly grados = GRADOS;
   protected readonly nombresGrado = aMapa(GRADOS);
+  protected readonly jornadas = JORNADAS;
   protected readonly estados = ESTADOS_REGISTRO;
+  protected readonly claveCurso = claveCurso;
   protected readonly horaLegible = horaLegible;
 
   protected readonly cursos = signal<Curso[]>([]);
   protected readonly deshabilitado = signal(false);
-  /** Grado del curso que se está modificando. */
+  protected readonly modoAgregar = signal<ModoAgregar>('VARIOS');
+  /** Clave (grado|jornada) del curso que se está modificando. */
   protected readonly editando = signal<string | null>(null);
   protected readonly errorGenerador = signal<string | null>(null);
   protected readonly errorEdicion = signal<string | null>(null);
   protected readonly activos = computed(() => this.cursos().filter((c) => c.estado === 'ACTIVO').length);
+  protected readonly variasJornadas = computed(() => new Set(this.cursos().map((c) => c.jornada)).size > 1);
 
   protected readonly generador = this.fb.group({
+    desde: [GRADO_INICIAL],
     hasta: ['', Validators.required],
+    jornada: [JORNADA_INICIAL, Validators.required],
     horaEntrada: ['06:30', Validators.required],
     horaSalida: ['13:00', Validators.required],
   });
@@ -68,11 +79,17 @@ export class CursosColegio implements ControlValueAccessor {
     this.editando.set(null);
   }
 
+  protected cambiarModo(modo: ModoAgregar): void {
+    this.modoAgregar.set(modo);
+    this.errorGenerador.set(null);
+  }
+
   protected agregarCursos(): void {
-    const { hasta, horaEntrada, horaSalida } = this.generador.getRawValue();
-    if (!hasta || !horaEntrada || !horaSalida) {
+    const { desde, hasta, jornada, horaEntrada, horaSalida } = this.generador.getRawValue();
+    const uno = this.modoAgregar() === 'UNO';
+    if (!hasta || !jornada || !horaEntrada || !horaSalida || (!uno && !desde)) {
       this.generador.markAllAsTouched();
-      this.errorGenerador.set('Elige el curso final y el horario.');
+      this.errorGenerador.set(uno ? 'Elige el curso, la jornada y el horario.' : 'Elige los cursos, la jornada y el horario.');
       return;
     }
     if (horaSalida <= horaEntrada) {
@@ -80,13 +97,13 @@ export class CursosColegio implements ControlValueAccessor {
       return;
     }
     this.errorGenerador.set(null);
-    this.actualizar(generarCursos(this.cursos(), hasta, horaEntrada, horaSalida));
+    this.actualizar(generarCursos(this.cursos(), hasta, horaEntrada, horaSalida, jornada, uno ? hasta : desde));
   }
 
   protected modificar(curso: Curso): void {
     this.errorEdicion.set(null);
     this.edicion.reset({ horaEntrada: curso.horaEntrada, horaSalida: curso.horaSalida, estado: curso.estado });
-    this.editando.set(curso.grado);
+    this.editando.set(claveCurso(curso));
   }
 
   protected guardarEdicion(): void {
@@ -95,17 +112,18 @@ export class CursosColegio implements ControlValueAccessor {
       this.errorEdicion.set('La hora de salida debe ser posterior a la de entrada.');
       return;
     }
-    const grado = this.editando();
-    this.actualizar(this.cursos().map((c) => (c.grado === grado ? { ...c, horaEntrada, horaSalida, estado } : c)));
+    const clave = this.editando();
+    this.actualizar(this.cursos().map((c) => (claveCurso(c) === clave ? { ...c, horaEntrada, horaSalida, estado } : c)));
     this.editando.set(null);
   }
 
   protected quitar(curso: Curso): void {
-    this.actualizar(this.cursos().filter((c) => c.grado !== curso.grado));
+    const clave = claveCurso(curso);
+    this.actualizar(this.cursos().filter((c) => claveCurso(c) !== clave));
   }
 
   private actualizar(cursos: Curso[]): void {
-    this.cursos.set(cursos);
+    this.cursos.set(ordenarCursos(cursos));
     this.alCambiar(cursos);
     this.alTocar();
   }

@@ -23,23 +23,33 @@ describe('CotizacionesPage', () => {
     expect(el.textContent).toContain('COT-0001');
   });
 
-  it('cotiza a un cliente nuevo y calcula el total por estudiante', async () => {
+  it('cotiza a un cliente nuevo con un valor por estudiante y calcula el total del servicio', async () => {
     ui.boton('Nueva cotización').click();
     await estabilizar(fixture);
     ui.boton('No, es un cliente nuevo').click();
     await estabilizar(fixture);
     ui.escribir('nombreAcudiente', 'Cliente Nuevo');
-    const nombre = el.querySelector('input[aria-label="Nombre del estudiante"]') as HTMLInputElement;
-    for (const estudiante of ['Ana', 'Luis']) {
+    const modal = el.querySelector('app-modal') as HTMLElement;
+    const nombre = modal.querySelector('input[aria-label="Nombre del estudiante"]') as HTMLInputElement;
+    const valor = modal.querySelector('input[aria-label="Valor mensual del estudiante"]') as HTMLInputElement;
+    const colegio = modal.querySelector('app-selector-busqueda[etiqueta="Colegio"] input') as HTMLInputElement;
+    for (const [estudiante, mensual] of [['Ana', '400000'], ['Luis', '350000']]) {
       nombre.value = estudiante;
       nombre.dispatchEvent(new Event('input'));
-      ui.boton('Agregar estudiante').click();
+      colegio.dispatchEvent(new Event('focus'));
+      colegio.value = 'San José';
+      colegio.dispatchEvent(new Event('input'));
+      colegio.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      valor.value = mensual;
+      valor.dispatchEvent(new Event('input'));
+      await estabilizar(fixture);
+      ui.boton('Agregar').click();
       await estabilizar(fixture);
     }
-    ui.escribir('valorPorEstudiante', '400000');
-    await estabilizar(fixture);
-    const modal = el.querySelector('app-modal') as HTMLElement;
-    expect(modal.textContent?.replace(/\s/g, '')).toMatch(/800[.,]000/); // total = 400.000 × 2
+    const texto = modal.textContent?.replace(/\s/g, '') ?? '';
+    expect(texto).toContain('ColegioSanJosé');
+    expect(texto).toMatch(/750[.,]000/); // mensual = 400.000 + 350.000
+    expect(texto).toMatch(/7[.,]500[.,]000/); // × 10 meses (valor por defecto del servicio)
 
     ui.boton('Registrar cotización').click();
     await estabilizar(fixture, 3);

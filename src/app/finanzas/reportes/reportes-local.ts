@@ -6,7 +6,8 @@ import { AcudientesRepositorio } from 'src/app/personas/acudientes/acudientes-re
 import { FuenteLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
 import { diasEntre, fechaIso, periodoDe, periodosEntre } from 'src/app/shared/fechas/fechas';
 import { normalizar } from 'src/app/shared/formularios/formularios';
-import { FILTROS_FACTURA_VACIOS, mesesFactura } from '../facturas/factura';
+import { cuotasFactura, pagosDeRecibos } from '../cuotas';
+import { FILTROS_FACTURA_VACIOS } from '../facturas/factura';
 import { FacturasRepositorio } from '../facturas/facturas-repositorio';
 import { FILTROS_PROGRAMACION_VACIOS } from '../programacion/programacion';
 import { ProgramacionesRepositorio } from '../programacion/programaciones-repositorio';
@@ -114,13 +115,13 @@ export class ReportesLocal extends ReportesRepositorio implements FuenteLocal {
       map(([facturas, recibos, programaciones]) => {
         const hoy = fechaIso();
         const mesActual = periodoDe();
-        const pagados = new Set(recibos.items.map((r) => `${r.facturaId}|${r.periodo}`));
+
         const diaLimite = new Map(programaciones.items.map((p) => [p.facturaId, p.diaLimitePago]));
         return facturas.items
           .flatMap((factura) =>
-            mesesFactura(factura)
-              .filter((periodo) => periodo <= mesActual && !pagados.has(`${factura.id}|${periodo}`))
-              .map((periodo): CuotaPendiente => {
+            cuotasFactura(factura, pagosDeRecibos(recibos.items.filter((r) => r.facturaId === factura.id)))
+              .filter((c) => c.periodo <= mesActual && c.saldo > 0)
+              .map(({ periodo, valor: valorMes, pagado, saldo }): CuotaPendiente => {
                 const fechaLimite = fechaLimiteCuota(periodo, diaLimite.get(factura.id));
                 return {
                   facturaId: factura.id,
@@ -129,9 +130,11 @@ export class ReportesLocal extends ReportesRepositorio implements FuenteLocal {
                   nombreAcudiente: factura.nombreAcudiente,
                   nombreEstudiante: factura.nombreEstudiante,
                   periodo,
-                  valor: factura.valorContratacion,
+                  valor: saldo,
                   fechaLimite,
                   diasMora: diasEntre(fechaLimite, hoy),
+                  valorMes,
+                  abonado: pagado,
                 };
               }),
           )

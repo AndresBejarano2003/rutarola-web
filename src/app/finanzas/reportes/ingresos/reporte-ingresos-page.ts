@@ -1,6 +1,6 @@
 import { PanelFiltros } from 'src/app/shared/panel-filtros/panel-filtros';
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ApexAxisChartSeries, ApexChart, ApexDataLabels, ApexPlotOptions, ApexTooltip, ApexXAxis, ApexYAxis, NgApexchartsModule } from 'ng-apexcharts';
 import { descargarCsv } from 'src/app/shared/exportar/csv';
@@ -66,9 +66,10 @@ export default class ReporteIngresosPage {
 
   constructor() {
     emitirEnVivo(this.form, { emit: (f: FiltrosIngresos) => this.filtros.set(f) });
+    // Página 1 al cambiar los filtros (no en la recarga automática, que conserva la página).
     effect(() => {
-      this.reporte();
-      this.paginacion.reiniciar();
+      this.filtros();
+      untracked(() => this.paginacion.reiniciar());
     });
   }
 

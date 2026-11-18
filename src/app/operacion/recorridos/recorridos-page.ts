@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ESTADOS_PARADA, EstadoRecorrido, Recorrido, TRAYECTOS, Trayecto, contarParadas, nombreAusencia } from 'src/app/ruta-del-dia/recorrido';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
@@ -79,8 +79,18 @@ export default class RecorridosPage implements OnInit {
     emitirEnVivo<FiltrosRecorrido>(this.filtros, { emit: (f) => this.store.buscar(f) });
   }
 
+  private readonly ruta = inject(ActivatedRoute, { optional: true });
+
+  /** `?rutaId=&desde=&hasta=` (p. ej. desde el Cronograma) llega como filtros iniciales. */
   ngOnInit(): void {
-    this.store.recargar();
+    const q = this.ruta?.snapshot.queryParamMap;
+    const iniciales = { rutaId: q?.get('rutaId') ?? '', desde: q?.get('desde') ?? '', hasta: q?.get('hasta') ?? '' };
+    if (iniciales.rutaId || iniciales.desde || iniciales.hasta) {
+      this.filtros.patchValue(iniciales);
+      this.store.buscar(this.filtros.getRawValue());
+    } else {
+      this.store.recargar();
+    }
   }
 
   protected consultar(r: Recorrido): void {

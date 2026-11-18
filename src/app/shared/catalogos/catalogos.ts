@@ -19,6 +19,15 @@ export function ordenGrado(grado: string): number {
   return GRADOS.findIndex((g) => g.id === grado);
 }
 
+/** Jornadas escolares en el orden del día (el id es el valor guardado). */
+export const JORNADAS: OpcionCatalogo[] = ['Mañana', 'Tarde', 'Única'].map((nombre) => ({ id: nombre, nombre }));
+
+/** Posición de la jornada en `JORNADAS` (para ordenar); las desconocidas van al final. */
+export function ordenJornada(jornada: string): number {
+  const i = JORNADAS.findIndex((j) => j.id === jornada);
+  return i < 0 ? JORNADAS.length : i;
+}
+
 /**
  * Listas FIJAS para `<app-selector-busqueda>` (tipos de documento, grados,
  * jornadas). Las listas de registros de otras pantallas (colegios,
@@ -37,7 +46,7 @@ export class CatalogosService {
   ];
 
   readonly grados = GRADOS;
-  readonly jornadas: OpcionCatalogo[] = ['Mañana', 'Tarde', 'Única'].map((nombre) => ({ id: nombre, nombre }));
+  readonly jornadas = JORNADAS;
   readonly nombresTipoDocumento = aMapa(this.tiposDocumento);
 }
 

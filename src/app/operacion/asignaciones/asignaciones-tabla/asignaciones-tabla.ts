@@ -3,7 +3,7 @@ import { AccionesFila } from 'src/app/shared/acciones-fila/acciones-fila';
 import { BadgeEstado } from 'src/app/shared/badge-estado/badge-estado';
 import { EstadoVacio } from 'src/app/shared/estado-vacio/estado-vacio';
 import { fechaCorta } from 'src/app/shared/fechas/fechas';
-import { Asignacion } from '../asignacion';
+import { Asignacion, textoHorario } from '../asignacion';
 
 /** Nombres para mostrar (vienen de los módulos de rutas, vehículos y empleados). */
 export interface NombresAsignacion {
@@ -25,7 +25,7 @@ export interface NombresAsignacion {
             <th>Vehículo</th>
             <th>Conductor</th>
             <th class="hidden @3xl:table-cell">Monitora</th>
-            <th class="hidden @5xl:table-cell">Vigencia</th>
+            <th class="hidden @5xl:table-cell">Vigencia y horario</th>
             <th>Estado</th>
             <th class="text-right">Acciones</th>
           </tr>
@@ -50,6 +50,9 @@ export interface NombresAsignacion {
                 <td class="hidden @3xl:table-cell">{{ a.monitoraId ? (nombres().empleados.get(a.monitoraId) ?? '—') : 'Sin monitora' }}</td>
                 <td class="hidden @5xl:table-cell whitespace-nowrap text-sm">
                   {{ fechaCorta(a.fechaInicio) }} – {{ a.fechaFin ? fechaCorta(a.fechaFin) : 'Indefinida' }}
+                  <div class="text-xs text-base-content/70">
+                    <i class="fa-regular fa-clock" aria-hidden="true"></i> {{ textoHorario(a) || 'Toda la jornada' }}
+                  </div>
                 </td>
                 <td><app-badge-estado [estado]="a.estado" textoActivo="Activa" textoInactivo="Inactiva" /></td>
                 <td class="text-right whitespace-nowrap">
@@ -71,6 +74,7 @@ export interface NombresAsignacion {
   `,
 })
 export class AsignacionesTabla {
+  protected readonly textoHorario = textoHorario;
   readonly asignaciones = input.required<Asignacion[]>();
   readonly nombres = input.required<NombresAsignacion>();
   readonly cargando = input(false);

@@ -1,7 +1,7 @@
 <form [formGroup]="form" class="card bg-base-200 border border-base-300 shadow-xl">
   <app-panel-filtros (limpiar)="limpiar()">
 
-    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
       <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2">
         <i class="fa-solid fa-magnifying-glass text-base-content/60"></i>
         <input type="search" formControlName="texto" class="grow" placeholder="Nombre o documento..."
@@ -16,6 +16,9 @@
 
       <app-selector-busqueda formControlName="grado" [opciones]="catalogos.grados"
         textoTodos="Todos los grados" etiqueta="Grado" />
+
+      <app-selector-busqueda formControlName="jornada" [opciones]="catalogos.jornadas"
+        textoTodos="Todas las jornadas" etiqueta="Jornada" />
 
       <app-selector-busqueda formControlName="estado" [opciones]="estados"
         textoTodos="Todos los estados" etiqueta="Estado" />

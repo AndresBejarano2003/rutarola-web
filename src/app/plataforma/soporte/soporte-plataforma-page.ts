@@ -36,6 +36,9 @@ import {
   nombreEstado,
   nombrePrioridad,
   nombreTipo,
+  DIAS_SIN_RESPUESTA,
+  diasSinActividad,
+  esTerminacion,
   opcionesEstado,
   requiereComentario,
 } from 'src/app/sistema/soporte/tickets/tickets';
@@ -148,6 +151,17 @@ export default class SoportePlataformaPage implements OnInit {
     const d = this.destino();
     return !!t && !!d && requiereComentario(t.estado, d);
   });
+  /** Días que lleva esperando a la empresa (solo en ESPERANDO_CLIENTE); desde DIAS_SIN_RESPUESTA se sugiere terminarlo. */
+  protected readonly diasEsperando = computed(() => {
+    const t = this.ticket();
+    return t?.estado === 'ESPERANDO_CLIENTE' ? diasSinActividad(t.fechaUltimaActividad) : null;
+  });
+  protected readonly diasSinRespuesta = DIAS_SIN_RESPUESTA;
+  protected readonly terminando = computed(() => {
+    const t = this.ticket();
+    const d = this.destino();
+    return !!t && !!d && esTerminacion(t.estado, d);
+  });
   protected readonly reunionesPendientes = computed(() => this.ticket()?.reuniones.filter((r) => r.estado === 'PROGRAMADA') ?? []);
   /** Reunión que se está registrando (realizada / cancelada). */
   protected readonly registrando = signal<ReunionTicket | null>(null);
@@ -216,7 +230,16 @@ export default class SoportePlataformaPage implements OnInit {
   }
 
   protected accionDe(e: EstadoTicket): string {
-    return ESTADOS_TICKET[e].accion;
+    const t = this.ticket();
+    return t && esTerminacion(t.estado, e) ? 'Terminar ticket' : ESTADOS_TICKET[e].accion;
+  }
+
+  /** Elige "Terminar ticket" con la justificación de falta de respuesta (editable). */
+  protected terminarPorFaltaDeRespuesta(dias: number): void {
+    this.elegirDestino('CERRADO');
+    this.formEstado.controls.comentario.setValue(
+      `Cerramos la solicitud porque no recibimos respuesta en ${dias} días. Si aún la necesitas, abre una nueva solicitud y con gusto te ayudamos.`,
+    );
   }
 
   protected iconoDe(e: EstadoTicket): string {
@@ -278,7 +301,7 @@ export default class SoportePlataformaPage implements OnInit {
         return d ? this.accionDe(d) : 'Elige el siguiente paso';
       }
       case 'responder':
-        return 'Enviar';
+        return 'Guardar seguimiento';
       case 'asignar':
         return 'Guardar asignación';
       default:
@@ -295,7 +318,7 @@ export default class SoportePlataformaPage implements OnInit {
     if (!this.valido(this.formEstado)) return Promise.resolve();
     return this.ejecutar(
       (t) => this.repositorio.cambiarEstado(t.id, destino, this.formEstado.getRawValue().comentario.trim()),
-      `Ticket en «${nombreEstado(destino)}». La empresa recibió el aviso.`,
+      this.terminando() ? 'Ticket terminado. La empresa recibió la justificación.' : `Ticket en «${nombreEstado(destino)}». La empresa recibió el aviso.`,
     );
   }
 
@@ -304,7 +327,7 @@ export default class SoportePlataformaPage implements OnInit {
     const { texto, interno, adjuntos } = this.formRespuesta.getRawValue();
     return this.ejecutar(
       (t) => this.repositorio.responder(t.id, texto.trim(), interno, adjuntos),
-      interno ? 'Nota interna guardada (la empresa no la ve).' : 'Respuesta enviada a la empresa.',
+      interno ? 'Nota interna guardada (la empresa no la ve).' : 'Seguimiento enviado a la empresa. El ticket sigue en el mismo estado.',
     );
   }
 

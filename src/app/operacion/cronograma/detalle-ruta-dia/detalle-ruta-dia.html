@@ -1,0 +1,164 @@
+<app-modal [(abierto)]="abierto" [titulo]="ruta() ? ruta()!.codigo + ' · ' + ruta()!.nombre : 'Ruta'"
+  [subtitulo]="(fecha() | date: 'EEEE d \'de\' MMMM \'de\' y') ?? ''" ancho="max-w-4xl">
+  @if (abierto() && ruta(); as r) {
+    <div class="flex flex-col gap-5" [attr.aria-busy]="cargando()">
+      <!-- Ruta y asignación -->
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div class="min-w-0 rounded-box border border-base-300 px-3 py-2">
+          <div class="text-base-content/70 text-xs">Colegio</div>
+          <div class="font-medium truncate">{{ r.colegio }}</div>
+          <div class="text-xs text-base-content/70">Jornada {{ r.jornada }}</div>
+        </div>
+        <div class="min-w-0 rounded-box border border-base-300 px-3 py-2">
+          <div class="text-base-content/70 text-xs">Vehículo</div>
+          @if (r.vehiculo) {
+            <div class="font-mono font-medium">{{ r.vehiculo }}</div>
+          } @else {
+            <div class="text-warning font-medium">Sin asignación</div>
+          }
+          @if (datos().sector) { <div class="text-xs text-base-content/70 truncate">{{ datos().sector }}</div> }
+        </div>
+        <div class="min-w-0 rounded-box border border-base-300 px-3 py-2">
+          <div class="text-base-content/70 text-xs">Conductor</div>
+          <div class="font-medium truncate">{{ r.conductor || '—' }}</div>
+          <div class="text-xs text-base-content/70 truncate">Monitora: {{ r.monitora || 'sin monitora' }}</div>
+        </div>
+        <div class="min-w-0 rounded-box border border-base-300 px-3 py-2">
+          <div class="text-base-content/70 text-xs">Estudiantes</div>
+          <div class="font-medium">{{ r.estudiantes }}</div>
+          @if (r.ausencias) {
+            <div class="text-xs text-warning">{{ r.ausencias }} no {{ r.ausencias === 1 ? 'viaja' : 'viajan' }}</div>
+          }
+        </div>
+      </section>
+
+      <!-- Trayectos -->
+      <section class="flex flex-col gap-3">
+        <div role="tablist" class="tabs tabs-box bg-base-100 w-fit" aria-label="Trayecto">
+          @for (t of r.trayectos; track t.trayecto) {
+            <button type="button" role="tab" class="tab gap-2" [class.tab-active]="trayectoActivo() === t.trayecto"
+              [attr.aria-selected]="trayectoActivo() === t.trayecto" (click)="trayectoActivo.set(t.trayecto)">
+              <i class="{{ estadosTrayecto[t.estado].icono }}" aria-hidden="true"></i>
+              {{ t.trayecto === 'RECOGIDA' ? 'Recogida' : 'Entrega' }}
+            </button>
+          }
+        </div>
+
+        @if (trayecto(); as t) {
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="badge badge-soft {{ estadosTrayecto[t.estado].badge }}">{{ estadosTrayecto[t.estado].nombre }}</span>
+            @if (t.horaInicio) {
+              <span><i class="fa-regular fa-clock text-info" aria-hidden="true"></i> Inició {{ t.horaInicio }}@if (t.horaFin) { · terminó {{ t.horaFin }} }</span>
+            }
+            @if (conteo(); as c) {
+              <span class="text-base-content/70">· {{ c.entregados }} entregados · {{ c.aBordo }} a bordo · {{ c.ausentes }} no viajaron · {{ c.pendientes }} pendientes</span>
+            }
+          </div>
+        }
+
+        @if (cargando()) {
+          <div class="flex flex-col gap-2">
+            @for (i of [1, 2, 3]; track i) { <div class="skeleton bg-base-300 h-10 w-full"></div> }
+          </div>
+        } @else if (recorrido(); as rec) {
+          <div class="@container overflow-x-auto rounded-box border border-base-300">
+            <table class="table table-sm">
+              <thead>
+                <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+                  <th>#</th>
+                  <th>Estudiante</th>
+                  <th class="hidden @2xl:table-cell">Dirección</th>
+                  <th>Estado</th>
+                  <th class="text-right">Subió · llegó</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of rec.paradas; track p.estudianteId; let i = $index) {
+                  <tr class="border-base-300">
+                    <td class="text-base-content/70">{{ i + 1 }}</td>
+                    <td>
+                      <div class="font-medium">{{ p.estudiante }}</div>
+                      <div class="text-xs text-base-content/70">{{ p.grado }} · {{ p.acudiente }}</div>
+                    </td>
+                    <td class="hidden @2xl:table-cell text-sm">{{ p.direccion }}</td>
+                    <td>
+                      <span class="badge badge-sm {{ estadosParada[p.estado].badge }}">
+                        {{ p.estado === 'AUSENTE' ? nombreAusencia(p.motivoAusencia, rec.trayecto) : estadosParada[p.estado].nombre }}
+                      </span>
+                    </td>
+                    <td class="text-right whitespace-nowrap text-sm">
+                      {{ p.horaAbordo ? (p.horaAbordo | date: 'HH:mm') : '—' }} · {{ p.horaEntrega ? (p.horaEntrega | date: 'HH:mm') : '—' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (rec.observaciones) {
+            <p class="text-sm"><span class="text-base-content/70">Observaciones del recorrido:</span> {{ rec.observaciones }}</p>
+          }
+        } @else if (datos().estudiantes.length) {
+          <p class="text-sm text-base-content/70">
+            <i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+            Aún no hay recorrido de este trayecto. Estudiantes programados en la ruta:
+          </p>
+          <ul class="divide-y divide-base-300 rounded-box border border-base-300 text-sm">
+            @for (e of datos().estudiantes; track e.id; let i = $index) {
+              <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                <span class="min-w-0">
+                  <span class="text-base-content/70 mr-2">{{ i + 1 }}.</span>
+                  <span class="font-medium">{{ e.nombre }}</span>
+                  <span class="text-base-content/70"> · {{ e.grado }} · {{ e.direccion }}</span>
+                </span>
+                @if (avisoDe(e.nombre); as a) {
+                  <span class="badge badge-soft badge-warning badge-sm">{{ textoAviso(a) }}</span>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-base-content/70">La ruta no tiene estudiantes activos.</p>
+        }
+      </section>
+
+      <!-- Avisos de los acudientes -->
+      @if (avisos().length) {
+        <section class="flex flex-col gap-2">
+          <h4 class="text-info uppercase text-xs font-semibold tracking-wide">Avisos de ausencia ({{ avisos().length }})</h4>
+          <ul class="divide-y divide-base-300 rounded-box border border-base-300 text-sm">
+            @for (a of avisos(); track a.id) {
+              <li class="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+                <span class="min-w-0">
+                  <span class="font-medium">{{ a.estudiante }}</span> — {{ textoAviso(a) }}
+                  <span class="block text-xs text-base-content/70">Avisó {{ a.acudiente }}@if (a.nota) { · "{{ a.nota }}" }</span>
+                </span>
+                @if (a.confirmadoPor) {
+                  <span class="badge badge-soft badge-success badge-sm">Confirmado por {{ a.confirmadoPor }}</span>
+                } @else {
+                  <span class="badge badge-soft bg-base-300 border-neutral badge-sm">Sin confirmar</span>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+  @if (abierto() && ruta(); as r) {
+    <div pie class="flex flex-wrap justify-end gap-2 w-full">
+      @if (r.trayectos.some(enCurso)) {
+        <a routerLink="/operacion/monitoreo" class="btn bg-base-300 border-neutral hover:bg-neutral">
+          <i class="fa-solid fa-location-dot text-info" aria-hidden="true"></i> Monitoreo en vivo
+        </a>
+      }
+      <a routerLink="/operacion/recorridos" [queryParams]="{ rutaId: r.rutaId, desde: fecha(), hasta: fecha() }"
+        class="btn bg-base-300 border-neutral hover:bg-neutral">
+        <i class="fa-solid fa-clock-rotate-left text-info" aria-hidden="true"></i> Historial
+      </a>
+      <a routerLink="/operacion/asignaciones" class="btn bg-base-300 border-neutral hover:bg-neutral">
+        <i class="fa-solid fa-id-badge text-info" aria-hidden="true"></i> Asignaciones
+      </a>
+      <button type="button" class="btn btn-primary" (click)="abierto.set(false)">Cerrar</button>
+    </div>
+  }
+</app-modal>

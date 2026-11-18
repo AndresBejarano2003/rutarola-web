@@ -1,5 +1,6 @@
-import { Factura, mesesFactura, totalFactura } from 'src/app/finanzas/facturas/factura';
-import { Recibo } from 'src/app/finanzas/recibos/recibo';
+import { cuotasFactura } from 'src/app/finanzas/cuotas';
+import { Factura } from 'src/app/finanzas/facturas/factura';
+import { Recibo, mesesRecibo } from 'src/app/finanzas/recibos/recibo';
 import { fechaLimiteCuota } from 'src/app/finanzas/reportes/reportes';
 import { diasEntre, fechaIso, periodoDe } from 'src/app/shared/fechas/fechas';
 import { CuotaPortal, FacturaPortal, ProximoPago, ReciboPortal, ResumenCuenta } from './portal';
@@ -8,9 +9,10 @@ const ORDEN_URGENCIA: Record<CuotaPortal['estado'], number> = { VENCIDA: 0, PEND
 
 /**
  * Estado de cuenta de un acudiente (función pura; el API debe aplicar las mismas reglas):
- * cada mes de cada factura vigente queda PAGADA (recibo válido), VENCIDA / PENDIENTE (mes ya
- * iniciado, según la fecha límite de `fechaLimiteCuota`) o PROGRAMADA (mes futuro). Las facturas
- * anuladas se muestran sin cuotas por cobrar y los recibos anulados no cuentan como pago.
+ * cada mes que se cobra de cada factura vigente (sin los meses desde el retiro) queda PAGADA (los
+ * recibos válidos cubren su valor), VENCIDA / PENDIENTE (mes ya iniciado con saldo, según la fecha
+ * límite de `fechaLimiteCuota`) o PROGRAMADA (mes futuro); un abono deja pendiente solo el saldo.
+ * Las facturas anuladas se muestran sin cuotas por cobrar y los recibos anulados no cuentan como pago.
  */
 export function calcularEstadoCuenta(
   facturas: Factura[],
@@ -22,28 +24,37 @@ export function calcularEstadoCuenta(
   const mesActual = periodoDe(ahora);
   const propias = new Set(facturas.map((f) => f.id));
   const recibosPropios = recibos.filter((r) => propias.has(r.facturaId));
-  const validos = new Map(recibosPropios.filter((r) => r.estado === 'ACTIVO').map((r) => [`${r.facturaId}|${r.periodo}`, r]));
+  const aplicados = recibosPropios
+    .filter((r) => r.estado === 'ACTIVO')
+    .flatMap((r) => mesesRecibo(r).map((m) => ({ recibo: r, ...m })));
 
   const facturasPortal = facturas
     .map((f): FacturaPortal => {
+      const deLaFactura = aplicados.filter((a) => a.recibo.facturaId === f.id);
       const cuotas =
         f.estado === 'ACTIVO'
-          ? mesesFactura(f).map((periodo): CuotaPortal => {
-              const recibo = validos.get(`${f.id}|${periodo}`) ?? null;
+          ? cuotasFactura(f, deLaFactura).map((c): CuotaPortal => {
+              const periodo = c.periodo;
+              const recibo =
+                deLaFactura
+                  .filter((a) => a.periodo === periodo)
+                  .map((a) => a.recibo)
+                  .sort((a, b) => b.fechaPago.localeCompare(a.fechaPago) || b.numero.localeCompare(a.numero))[0] ?? null;
               const fechaLimite = fechaLimiteCuota(periodo, diaLimitePorFactura.get(f.id));
               const diasMora = diasEntre(fechaLimite, hoy);
-              const estado = recibo ? 'PAGADA' : periodo > mesActual ? 'PROGRAMADA' : diasMora > 0 ? 'VENCIDA' : 'PENDIENTE';
+              const estado = c.saldo <= 0 ? 'PAGADA' : periodo > mesActual ? 'PROGRAMADA' : diasMora > 0 ? 'VENCIDA' : 'PENDIENTE';
               return {
                 periodo,
-                valor: f.valorContratacion,
+                valor: c.valor,
                 estado,
                 fechaLimite,
                 diasMora: estado === 'VENCIDA' || estado === 'PENDIENTE' ? diasMora : 0,
                 recibo: recibo ? { id: recibo.id, numero: recibo.numero, fechaPago: recibo.fechaPago, medioPago: recibo.medioPago } : null,
+                abonado: c.pagado,
+                saldo: c.saldo,
               };
             })
           : [];
-      const suma = (estado: CuotaPortal['estado']) => cuotas.filter((c) => c.estado === estado).reduce((s, c) => s + c.valor, 0);
       return {
         id: f.id,
         numero: f.numero,
@@ -54,9 +65,9 @@ export function calcularEstadoCuenta(
         valorMensual: f.valorContratacion,
         periodoInicio: f.periodoInicio,
         periodoFin: f.periodoFin,
-        total: totalFactura(f),
-        pagado: suma('PAGADA'),
-        vencido: suma('VENCIDA'),
+        total: f.valorContratacion * cuotas.length,
+        pagado: cuotas.reduce((s, c) => s + Math.min(c.abonado, c.valor), 0),
+        vencido: cuotas.filter((c) => c.estado === 'VENCIDA').reduce((s, c) => s + c.saldo, 0),
         estado: f.estado,
         cuotas,
       };
@@ -85,7 +96,7 @@ export function calcularEstadoCuenta(
       numeroFactura: f.numero,
       estudiante: f.estudiante,
       periodo: c.periodo,
-      valor: c.valor,
+      valor: c.saldo,
       fechaLimite: c.fechaLimite,
       estado: c.estado,
     })),

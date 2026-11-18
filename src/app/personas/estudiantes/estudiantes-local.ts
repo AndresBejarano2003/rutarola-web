@@ -1,6 +1,7 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { FILTROS_FACTURA_VACIOS } from 'src/app/finanzas/facturas/factura';
+import { FacturasLocal } from 'src/app/finanzas/facturas/facturas-local';
 import { FacturasRepositorio } from 'src/app/finanzas/facturas/facturas-repositorio';
 import { RutasRepositorio } from 'src/app/operacion/rutas/rutas-repositorio';
 import { DatosRegistro } from 'src/app/shared/crud/crud';
@@ -18,6 +19,19 @@ export class EstudiantesLocal
   protected readonly clave = 'rutarola.estudiantes';
   protected readonly filtrosVacios = FILTROS_ESTUDIANTE_VACIOS;
   private readonly injector = inject(Injector);
+
+  /** Retiro: al inactivarlo, sus facturas vigentes dejan de cobrar los meses que faltan (con el API lo hace el servidor). */
+  override actualizar(id: string, datos: DatosRegistro<Estudiante>): Observable<Estudiante> {
+    const antes = this.leer().find((r) => r.id === id);
+    return super.actualizar(id, datos).pipe(
+      switchMap((r) => {
+        const facturas = this.injector.get(FacturasRepositorio);
+        return antes?.estado === 'ACTIVO' && r.estado === 'INACTIVO' && facturas instanceof FacturasLocal
+          ? facturas.retirarDe({ estudianteId: id }, 'Retiro del estudiante (quedó inactivo).').pipe(map(() => r))
+          : of(r);
+      }),
+    );
+  }
 
   /** No se elimina un estudiante que va en una ruta o tiene facturas. */
   override motivoNoEliminar(id: string): Observable<string | null> {
@@ -43,6 +57,7 @@ export class EstudiantesLocal
       (!f.acudienteId || e.acudienteId === f.acudienteId) &&
       (!f.colegioId || e.colegioId === f.colegioId) &&
       (!f.grado || e.grado === f.grado) &&
+      (!f.jornada || e.jornada === f.jornada) &&
       (!f.estado || e.estado === f.estado)
     );
   }

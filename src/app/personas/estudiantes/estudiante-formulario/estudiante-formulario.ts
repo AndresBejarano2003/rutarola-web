@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { distinctUntilChanged } from 'rxjs';
 import { Curso } from 'src/app/operacion/colegios/colegio';
@@ -34,7 +34,14 @@ export class EstudianteFormulario {
   /** Cursos del colegio elegido (`null` = aún no cargan: se ofrecen todos los grados). */
   readonly cursos = input<Curso[] | null>(null);
 
+  /** Acudiente elegido al crear (p. ej. desde el detalle de un acudiente). */
+  readonly acudienteInicial = input('');
+  /** El acudiente no se puede cambiar (alta desde el acudiente) y no se ofrece crear otro. */
+  readonly acudienteFijo = input(false, { transform: booleanAttribute });
+
   readonly guardar = output<DatosRegistro<Estudiante>>();
+  /** "Nuevo acudiente": la página abre el registro rápido encima, sin perder lo escrito. */
+  readonly nuevoAcudiente = output<void>();
   /** Cambió el colegio: la página carga sus cursos. */
   readonly colegioCambiado = output<string>();
 
@@ -61,19 +68,44 @@ export class EstudianteFormulario {
   });
 
   private readonly gradoActual = toSignal(this.form.controls.grado.valueChanges, { initialValue: '' });
+  protected readonly jornadaActual = toSignal(this.form.controls.jornada.valueChanges, { initialValue: '' });
+  private readonly cursosActivos = computed(() => this.cursos()?.filter((c) => c.estado === 'ACTIVO') ?? []);
 
-  /** Grados que ofrece el colegio (cursos activos con su horario); si no tiene cursos, todos. */
+  /** Jornadas en las que el colegio tiene cursos activos (todas si no tiene cursos). Conserva la guardada. */
+  protected readonly jornadas = computed<OpcionCatalogo[]>(() => {
+    const ofrecidas = new Set(this.cursosActivos().map((c) => c.jornada));
+    const actual = this.jornadaActual() || this.form.controls.jornada.value;
+    const lista = ofrecidas.size ? this.catalogos.jornadas.filter((j) => ofrecidas.has(j.id) || j.id === actual) : this.catalogos.jornadas;
+    return lista;
+  });
+
+  /** El colegio tiene cursos, pero ninguno activo en la jornada elegida. */
+  protected readonly sinCursosEnJornada = computed(() => {
+    const jornada = this.jornadaActual();
+    return !!jornada && this.cursosActivos().length > 0 && !this.cursosActivos().some((c) => c.jornada === jornada);
+  });
+
+  /**
+   * Grados que ofrece el colegio en la jornada elegida (cursos activos con su horario). Sin jornada se muestran los de
+   * todas; si el colegio no tiene cursos, todos los grados.
+   */
   protected readonly grados = computed<OpcionCatalogo[]>(() => {
-    const cursos = this.cursos()?.filter((c) => c.estado === 'ACTIVO') ?? [];
-    if (!cursos.length) {
+    const activos = this.cursosActivos();
+    if (!activos.length) {
       return this.catalogos.grados;
     }
+    const jornada = this.jornadaActual();
+    const cursos = jornada ? activos.filter((c) => c.jornada === jornada) : activos;
     const nombres = aMapa(this.catalogos.grados);
+    const vistos = new Set<string>();
     const opciones = [...cursos]
       .sort((a, b) => ordenGrado(a.grado) - ordenGrado(b.grado))
+      .filter((c) => !vistos.has(c.grado) && !!vistos.add(c.grado))
       .map((c) => ({
         id: c.grado,
-        nombre: `${nombres.get(c.grado) ?? c.grado} (${horaLegible(c.horaEntrada)} – ${horaLegible(c.horaSalida)})`,
+        nombre: jornada
+          ? `${nombres.get(c.grado) ?? c.grado} (${horaLegible(c.horaEntrada)} – ${horaLegible(c.horaSalida)})`
+          : (nombres.get(c.grado) ?? c.grado),
       }));
     // Conserva el grado guardado aunque el colegio ya no lo ofrezca.
     const actual = this.gradoActual() || this.form.controls.grado.value;
@@ -92,14 +124,21 @@ export class EstudianteFormulario {
         const { id: _id, fechaCreacion: _c, fechaActualizacion: _a, ...datos } = estudiante;
         this.form.reset(datos);
       } else {
-        this.form.reset();
+        this.form.reset({ acudienteId: untracked(this.acudienteInicial) });
       }
       if (this.soloLectura()) {
         this.form.disable();
       } else {
         this.form.enable();
+        if (untracked(this.acudienteFijo)) this.form.controls.acudienteId.disable();
       }
     });
+  }
+
+  /** Selecciona el acudiente recién creado en el registro rápido. */
+  elegirAcudiente(id: string): void {
+    this.form.controls.acudienteId.setValue(id);
+    this.form.controls.acudienteId.markAsDirty();
   }
 
   protected error(campo: keyof typeof this.form.controls): string | null {

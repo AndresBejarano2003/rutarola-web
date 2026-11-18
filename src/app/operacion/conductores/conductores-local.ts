@@ -1,3 +1,4 @@
+import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin, map } from 'rxjs';
 import { iniciales, nombreCompleto } from 'src/app/personas/compartido/persona';
@@ -8,7 +9,7 @@ import { Pagina, Paginacion } from 'src/app/shared/crud/crud';
 import { FuenteLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
 import { normalizar } from 'src/app/shared/formularios/formularios';
 import { estadoVencimiento } from 'src/app/shared/vencimiento/vencimiento';
-import { FILTROS_ASIGNACION_VACIOS } from '../asignaciones/asignacion';
+import { FILTROS_ASIGNACION_VACIOS, ordenarPorHorario } from '../asignaciones/asignacion';
 import { AsignacionesRepositorio } from '../asignaciones/asignaciones-repositorio';
 import { FILTROS_RUTA_VACIOS, etiquetaRuta } from '../rutas/ruta';
 import { RutasRepositorio } from '../rutas/rutas-repositorio';
@@ -38,9 +39,13 @@ export class ConductoresLocal extends ConductoresRepositorio implements FuenteLo
         const vehiculoPorId = aMapa(vehiculos);
         const monitoraPorId = aMapa(monitoras);
         const texto = normalizar(f.texto);
+        const hoy = fechaIso();
         const todos = conductores.items
           .map((e): ConductorOperacion => {
-            const a = asignaciones.items.find((x) => x.conductorId === e.id);
+            // La que cubre hoy o la próxima (puede haber varias por ruta en fechas u horarios distintos).
+            const a = ordenarPorHorario(
+              asignaciones.items.filter((x) => x.conductorId === e.id && (!x.fechaFin || x.fechaFin >= hoy)),
+            ).sort((x, y) => Number(x.fechaInicio > hoy) - Number(y.fechaInicio > hoy) || x.fechaInicio.localeCompare(y.fechaInicio))[0];
             const ruta = a ? rutaPorId.get(a.rutaId) : undefined;
             return {
               id: e.id,

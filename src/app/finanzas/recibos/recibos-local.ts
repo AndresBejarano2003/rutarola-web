@@ -4,6 +4,8 @@ import { DatosRegistro, ErrorCrud, siguienteConsecutivo } from 'src/app/shared/c
 import { RepositorioLocal } from 'src/app/shared/crud/repositorio-local';
 import { nombrePeriodo, periodosEntre } from 'src/app/shared/fechas/fechas';
 import { normalizar } from 'src/app/shared/formularios/formularios';
+import { cuotasFactura, distribuir, pagosDeRecibos } from '../cuotas';
+import { Factura } from '../facturas/factura';
 import { FacturasRepositorio } from '../facturas/facturas-repositorio';
 import { FILTROS_RECIBO_VACIOS, FiltrosRecibo, MedioPago, Recibo } from './recibo';
 import { RecibosRepositorio } from './recibos-repositorio';
@@ -14,6 +16,8 @@ export class RecibosLocal extends RepositorioLocal<Recibo, FiltrosRecibo> implem
   protected readonly clave = 'rutarola.recibos';
   protected readonly filtrosVacios = FILTROS_RECIBO_VACIOS;
   private readonly injector = inject(Injector);
+  /** Factura del recibo en curso (la carga `validarRelaciones`, la usa `preparar`). */
+  private factura: Factura | null = null;
 
   protected coincide(r: Recibo, f: FiltrosRecibo): boolean {
     const texto = normalizar(f.texto);
@@ -36,19 +40,6 @@ export class RecibosLocal extends RepositorioLocal<Recibo, FiltrosRecibo> implem
     return b.fechaPago.localeCompare(a.fechaPago) || b.numero.localeCompare(a.numero, 'es', { numeric: true });
   }
 
-  protected override validar(datos: DatosRegistro<Recibo>, idActual: string | null, registros: Recibo[]): void {
-    if (datos.estado !== 'ACTIVO') return;
-    const repetido = registros.find(
-      (r) => r.id !== idActual && r.estado === 'ACTIVO' && r.facturaId === datos.facturaId && r.periodo === datos.periodo,
-    );
-    if (repetido) {
-      throw new ErrorCrud(
-        `${nombrePeriodo(datos.periodo, true)} de la factura ${datos.numeroFactura} ya está pagado (recibo ${repetido.numero}).`,
-        'DUPLICADO',
-      );
-    }
-  }
-
   protected override validarRelaciones(datos: DatosRegistro<Recibo>): Observable<unknown> {
     return this.injector
       .get(FacturasRepositorio)
@@ -58,15 +49,34 @@ export class RecibosLocal extends RepositorioLocal<Recibo, FiltrosRecibo> implem
           if (datos.estado === 'ACTIVO' && factura.estado !== 'ACTIVO') {
             throw new ErrorCrud(`La factura ${factura.numero} está anulada.`, 'VALIDACION');
           }
-          if (!periodosEntre(factura.periodoInicio, factura.periodoFin).includes(datos.periodo)) {
-            throw new ErrorCrud(`${nombrePeriodo(datos.periodo, true)} no está dentro del periodo de la factura ${factura.numero}.`, 'VALIDACION');
-          }
+          this.factura = factura;
         }),
       );
   }
 
+  /**
+   * Reparte el valor en los meses (como el API): MESES = los elegidos, SALDO = los más antiguos con saldo. Un recibo
+   * anulado sin cambios de factura ni valor conserva cómo se había aplicado.
+   */
   protected override preparar(datos: DatosRegistro<Recibo>, idActual: string | null, registros: Recibo[]): DatosRegistro<Recibo> {
-    return idActual ? datos : { ...datos, numero: siguienteConsecutivo('REC', registros.map((r) => r.numero)) };
+    const factura = this.factura;
+    if (!factura) throw new ErrorCrud('La factura no existe.', 'NO_ENCONTRADO');
+    const actual = idActual ? registros.find((r) => r.id === idActual) : undefined;
+    const numero = actual?.numero ?? siguienteConsecutivo('REC', registros.map((r) => r.numero));
+    const aplicacion = datos.aplicacion ?? 'MESES';
+    const periodos = datos.periodos?.length ? datos.periodos : datos.periodo ? [datos.periodo] : [];
+    const conservar =
+      datos.estado === 'INACTIVO' && actual?.facturaId === datos.facturaId && actual.valor === datos.valor && !!actual.meses?.length;
+    const meses = conservar
+      ? actual!.meses!
+      : distribuir(
+          cuotasFactura(factura, pagosDeRecibos(registros.filter((r) => r.facturaId === factura.id && r.id !== idActual))),
+          datos.valor,
+          aplicacion,
+          aplicacion === 'MESES' ? periodos : [],
+          factura.numero,
+        );
+    return { ...datos, numero, aplicacion, periodos: aplicacion === 'MESES' ? periodos : [], meses, periodo: meses[0]?.periodo ?? datos.periodo };
   }
 
   protected datosIniciales(): Recibo[] {
@@ -96,6 +106,9 @@ export class RecibosLocal extends RepositorioLocal<Recibo, FiltrosRecibo> implem
           nombreAcudiente,
           nombreEstudiante,
           periodo,
+          aplicacion: 'MESES',
+          periodos: [periodo],
+          meses: [{ periodo, valor }],
           fechaPago: `${periodo}-${dia}`,
           valor,
           medioPago,

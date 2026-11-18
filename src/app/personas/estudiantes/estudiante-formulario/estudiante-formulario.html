@@ -18,8 +18,17 @@
     <h4 class="md:col-span-2 text-sm font-semibold uppercase tracking-wide text-info mt-2 border-b border-base-300 pb-1">Información escolar</h4>
     <div class="flex flex-col w-full">
       <span class="label-text text-base-content/90 mb-1">Acudiente <span class="text-error">*</span></span>
-      <app-selector-busqueda formControlName="acudienteId" [opciones]="acudientes()" etiqueta="Acudiente"
-        [invalido]="!!error('acudienteId')" />
+      <div class="flex items-start gap-2">
+        <app-selector-busqueda class="flex-1 min-w-0" formControlName="acudienteId" [opciones]="acudientes()" etiqueta="Acudiente"
+          [invalido]="!!error('acudienteId')" />
+        @if (!soloLectura() && !acudienteFijo()) {
+          <div class="tooltip tooltip-left" data-tip="Registrar un acudiente nuevo sin salir">
+            <button type="button" class="btn btn-secondary btn-square" aria-label="Nuevo acudiente" (click)="nuevoAcudiente.emit()">
+              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+      </div>
       @if (error('acudienteId'); as mensaje) {
         <span class="text-xs text-error mt-1">{{ mensaje }}</span>
       }
@@ -33,19 +42,21 @@
       }
     </div>
     <div class="flex flex-col w-full">
+      <span class="label-text text-base-content/90 mb-1">Jornada <span class="text-error">*</span></span>
+      <app-selector-busqueda formControlName="jornada" [opciones]="jornadas()" etiqueta="Jornada"
+        [invalido]="!!error('jornada')" />
+      @if (error('jornada'); as mensaje) {
+        <span class="text-xs text-error mt-1">{{ mensaje }}</span>
+      }
+    </div>
+    <div class="flex flex-col w-full">
       <span class="label-text text-base-content/90 mb-1">Grado <span class="text-error">*</span></span>
       <app-selector-busqueda formControlName="grado" [opciones]="grados()" etiqueta="Grado"
         [invalido]="!!error('grado')" />
       @if (error('grado'); as mensaje) {
         <span class="text-xs text-error mt-1">{{ mensaje }}</span>
-      }
-    </div>
-    <div class="flex flex-col w-full">
-      <span class="label-text text-base-content/90 mb-1">Jornada <span class="text-error">*</span></span>
-      <app-selector-busqueda formControlName="jornada" [opciones]="catalogos.jornadas" etiqueta="Jornada"
-        [invalido]="!!error('jornada')" />
-      @if (error('jornada'); as mensaje) {
-        <span class="text-xs text-error mt-1">{{ mensaje }}</span>
+      } @else if (sinCursosEnJornada()) {
+        <span class="text-xs text-warning mt-1">El colegio no tiene cursos activos en la jornada {{ jornadaActual() }}.</span>
       }
     </div>
     <div class="flex flex-col w-full">

@@ -1,6 +1,6 @@
 import type { Cotizacion } from 'src/app/finanzas/cotizaciones/cotizacion';
 import type { Factura } from 'src/app/finanzas/facturas/factura';
-import type { Recibo } from 'src/app/finanzas/recibos/recibo';
+import { type Recibo, mesesRecibo } from 'src/app/finanzas/recibos/recibo';
 import { nombrePeriodo, periodosEntre } from '../fechas/fechas';
 
 /**
@@ -114,9 +114,10 @@ export function contenidoRecibo(r: Recibo, medioPago: string): ContenidoDocument
       { etiqueta: 'Factura', valor: r.numeroFactura },
       { etiqueta: 'Medio de pago', valor: r.referencia ? `${medioPago} · Ref. ${r.referencia}` : medioPago },
     ],
+    // Un recibo puede pagar o abonar varios meses: una fila por mes con lo aplicado.
     tabla: {
-      columnas: ['Concepto', 'Mes pagado', 'Valor'],
-      filas: [['Transporte escolar', nombrePeriodo(r.periodo, true), pesos.format(r.valor)]],
+      columnas: ['Concepto', 'Mes', 'Valor aplicado'],
+      filas: mesesRecibo(r).map((m) => ['Transporte escolar', nombrePeriodo(m.periodo, true), pesos.format(m.valor)]),
       alinearDerecha: [2],
     },
     totales: [{ etiqueta: 'Total pagado', valor: pesos.format(r.valor), destacado: true }],
@@ -136,13 +137,14 @@ export function contenidoCotizacion(c: Cotizacion, estado: string): ContenidoDoc
       ...(c.telefonoAcudiente ? [{ etiqueta: 'Teléfono', valor: c.telefonoAcudiente }] : []),
     ],
     tabla: {
-      columnas: ['Estudiante', 'Valor mensual'],
-      filas: c.estudiantes.map((e) => [e.nombre, pesos.format(c.valorPorEstudiante)]),
-      alinearDerecha: [1],
+      columnas: ['Estudiante', 'Colegio', 'Valor mensual'],
+      filas: c.estudiantes.map((e) => [e.nombre, e.nombreColegio || '—', pesos.format(e.valor)]),
+      alinearDerecha: [2],
     },
     totales: [
-      { etiqueta: 'Valor por estudiante', valor: pesos.format(c.valorPorEstudiante) },
-      { etiqueta: 'Total mensual', valor: pesos.format(c.valorTotal), destacado: true },
+      { etiqueta: 'Servicio', valor: `${nombrePeriodo(c.periodoInicio, true)} a ${nombrePeriodo(c.periodoFin, true)} (${c.meses} ${c.meses === 1 ? 'mes' : 'meses'})` },
+      { etiqueta: 'Valor mensual', valor: pesos.format(c.valorMensual) },
+      { etiqueta: 'Total del servicio', valor: pesos.format(c.valorTotal), destacado: true },
     ],
     observaciones: c.observaciones,
   };
@@ -279,8 +281,11 @@ export function contenidoDeEjemplo(tipo: TipoDocumentoPdf): ContenidoDocumento {
   if (tipo === 'COTIZACION') {
     return contenidoCotizacion(
       { ...base, numero: 'COT-0001', fecha, registrados: false, acudienteId: null, nombreAcudiente: 'María Pérez', telefonoAcudiente: '3001234567',
-        estudiantes: [{ estudianteId: null, nombre: 'Juan Pérez' }, { estudianteId: null, nombre: 'Sofía Pérez' }],
-        valorPorEstudiante: 250_000, valorTotal: 500_000, estado: 'PENDIENTE' },
+        estudiantes: [
+          { estudianteId: null, nombre: 'Juan Pérez', colegioId: null, nombreColegio: 'Colegio San José', valor: 250_000 },
+          { estudianteId: null, nombre: 'Sofía Pérez', colegioId: null, nombreColegio: 'Liceo Los Andes', valor: 230_000 },
+        ],
+        periodoInicio: periodo, periodoFin: periodo, valorMensual: 480_000, meses: 1, valorTotal: 480_000, estado: 'PENDIENTE', facturas: [] },
       'Pendiente',
     );
   }

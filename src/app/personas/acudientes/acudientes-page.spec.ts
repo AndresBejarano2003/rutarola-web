@@ -84,5 +84,40 @@ describe('AcudientesPage', () => {
     await estabilizar(fixture, 3);
     expect(el.textContent).toContain('9 registros');
     expect(el.textContent).toContain('Ana Arias');
+    // El modal sigue abierto con el detalle del acudiente nuevo para agregarle estudiantes.
+    expect(el.querySelector('app-estudiantes-a-cargo')).not.toBeNull();
+    expect(ui.boton('Agregar estudiante')).toBeTruthy();
+  });
+
+  it('agrega un estudiante desde el detalle del acudiente sin salir', async () => {
+    accionEnFila('Paola Andrea Silva Torres', 'Consultar');
+    await estabilizar(fixture, 3);
+    ui.boton('Agregar estudiante').click();
+    await estabilizar(fixture, 2);
+
+    const alta = el.querySelector('app-alta-estudiante') as HTMLElement;
+    const form = alta.querySelector('form') as HTMLElement;
+    const escribir = (control: string, valor: string) => {
+      const campo = form.querySelector(`input[formcontrolname="${control}"]`) as HTMLInputElement;
+      campo.value = valor;
+      campo.dispatchEvent(new Event('input'));
+    };
+    // El acudiente ya viene elegido y fijo.
+    expect((form.querySelector('app-selector-busqueda[formcontrolname="acudienteId"] input') as HTMLInputElement).disabled).toBe(true);
+    ui.elegir('tipoDocumento', 'tarjeta', form);
+    escribir('numeroDocumento', '5555000111');
+    escribir('primerNombre', 'Lucía');
+    escribir('primerApellido', 'Silva');
+    escribir('fechaNacimiento', '2015-03-03');
+    escribir('direccion', 'Calle 8');
+    ui.elegir('colegioId', 'cayetano', form);
+    await estabilizar(fixture, 2);
+    ui.elegir('jornada', 'manana', form);
+    ui.elegir('grado', '3°', form);
+    (alta.querySelector('footer button[type="submit"]') as HTMLButtonElement).click();
+    await estabilizar(fixture, 4);
+
+    const aCargo = el.querySelector('app-modal app-estudiantes-a-cargo') as HTMLElement;
+    expect(aCargo.textContent).toContain('Lucía Silva');
   });
 });

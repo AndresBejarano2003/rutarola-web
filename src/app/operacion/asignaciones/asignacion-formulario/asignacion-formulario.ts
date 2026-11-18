@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Campo, TituloSeccion } from 'src/app/shared/campo/campo';
 import { OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
 import { DatosRegistro, ESTADOS_REGISTRO, EstadoRegistro, ModoFormulario } from 'src/app/shared/crud/crud';
@@ -14,6 +14,19 @@ export interface OpcionesAsignacion {
   conductores: OpcionCatalogo[];
   monitoras: OpcionCatalogo[];
 }
+
+/** Horario: las dos horas o ninguna (error `incompleto` en la que falta). */
+const horarioCompleto: ValidatorFn = (grupo: AbstractControl): ValidationErrors | null => {
+  const inicio = grupo.get('horaInicio');
+  const fin = grupo.get('horaFin');
+  if (!inicio || !fin) return null;
+  for (const [control, otro] of [[inicio, fin], [fin, inicio]] as const) {
+    const { incompleto: _previo, ...otros } = control.errors ?? {};
+    const errores = !control.value && !!otro.value ? { ...otros, incompleto: true } : otros;
+    control.setErrors(Object.keys(errores).length ? errores : null);
+  }
+  return null;
+};
 
 @Component({
   selector: 'app-asignacion-formulario',
@@ -40,10 +53,12 @@ export class AsignacionFormulario {
       monitoraId: [''],
       fechaInicio: ['', Validators.required],
       fechaFin: [''],
+      horaInicio: [''],
+      horaFin: [''],
       estado: this.fb.control<EstadoRegistro>('ACTIVO', Validators.required),
       observaciones: ['', Validators.maxLength(500)],
     },
-    { validators: posteriorA('fechaInicio', 'fechaFin') },
+    { validators: [posteriorA('fechaInicio', 'fechaFin', 'rango', true), posteriorA('horaInicio', 'horaFin'), horarioCompleto] },
   );
 
   protected readonly monitoras = computed(() => [{ id: '', nombre: 'Sin monitora' }, ...this.opciones().monitoras]);
@@ -53,7 +68,7 @@ export class AsignacionFormulario {
       const asignacion = this.asignacion();
       if (asignacion) {
         const { id: _id, fechaCreacion: _c, fechaActualizacion: _a, ...datos } = asignacion;
-        this.form.reset(datos);
+        this.form.reset({ ...datos, horaInicio: datos.horaInicio ?? '', horaFin: datos.horaFin ?? '' });
       } else {
         this.form.reset();
       }

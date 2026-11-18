@@ -6,12 +6,13 @@ import { Provider } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
 import { proveerRepositorios } from 'src/app/core/repositorios';
 import { LATENCIA_LOCAL } from 'src/app/shared/crud/repositorio-local';
+import { INTERVALO_RECARGA } from 'src/app/shared/crud/listado-store';
 
 /** Repositorios locales sin latencia. Llamar `localStorage.clear()` antes de cada prueba. */
 export function repositoriosDePrueba(): Provider[] {
   simularVideo();
   // Las pruebas siempre usan los repositorios locales, sin importar el entorno.
-  return [...proveerRepositorios({ usarApi: false }), { provide: LATENCIA_LOCAL, useValue: 0 }];
+  return [...proveerRepositorios({ usarApi: false }), { provide: LATENCIA_LOCAL, useValue: 0 }, { provide: INTERVALO_RECARGA, useValue: 0 }];
 }
 
 /**

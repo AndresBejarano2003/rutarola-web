@@ -1,6 +1,6 @@
 import { PanelFiltros } from 'src/app/shared/panel-filtros/panel-filtros';
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -62,9 +62,10 @@ export default class ReportePendientesPage {
 
   constructor() {
     emitirEnVivo(this.form, { emit: (f: FiltrosPendientes) => this.filtros.set(f) });
+    // Página 1 al cambiar los filtros (no en la recarga automática, que conserva la página).
     effect(() => {
-      this.reporte();
-      this.paginacion.reiniciar();
+      this.filtros();
+      untracked(() => this.paginacion.reiniciar());
     });
   }
 

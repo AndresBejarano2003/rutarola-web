@@ -19,6 +19,8 @@ export interface FiltrosEstudiante {
   acudienteId: string;
   colegioId: string;
   grado: string;
+  /** Solo los de esa jornada (p. ej. los estudiantes que se pueden agregar a una ruta). */
+  jornada: string;
   estado: EstadoRegistro | '';
 }
 
@@ -27,6 +29,7 @@ export const FILTROS_ESTUDIANTE_VACIOS: FiltrosEstudiante = {
   acudienteId: '',
   colegioId: '',
   grado: '',
+  jornada: '',
   estado: '',
 };
 

@@ -81,6 +81,7 @@ export function mensajeError(control: AbstractControl): string | null {
   if (e['nit']) return 'Ingresa un NIT válido (ej. 900123456-7).';
   if (e['placa']) return 'Ingresa una placa válida (ej. ABC123).';
   if (e['rango']) return 'Debe ser posterior al valor inicial.';
+  if (e['incompleto']) return 'Completa las dos horas o deja ambas vacías.';
   if (e['duplicado']) return 'Este valor ya está en la lista.';
   if (e['pattern']) return 'El formato no es válido.';
   if (e['fechaFutura']) return 'La fecha no puede ser futura.';

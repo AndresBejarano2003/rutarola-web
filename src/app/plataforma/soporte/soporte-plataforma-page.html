@@ -121,7 +121,7 @@
           <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'avanzar'" [attr.aria-selected]="pestana() === 'avanzar'"
             (click)="cambiarPestana('avanzar')"><i class="fa-solid fa-forward-step mr-1" aria-hidden="true"></i>Avanzar</button>
           <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'responder'" [attr.aria-selected]="pestana() === 'responder'"
-            (click)="cambiarPestana('responder')"><i class="fa-solid fa-reply mr-1" aria-hidden="true"></i>Responder</button>
+            (click)="cambiarPestana('responder')"><i class="fa-solid fa-comment-dots mr-1" aria-hidden="true"></i>Seguimiento</button>
           <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'asignar'" [attr.aria-selected]="pestana() === 'asignar'"
             (click)="cambiarPestana('asignar')"><i class="fa-solid fa-user-tag mr-1" aria-hidden="true"></i>Asignar</button>
           <button type="button" role="tab" class="tab" [class.tab-active]="pestana() === 'reunion'" [attr.aria-selected]="pestana() === 'reunion'"
@@ -140,17 +140,37 @@
                     @for (e of t.siguientesEstados; track e) {
                       <label class="flex items-center gap-3 rounded-box border border-neutral bg-base-100 p-3 cursor-pointer hover:border-primary/60 has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-focus-visible:outline-primary">
                         <input type="radio" class="sr-only" name="destino" [value]="e" [checked]="destino() === e" (change)="elegirDestino(e)" />
-                        <i [class]="iconoDe(e) + ' text-info'" aria-hidden="true"></i>
+                        <i [class]="(accionDe(e) === 'Terminar ticket' ? 'fa-solid fa-flag-checkered text-error' : iconoDe(e) + ' text-info')" aria-hidden="true"></i>
                         <span class="min-w-0">
                           <span class="block font-medium text-sm">{{ accionDe(e) }}</span>
-                          <span class="block text-xs text-base-content/70">→ {{ nombreEstado(e) }}</span>
+                          <span class="block text-xs text-base-content/70">
+                            {{ accionDe(e) === 'Terminar ticket' ? 'Cerrar sin resolver, con justificación' : '→ ' + nombreEstado(e) }}
+                          </span>
                         </span>
                       </label>
                     }
+                    <button type="button" class="flex items-center gap-3 rounded-box border border-dashed border-neutral bg-base-100 p-3 text-left hover:border-primary/60"
+                      (click)="cambiarPestana('responder')">
+                      <i class="fa-solid fa-comment-dots text-info" aria-hidden="true"></i>
+                      <span class="min-w-0">
+                        <span class="block font-medium text-sm">Solo dejar un seguimiento</span>
+                        <span class="block text-xs text-base-content/70">Avance o pregunta · se queda en {{ nombreEstado(t.estado) }}</span>
+                      </span>
+                    </button>
                   </div>
                 </fieldset>
-                <label app-campo etiqueta="Comentario para la empresa" [requerido]="comentarioObligatorio()" [error]="error(formEstado.controls.comentario)"
-                  [ayuda]="comentarioObligatorio() ? 'Obligatorio: la empresa verá el motivo en el historial y en el correo.' : 'Opcional: llega a la empresa con el aviso.'">
+                @if (diasEsperando(); as dias) {
+                  @if (dias >= diasSinRespuesta) {
+                    <div role="alert" class="alert alert-warning alert-soft text-sm">
+                      <i class="fa-solid fa-hourglass-end" aria-hidden="true"></i>
+                      <span>La empresa no responde hace {{ dias }} días. Puedes terminar el ticket por falta de seguimiento.</span>
+                      <button type="button" class="btn btn-sm btn-ghost" (click)="terminarPorFaltaDeRespuesta(dias)">Terminar por falta de respuesta</button>
+                    </div>
+                  }
+                }
+                <label app-campo [etiqueta]="terminando() ? 'Justificación del cierre' : 'Comentario para la empresa'" [requerido]="comentarioObligatorio()"
+                  [error]="error(formEstado.controls.comentario)"
+                  [ayuda]="terminando() ? 'Obligatoria: explica por qué se termina (p. ej. no hubo respuesta en ' + diasSinRespuesta + ' días). La empresa la verá en el historial y en el correo.' : comentarioObligatorio() ? 'Obligatorio: la empresa verá el motivo en el historial y en el correo.' : 'Opcional: llega a la empresa con el aviso.'">
                   <textarea formControlName="comentario" rows="3" maxlength="2000" class="textarea textarea-bordered bg-base-100 border-neutral w-full"
                     [class.textarea-error]="!!error(formEstado.controls.comentario)"></textarea>
                 </label>
@@ -169,7 +189,11 @@
           }
           @case ('responder') {
             <form id="form-respuesta-ticket" [formGroup]="formRespuesta" (ngSubmit)="responder()" novalidate class="flex flex-col gap-3">
-              <label app-campo etiqueta="Mensaje" requerido [error]="error(formRespuesta.controls.texto)">
+              <p class="text-sm text-base-content/70">
+                Reporta un avance, haz una pregunta o deja una nota. El ticket se queda en
+                <span class="badge badge-soft badge-sm {{ badgeEstado(t.estado) }}">{{ nombreEstado(t.estado) }}</span>.
+              </p>
+              <label app-campo etiqueta="Seguimiento" requerido [error]="error(formRespuesta.controls.texto)">
                 <textarea formControlName="texto" rows="4" maxlength="2000" class="textarea textarea-bordered bg-base-100 border-neutral w-full"
                   [class.textarea-error]="!!error(formRespuesta.controls.texto)"></textarea>
               </label>

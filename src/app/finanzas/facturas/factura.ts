@@ -1,6 +1,6 @@
 import { OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
 import { Entidad, EstadoRegistro } from 'src/app/shared/crud/crud';
-import { periodosEntre } from 'src/app/shared/fechas/fechas';
+import { mesesCobrables } from '../cuotas';
 
 /**
  * Factura de contratación del servicio: un estudiante, su acudiente y el
@@ -26,6 +26,26 @@ export interface Factura extends Entidad {
   /** ACTIVO = vigente, INACTIVO = anulada. */
   estado: EstadoRegistro;
   observaciones: string;
+  /**
+   * Retiro del estudiante o del acudiente: primer mes que YA NO se cobra (`''` = sin retiro). Lo pone
+   * `FacturasRepositorio.retiro` (o el servidor al inactivar al estudiante/acudiente), no el formulario.
+   */
+  periodoRetiro?: string;
+  motivoRetiro?: string;
+  /** Cotización aprobada de la que salió (`''` si se creó a mano). Solo lectura. */
+  cotizacionId?: string;
+  numeroCotizacion?: string;
+}
+
+/** Mes de la factura con lo pagado y el saldo (`GET /facturas/{id}/cuotas`). */
+export interface CuotaFactura {
+  periodo: string;
+  valor: number;
+  pagado: number;
+  saldo: number;
+  /** `YYYY-MM-DD` */
+  fechaLimite: string;
+  estado: 'PAGADA' | 'VENCIDA' | 'PENDIENTE' | 'PROGRAMADA';
 }
 
 export interface FiltrosFactura {
@@ -43,11 +63,12 @@ export const ESTADOS_FACTURA: OpcionCatalogo[] = [
   { id: 'INACTIVO', nombre: 'Anulada' },
 ];
 
-export function mesesFactura(f: Pick<Factura, 'periodoInicio' | 'periodoFin'>): string[] {
-  return periodosEntre(f.periodoInicio, f.periodoFin);
+/** Meses que se cobran (sin los meses desde el retiro). */
+export function mesesFactura(f: Pick<Factura, 'periodoInicio' | 'periodoFin' | 'periodoRetiro'>): string[] {
+  return mesesCobrables(f);
 }
 
-export function totalFactura(f: Pick<Factura, 'periodoInicio' | 'periodoFin' | 'valorContratacion'>): number {
+export function totalFactura(f: Pick<Factura, 'periodoInicio' | 'periodoFin' | 'periodoRetiro' | 'valorContratacion'>): number {
   return mesesFactura(f).length * f.valorContratacion;
 }
 

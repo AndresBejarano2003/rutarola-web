@@ -91,7 +91,7 @@ describe('RecorridosLocal', () => {
     sessionStorage.clear();
     TestBed.configureTestingModule({ providers: repositoriosDePrueba() });
     repo = TestBed.inject(RecorridosRepositorio);
-    // Las asignaciones de ejemplo terminan el 2026-11-30: se fija la fecha para que la prueba no caduque.
+    // Se fija la fecha (día hábil, antes de las rutas) para que la prueba sea estable.
     vi.useFakeTimers({ now: new Date('2026-11-05T06:30:00'), toFake: ['Date'] });
   });
 
@@ -197,6 +197,7 @@ describe('RecorridosLocal', () => {
     entrar('emp-3');
     expect(await firstValueFrom(repo.rutasDelDia(fechaIso()))).toEqual([]);
     entrar('emp-1');
-    expect(await firstValueFrom(repo.rutasDelDia('2026-12-15'))).toEqual([]);
+    // Antes de que empiece la asignación de ejemplo (2026-02-02).
+    expect(await firstValueFrom(repo.rutasDelDia('2026-01-15'))).toEqual([]);
   });
 });

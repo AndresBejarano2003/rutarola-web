@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CambiosDatos } from 'src/app/shared/crud/cambios-datos';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
+import { recargaAutomatica } from 'src/app/shared/crud/recarga-automatica';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
 import {
   AusenciaCronograma,
@@ -11,6 +12,7 @@ import {
   DetalleDiaCronograma,
   DiaCronograma,
   ESTADOS_TRAYECTO,
+  RutaCronograma,
   ICONOS_EVENTO,
   VistaCronograma,
   moverVista,
@@ -19,6 +21,7 @@ import {
   semanasDelMes,
 } from './cronograma';
 import { CronogramaRepositorio } from './cronograma-repositorio';
+import { DetalleRutaDia } from './detalle-ruta-dia/detalle-ruta-dia';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const VISTAS: { id: VistaCronograma; nombre: string }[] = [
@@ -44,7 +47,7 @@ const TONO_NIVEL: Record<string, string> = {
 @Component({
   selector: 'app-cronograma-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, DetalleRutaDia],
   templateUrl: './cronograma-page.html',
 })
 export default class CronogramaPage {
@@ -68,6 +71,15 @@ export default class CronogramaPage {
   protected readonly cargando = signal(true);
   protected readonly cargandoDia = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  /** Ruta elegida en el detalle del día (abre su modal). */
+  protected readonly rutaElegida = signal<RutaCronograma | null>(null);
+  protected readonly rutaAbierta = signal(false);
+
+  protected abrirRuta(r: RutaCronograma): void {
+    this.rutaElegida.set(r);
+    this.rutaAbierta.set(true);
+  }
 
   protected readonly rango = computed(() => rangoVista(this.vista(), this.fecha()));
   protected readonly titulo = computed(() => {
@@ -121,6 +133,14 @@ export default class CronogramaPage {
       this.cambios.version();
       untracked(() => void this.cargarDia(f));
     });
+    // Estados de los recorridos y avisos al día mientras la pantalla está visible.
+    recargaAutomatica(
+      () => {
+        void this.cargar(this.rango().desde, this.rango().hasta, true);
+        void this.cargarDia(this.fecha(), true);
+      },
+      () => !this.cargando() && !this.cargandoDia(),
+    );
   }
 
   /** Qué avisó el acudiente, en palabras del aviso del portal. */
@@ -163,26 +183,30 @@ export default class CronogramaPage {
     this.cambiarVista('MES');
   }
 
-  protected async cargar(desde = this.rango().desde, hasta = this.rango().hasta): Promise<void> {
-    this.cargando.set(true);
+  /** `silenciosa`: recarga automática, sin indicador y sin mostrar errores (se conserva lo que se ve). */
+  protected async cargar(desde = this.rango().desde, hasta = this.rango().hasta, silenciosa = false): Promise<void> {
+    if (!silenciosa) this.cargando.set(true);
     try {
-      this.cronograma.set(await firstValueFrom(this.repositorio.obtener(desde, hasta)));
+      const datos = await firstValueFrom(this.repositorio.obtener(desde, hasta));
+      // Si mientras tanto cambió la vista, se descarta la respuesta vieja.
+      if (this.rango().desde === desde && this.rango().hasta === hasta) this.cronograma.set(datos);
       this.error.set(null);
     } catch (e) {
-      this.error.set(mensajeDeError(e));
+      if (!silenciosa) this.error.set(mensajeDeError(e));
     } finally {
-      this.cargando.set(false);
+      if (!silenciosa) this.cargando.set(false);
     }
   }
 
-  private async cargarDia(fecha: string): Promise<void> {
-    this.cargandoDia.set(true);
+  private async cargarDia(fecha: string, silenciosa = false): Promise<void> {
+    if (!silenciosa) this.cargandoDia.set(true);
     try {
-      this.detalle.set(await firstValueFrom(this.repositorio.dia(fecha)));
+      const detalle = await firstValueFrom(this.repositorio.dia(fecha));
+      if (this.fecha() === fecha) this.detalle.set(detalle);
     } catch (e) {
-      this.error.set(mensajeDeError(e));
+      if (!silenciosa) this.error.set(mensajeDeError(e));
     } finally {
-      this.cargandoDia.set(false);
+      if (!silenciosa) this.cargandoDia.set(false);
     }
   }
 

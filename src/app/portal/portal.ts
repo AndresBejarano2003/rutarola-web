@@ -43,8 +43,11 @@ export interface CuotaPortal {
   fechaLimite: string;
   /** Días desde la fecha límite (> 0 = en mora). Solo para cuotas sin pagar ya iniciadas. */
   diasMora: number;
-  /** Recibo válido que la paga. */
+  /** Último recibo válido que aplicó a este mes. */
   recibo: Pick<ReciboPortal, 'id' | 'numero' | 'fechaPago' | 'medioPago'> | null;
+  /** Lo pagado con abonos y lo que falta (`valor` es la cuota completa). */
+  abonado: number;
+  saldo: number;
 }
 
 export interface FacturaPortal {
@@ -121,9 +124,14 @@ export interface CotizacionPortal {
   numero: string;
   fecha: string;
   estudiantes: string[];
-  valorPorEstudiante: number;
+  /** Suma de los valores mensuales de los estudiantes. */
+  valorMensual: number;
   valorTotal: number;
   estado: EstadoCotizacion;
+  /** Meses del servicio `YYYY-MM`. */
+  periodoInicio: string;
+  periodoFin: string;
+  meses: number;
 }
 
 export interface ProximoPago {

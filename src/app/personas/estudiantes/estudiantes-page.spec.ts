@@ -98,4 +98,37 @@ describe('EstudiantesPage', () => {
     expect(campo().disabled).toBe(false);
     expect(el.textContent).toContain('Guardar cambios');
   });
+
+  it('registra un acudiente nuevo sin salir del formulario del estudiante y lo deja elegido', async () => {
+    ui.boton('Nuevo estudiante').click();
+    await estabilizar(fixture);
+    ui.escribir('primerNombre', 'Aaron');
+    (el.querySelector('button[aria-label="Nuevo acudiente"]') as HTMLButtonElement).click();
+    await estabilizar(fixture);
+
+    const alta = el.querySelector('app-alta-acudiente') as HTMLElement;
+    const form = alta.querySelector('form') as HTMLElement;
+    const escribir = (control: string, valor: string) => {
+      const campo = form.querySelector(`input[formcontrolname="${control}"]`) as HTMLInputElement;
+      campo.value = valor;
+      campo.dispatchEvent(new Event('input'));
+    };
+    ui.elegir('tipoDocumento', 'cedula de ciu', form);
+    escribir('numeroDocumento', '1075111222');
+    escribir('primerNombre', 'Rosa');
+    escribir('primerApellido', 'Quintero');
+    escribir('telefono', '3005551234');
+    escribir('usuario', 'rquintero');
+    escribir('contrasena', 'clave123');
+    escribir('confirmarContrasena', 'clave123');
+    (alta.querySelector('footer button[type="submit"]') as HTMLButtonElement).click();
+    await estabilizar(fixture, 3);
+
+    // Lo escrito en el estudiante sigue ahí y el acudiente nuevo quedó elegido.
+    const estudiante = el.querySelector('app-estudiante-formulario') as HTMLElement;
+    expect((estudiante.querySelector('input[formcontrolname="primerNombre"]') as HTMLInputElement).value).toBe('Aaron');
+    expect((estudiante.querySelector('app-selector-busqueda[formcontrolname="acudienteId"] input') as HTMLInputElement).value).toContain(
+      'Rosa Quintero',
+    );
+  });
 });

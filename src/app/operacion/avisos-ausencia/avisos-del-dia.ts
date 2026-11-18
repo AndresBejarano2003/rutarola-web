@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, interval, map, of, startWith, switchMap } from 'rxjs';
+import { EMPTY, Subject, catchError, map, merge, of, startWith, switchMap } from 'rxjs';
+import { recargaAutomatica } from 'src/app/shared/crud/recarga-automatica';
 import { AvisoAusencia, textoAviso } from 'src/app/ruta-del-dia/avisos-ausencia';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
@@ -100,13 +101,23 @@ export class AvisosDelDia {
   protected readonly hoy = fechaIso();
   protected readonly fecha = signal(this.hoy);
 
+  /** Se actualiza solo con la pantalla visible (sin "cargando"; si falla se conserva la lista). */
+  private readonly silenciosas = new Subject<void>();
+  private readonly recarga = recargaAutomatica(() => this.silenciosas.next());
+
   protected readonly estado = toSignal(
-    combineLatest([toObservable(this.fecha), interval(60_000).pipe(startWith(0))]).pipe(
-      switchMap(([fecha]) =>
-        this.repositorio.listar({ fecha, rutaId: '' }).pipe(
-          map((avisos): Estado => ({ cargando: false, avisos, error: null })),
-          catchError((e: unknown) => of<Estado>({ cargando: false, avisos: [], error: mensajeDeError(e) })),
-          startWith<Estado>({ cargando: true }),
+    toObservable(this.fecha).pipe(
+      switchMap((fecha) =>
+        merge(of(false), this.silenciosas.pipe(map(() => true))).pipe(
+          switchMap((silenciosa) => {
+            const consulta = this.repositorio.listar({ fecha, rutaId: '' }).pipe(map((avisos): Estado => ({ cargando: false, avisos, error: null })));
+            return silenciosa
+              ? consulta.pipe(catchError(() => EMPTY))
+              : consulta.pipe(
+                  catchError((e: unknown) => of<Estado>({ cargando: false, avisos: [], error: mensajeDeError(e) })),
+                  startWith<Estado>({ cargando: true }),
+                );
+          }),
         ),
       ),
     ),

@@ -25,6 +25,15 @@
       <app-factura-formulario idFormulario="form-factura" [modo]="modo()" [factura]="seleccionado()"
         [acudientes]="acudientes()" [estudiantesAcudiente]="estudiantesAcudiente()"
         (acudienteCambiado)="acudienteFormulario.set($event)" (guardar)="guardar($event)" />
+      @if (modo() === 'consultar' && seleccionado(); as f) {
+        @if (f.numeroCotizacion) {
+          <p class="mt-4 text-sm text-base-content/70">
+            <i class="fa-solid fa-file-lines text-info" aria-hidden="true"></i> Generada desde la cotización
+            <span class="font-mono font-medium text-base-content">{{ f.numeroCotizacion }}</span>.
+          </p>
+        }
+        <div class="mt-6"><app-cuenta-factura [factura]="f" (cambio)="retiroCambiado($event)" /></div>
+      }
     </div>
   }
   @if (modalAbierto()) {

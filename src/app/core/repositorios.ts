@@ -75,6 +75,12 @@ import { HistorialRecorridosRepositorio } from "../operacion/recorridos/historia
 import { DocumentosVehiculoHttp } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-http";
 import { DocumentosVehiculoLocal } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-local";
 import { DocumentosVehiculoRepositorio } from "../operacion/vehiculos/documentos-vehiculo/documentos-vehiculo-repositorio";
+import { GastosVehiculoHttp } from "../operacion/vehiculos/gastos-vehiculo/gastos-vehiculo-http";
+import { GastosVehiculoLocal } from "../operacion/vehiculos/gastos-vehiculo/gastos-vehiculo-local";
+import { GastosVehiculoRepositorio } from "../operacion/vehiculos/gastos-vehiculo/gastos-vehiculo-repositorio";
+import { NovedadesVehiculoHttp } from "../operacion/vehiculos/novedades-vehiculo/novedades-vehiculo-http";
+import { NovedadesVehiculoLocal } from "../operacion/vehiculos/novedades-vehiculo/novedades-vehiculo-local";
+import { NovedadesVehiculoRepositorio } from "../operacion/vehiculos/novedades-vehiculo/novedades-vehiculo-repositorio";
 import { AvisosAusenciaHttp } from "../operacion/avisos-ausencia/avisos-ausencia-http";
 import { AvisosAusenciaLocal } from "../operacion/avisos-ausencia/avisos-ausencia-local";
 import { AvisosAusenciaRepositorio } from "../operacion/avisos-ausencia/avisos-ausencia-repositorio";
@@ -127,6 +133,8 @@ export function proveerRepositorios({
     api(ColegiosRepositorio, ColegiosLocal, ColegiosHttp),
     api(VehiculosRepositorio, VehiculosLocal, VehiculosHttp),
     api(DocumentosVehiculoRepositorio, DocumentosVehiculoLocal, DocumentosVehiculoHttp),
+    api(NovedadesVehiculoRepositorio, NovedadesVehiculoLocal, NovedadesVehiculoHttp),
+    api(GastosVehiculoRepositorio, GastosVehiculoLocal, GastosVehiculoHttp),
     api(RutasRepositorio, RutasLocal, RutasHttp),
     api(AsignacionesRepositorio, AsignacionesLocal, AsignacionesHttp),
     api(ConductoresRepositorio, ConductoresLocal, ConductoresHttp),

@@ -6,30 +6,160 @@
         placeholder="Número de factura o estudiante..." [invalido]="!!error('facturaId')" />
     </div>
     @if (factura(); as f) {
-      <div class="md:col-span-2 rounded-box border border-base-300 bg-base-100/40 px-4 py-3 grid sm:grid-cols-4 gap-3 text-sm">
-        <div><div class="text-base-content/70">Acudiente</div><div class="font-medium">{{ f.nombreAcudiente }}</div></div>
-        <div><div class="text-base-content/70">Estudiante</div><div class="font-medium">{{ f.nombreEstudiante }}</div></div>
+      <div class="md:col-span-2 rounded-box border border-base-300 bg-base-100/40 px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        <div class="min-w-0"><div class="text-base-content/70">Acudiente</div><div class="font-medium truncate">{{ f.nombreAcudiente }}</div></div>
+        <div class="min-w-0"><div class="text-base-content/70">Estudiante</div><div class="font-medium truncate">{{ f.nombreEstudiante }}</div></div>
         <div><div class="text-base-content/70">Valor mensual</div>
           <div class="font-medium">{{ f.valorContratacion | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div></div>
-        <div><div class="text-base-content/70">Meses pagados</div><div class="font-medium">{{ pagados() }}</div></div>
+        <div><div class="text-base-content/70">Saldo de la factura</div>
+          <div class="font-medium">{{ saldoFactura() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
+          <div class="text-xs text-base-content/70">{{ pagadas() }} de {{ cuotas().length }} meses pagados</div></div>
+        @if (f.periodoRetiro) {
+          <p class="col-span-2 sm:col-span-4 text-xs text-base-content/70">
+            <i class="fa-solid fa-user-minus text-warning" aria-hidden="true"></i>
+            Retiro desde {{ nombrePeriodo(f.periodoRetiro, true) }}: esos meses ya no se cobran.
+          </p>
+        }
       </div>
     }
 
+    @if (soloLectura()) {
+      <app-titulo-seccion>Meses pagados con este recibo</app-titulo-seccion>
+      <ul class="md:col-span-2 divide-y divide-base-300 rounded-box border border-base-300 text-sm">
+        @for (m of aplicado(); track m.periodo) {
+          <li class="flex items-center justify-between gap-3 px-3 py-2">
+            <span>{{ nombrePeriodo(m.periodo, true) }}</span>
+            <span class="font-medium">{{ m.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <app-titulo-seccion>¿Cómo se aplica el pago?</app-titulo-seccion>
+      <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Cómo se aplica el pago">
+        <label class="flex items-start gap-3 rounded-box border border-neutral bg-base-100 p-3 cursor-pointer hover:border-primary/60 has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-focus-visible:outline-primary">
+          <input type="radio" class="sr-only" name="aplicacion" value="MESES" [checked]="aplicacion() === 'MESES'" (change)="elegirAplicacion('MESES')" />
+          <i class="fa-solid fa-calendar-check text-info mt-0.5" aria-hidden="true"></i>
+          <span>
+            <span class="block font-medium text-sm">Pagar meses</span>
+            <span class="block text-xs text-base-content/70">Elige uno o varios meses; si el valor no alcanza, queda un abono.</span>
+          </span>
+        </label>
+        <label class="flex items-start gap-3 rounded-box border border-neutral bg-base-100 p-3 cursor-pointer hover:border-primary/60 has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-focus-visible:outline-primary">
+          <input type="radio" class="sr-only" name="aplicacion" value="SALDO" [checked]="aplicacion() === 'SALDO'" (change)="elegirAplicacion('SALDO')" />
+          <i class="fa-solid fa-coins text-info mt-0.5" aria-hidden="true"></i>
+          <span>
+            <span class="block font-medium text-sm">Abonar al saldo de la factura</span>
+            <span class="block text-xs text-base-content/70">Se aplica a los meses más antiguos con saldo.</span>
+          </span>
+        </label>
+      </div>
+
+      @if (aplicacion() === 'MESES' && factura()) {
+        <fieldset class="md:col-span-2">
+          <legend class="label-text text-base-content/90 mb-2 flex flex-wrap items-center justify-between gap-2 w-full">
+            <span>Meses a pagar <span class="text-error">*</span></span>
+            @if (pendientes().length) {
+              <button type="button" class="btn btn-ghost btn-xs" (click)="elegirExigibles()">Elegir vencidos y del mes</button>
+            }
+          </legend>
+          @if (pendientes().length) {
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              @for (c of pendientes(); track c.periodo) {
+                <label class="flex flex-col gap-0.5 rounded-box border border-neutral bg-base-100 px-3 py-2 cursor-pointer text-sm hover:border-primary/60 has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2 has-focus-visible:outline-primary">
+                  <span class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm checkbox-primary" [checked]="elegidos().includes(c.periodo)"
+                      (change)="alternarMes(c.periodo)" [attr.aria-label]="nombrePeriodo(c.periodo, true)" />
+                    <span class="font-medium capitalize">{{ nombrePeriodo(c.periodo) }}</span>
+                    @if (c.estado === 'VENCIDA') {
+                      <span class="badge badge-soft badge-error badge-xs">Vencido</span>
+                    }
+                  </span>
+                  <span class="text-xs text-base-content/70">
+                    {{ c.saldo | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    @if (c.pagado > 0) {
+                      <span>· abonado {{ c.pagado | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                    }
+                  </span>
+                </label>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i> Todos los meses de la factura ya están pagados.</p>
+          }
+          @if (errorMeses(); as mensaje) {
+            <span class="text-xs text-error">{{ mensaje }}</span>
+          }
+        </fieldset>
+      }
+    }
+
     <app-titulo-seccion>Pago</app-titulo-seccion>
-    <div app-campo etiqueta="Mes que se paga" requerido [error]="error('periodo')"
-      [ayuda]="factura() && !periodos().length ? 'Todos los meses de la factura ya están pagados.' : ''">
-      <app-selector-busqueda formControlName="periodo" [opciones]="periodos()" etiqueta="Mes que se paga" [invalido]="!!error('periodo')" />
-    </div>
-    <div app-campo etiqueta="Valor pagado" requerido [error]="error('valor')">
-      <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2" [class.input-error]="error('valor')">
-        <span class="text-base-content/70">$</span>
-        <input type="number" formControlName="valor" min="1" step="1000" class="grow" aria-label="Valor pagado" />
-      </label>
+    <div app-campo etiqueta="Valor pagado" requerido [error]="error('valor')"
+      [ayuda]="!soloLectura() && sugerido() > 0 ? (aplicacion() === 'MESES' ? 'Saldo de los meses elegidos: ' : 'Saldo de la factura: ') + (sugerido() | currency: 'COP' : 'symbol-narrow' : '1.0-0') : ''">
+      <div class="flex gap-2">
+        <label class="input input-bordered bg-base-100 border-neutral w-full flex items-center gap-2" [class.input-error]="error('valor')">
+          <span class="text-base-content/70">$</span>
+          <input type="number" formControlName="valor" min="1" step="1000" class="grow min-w-0" aria-label="Valor pagado" />
+        </label>
+        @if (!soloLectura() && sugerido() > 0 && form.controls.valor.value !== sugerido()) {
+          <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="usarSugerido()">Usar saldo</button>
+        }
+      </div>
     </div>
     <label app-campo etiqueta="Fecha de pago" requerido [error]="error('fechaPago')">
       <input type="date" formControlName="fechaPago" [max]="hoy" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('fechaPago')" />
     </label>
+
+    @if (vistaPrevia(); as p) {
+      @if (p.ok) {
+        @let r = p.resultado;
+        @if (r.faltante > 0) {
+          <div role="alert" class="md:col-span-2 alert alert-warning alert-soft text-sm items-start">
+            <i class="fa-solid fa-triangle-exclamation mt-0.5" aria-hidden="true"></i>
+            <div>
+              <p class="font-medium">
+                El valor no cubre el total {{ aplicacion() === 'MESES' ? 'de los meses seleccionados' : 'del saldo de la factura' }}
+                ({{ r.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}; faltan {{ r.faltante | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}).
+              </p>
+              <p>
+                @if (r.cancelados.length) {
+                  Quedarían canceladas {{ r.cancelados.length }} {{ r.cancelados.length === 1 ? 'mensualidad' : 'mensualidades' }} ({{ unirMeses(r.cancelados) }})
+                } @else {
+                  No se cancela ninguna mensualidad completa
+                }
+                @if (r.abono; as a) {
+                  y se abonan {{ a.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} a {{ nombrePeriodo(a.periodo, true) }}
+                  (le quedan {{ r.saldoAbono | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}).
+                } @else {
+                  .
+                }
+                @if (r.sinCubrir.length) {
+                  Quedan pendientes de pago: {{ unirMeses(r.sinCubrir) }}.
+                }
+              </p>
+            </div>
+          </div>
+        } @else {
+          <div role="status" class="md:col-span-2 alert alert-success alert-soft text-sm">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            <span>
+              @if (r.abono; as a) {
+                Abona {{ a.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} a {{ nombrePeriodo(a.periodo, true) }}.
+              } @else {
+                Se {{ r.cancelados.length === 1 ? 'cancela' : 'cancelan' }} {{ unirMeses(r.cancelados) }} en su totalidad.
+              }
+            </span>
+          </div>
+        }
+      } @else {
+        <div role="alert" class="md:col-span-2 alert alert-error alert-soft text-sm">
+          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+          <span>{{ p.mensaje }}</span>
+        </div>
+      }
+    }
+
     <div app-campo etiqueta="Medio de pago" requerido [error]="error('medioPago')">
       <app-selector-busqueda formControlName="medioPago" [opciones]="medios" etiqueta="Medio de pago" [invalido]="!!error('medioPago')" />
     </div>

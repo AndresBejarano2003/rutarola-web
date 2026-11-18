@@ -107,7 +107,13 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Personas',
     pregunta: '¿Cómo registro un estudiante?',
     respuesta:
-      'En Personas › Estudiantes presiona "Nuevo estudiante". El curso se elige entre los cursos activos del colegio seleccionado, así que primero el colegio debe tener sus cursos creados en Operación › Colegios.',
+      'En Personas › Estudiantes presiona "Nuevo estudiante". El curso se elige entre los cursos activos del colegio en la jornada del estudiante, así que primero el colegio debe tener sus cursos creados en Operación › Colegios ("Agregar cursos" crea un solo curso o todos hasta el grado más alto, en la jornada que elijas). Si el acudiente aún no existe, créalo ahí mismo con "Nuevo acudiente": se abre encima y lo que ya escribiste del estudiante no se pierde. Desde Personas › Acudientes, en el acudiente, "Agregar estudiante" crea sus estudiantes.',
+  },
+  {
+    modulo: 'Personas',
+    pregunta: '¿Qué pasa con las facturas si un estudiante o acudiente se retira?',
+    respuesta:
+      'Al cambiarlo a Inactivo, sus facturas vigentes registran el retiro: desde el mes siguiente (o después del último mes pagado) ya no se cobran los meses que faltan, no aparecen como pendientes ni en mora y no se envían recordatorios. También puedes registrar o quitar el retiro a mano en el detalle de la factura ("Registrar retiro"), eligiendo el mes desde el que deja de cobrar y el motivo; los meses ya pagados se conservan.',
   },
   {
     modulo: 'Finanzas',
@@ -119,7 +125,13 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Finanzas',
     pregunta: '¿Cómo registro un pago?',
     respuesta:
-      'En Finanzas › Recibos crea un recibo para la factura y el mes que se paga. Cada mes de una factura solo se puede pagar una vez; si te equivocaste, anula el recibo y crea uno nuevo.',
+      'En Finanzas › Recibos crea un recibo para la factura y elige cómo aplicarlo: "Pagar meses" (uno o varios meses) o "Abonar al saldo de la factura" (se aplica a los meses más antiguos). El valor se sugiere con el saldo de lo elegido. Si pagas menos, el sistema te avisa antes de guardar cuántas mensualidades quedan canceladas, cuánto se abona y a qué mes, y cuáles siguen pendientes: un mes solo queda pagado cuando se cubre su valor completo (si de 230.000 pagas 130.000, quedan 100.000 por pagar). No se puede pagar más que el saldo ni un mes ya pagado; si te equivocaste, anula el recibo y crea uno nuevo. El estado de cuenta de cada mes se ve en el detalle de la factura.',
+  },
+  {
+    modulo: 'Finanzas',
+    pregunta: '¿Cómo hago una cotización y la convierto en facturas?',
+    respuesta:
+      'En Finanzas › Cotizaciones presiona "Nueva cotización", elige un acudiente registrado o escribe los datos de un cliente nuevo, indica el mes inicial y final del servicio y agrega cada estudiante con su colegio y su valor mensual (pueden ser de colegios distintos y con valores distintos). El sistema suma el valor mensual y el total por los meses. En el detalle puedes enviarla por WhatsApp o por correo y, si el acudiente y los estudiantes están registrados, "Convertir en facturas": se aprueba y se crea una factura vigente por estudiante con su valor y los mismos meses. Una cotización facturada ya no se edita ni se elimina.',
   },
   {
     modulo: 'Finanzas',
@@ -131,7 +143,13 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo asigno un vehículo y un conductor a una ruta?',
     respuesta:
-      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día.',
+      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora, el rango de fechas y, si quieres, un horario (hora de inicio y fin). Una ruta puede tener varias asignaciones (por ejemplo, un equipo en la mañana y otro en la tarde del mismo rango de fechas) mientras no se crucen en fechas y horas; tampoco un vehículo o una persona puede estar en dos rutas a la misma hora. Sin horario, la asignación ocupa toda la jornada de la ruta. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día. Al crear una ruta, el código se asigna solo y solo aparecen los estudiantes del colegio y la jornada de la ruta.',
+  },
+  {
+    modulo: 'Operación',
+    pregunta: '¿Cómo reporto una novedad del vehículo y llevo sus gastos?',
+    respuesta:
+      'El conductor o la monitora entra a Ruta del día › "Novedades del vehículo", elige el vehículo, el tipo (avería, daño, llantas, mantenimiento, limpieza, documentos u otro), la gravedad, describe lo que pasa y puede adjuntar una foto o PDF; los administradores reciben el aviso en la campana. El administrador la ve en el detalle del vehículo y la pasa a "En proceso" o "Resuelta" con su respuesta. En Operación › Vehículos también se registran los gastos (combustible con galones, mantenimiento, repuestos, llantas, peajes y más, con kilometraje y soporte) y el botón "Gastos" (o "Ver gastos" en el detalle de un vehículo) abre su tablero con totales por tipo y vehículo, promedio mensual, costo por kilómetro y kilómetros por galón.',
   },
   {
     modulo: 'Operación',
@@ -155,7 +173,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Dónde veo la programación de la semana, el mes o el año?',
     respuesta:
-      'En Operación › Cronograma (planes Profesional y Empresarial, y en la prueba gratuita). Cambia entre Semana, Mes y Año y avanza o retrocede con las flechas. Cada día muestra las rutas programadas (las activas con asignación vigente, de lunes a viernes), los recorridos realizados, las ausencias avisadas por los acudientes y la agenda: vencimiento de documentos de vehículos y licencias, fechas límite de pago, fin de contratos y de asignaciones (en rojo lo vencido). Al elegir un día ves cada ruta con su vehículo, conductor, monitora y el estado de la recogida y la entrega, quién no viaja y por qué.',
+      'En Operación › Cronograma (planes Profesional y Empresarial, y en la prueba gratuita). Cambia entre Semana, Mes y Año y avanza o retrocede con las flechas. Cada día muestra las rutas programadas (las activas con asignación vigente, de lunes a viernes), los recorridos realizados, las ausencias avisadas por los acudientes y la agenda: vencimiento de documentos de vehículos y licencias, fechas límite de pago, fin de contratos y de asignaciones (en rojo lo vencido). Al elegir un día ves cada ruta con su vehículo, conductor, monitora y el estado de la recogida y la entrega, quién no viaja y por qué; al tocar una ruta se abre su detalle con cada estudiante, su estado y la hora en que subió y llegó (o los programados si aún no sale), y accesos al monitoreo, al historial y a las asignaciones.',
   },
   {
     modulo: 'Personas',
@@ -179,7 +197,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Sistema',
     pregunta: '¿Qué pasa con mi solicitud de soporte?',
     respuesta:
-      'Cada solicitud es un ticket con número (SOP-0001) que sigues en "Mis solicitudes" de esta pantalla. Pasa por revisión, desarrollo, control de calidad (QA) y pruebas; los errores y mejoras además te piden validar la solución antes de resolverse. Te avisamos en la campana en cada avance; si te pedimos información, respóndela en el ticket. Cuando esté resuelto, confírmalo y califica la atención, o reábrelo si sigue fallando (si no respondes, se cierra solo a los 7 días). Puedes cancelarlo mientras no esté resuelto. También podemos agendarte una reunión: la verás en el ticket.',
+      'Cada solicitud es un ticket con número (SOP-0001) que sigues en "Mis solicitudes" de esta pantalla. Pasa por revisión, desarrollo, control de calidad (QA) y pruebas; los errores y mejoras además te piden validar la solución antes de resolverse. Te avisamos en la campana en cada avance; si te pedimos información, respóndela en el ticket. Cuando esté resuelto, confírmalo y califica la atención, o reábrelo si sigue fallando (si no respondes, se cierra solo a los 7 días). Puedes cancelarlo mientras no esté resuelto. También podemos agendarte una reunión: la verás en el ticket. Nuestro equipo puede dejarte seguimientos (avances o preguntas) sin cambiar la etapa, y terminar el ticket explicando el motivo, por ejemplo si lleva 15 días esperando tu respuesta: la justificación queda en el historial.',
   },
   {
     modulo: 'Sistema',
@@ -197,7 +215,13 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'General',
     pregunta: '¿Por qué no puedo eliminar un registro?',
     respuesta:
-      'Un registro que está en uso (por ejemplo, un acudiente con facturas o un vehículo asignado a una ruta) no se puede eliminar para no perder información. Cámbialo a estado Inactivo.',
+      'Un registro que está en uso (por ejemplo, un acudiente con facturas, un vehículo asignado a una ruta o con gastos, o una cotización ya convertida en facturas) no se puede eliminar para no perder información. Cámbialo a estado Inactivo.',
+  },
+  {
+    modulo: 'General',
+    pregunta: '¿Tengo que recargar la página para ver datos nuevos?',
+    respuesta:
+      'No. Las tablas, reportes y el cronograma se actualizan solos cada minuto mientras tienes la pantalla abierta y visible, sin perder la página ni los filtros. Si cambias de pestaña o bloqueas el teléfono se detiene, y al volver se actualiza enseguida.',
   },
 ];
 

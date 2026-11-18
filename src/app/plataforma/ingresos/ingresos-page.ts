@@ -16,6 +16,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { COLORES_TEMA, TemaApp } from 'src/app/core/tema';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
+import { recargaAutomatica } from 'src/app/shared/crud/recarga-automatica';
 import { descargarCsv } from 'src/app/shared/exportar/csv';
 import { Paginacion } from 'src/app/shared/paginacion/paginacion';
 import { PaginacionLocal } from 'src/app/shared/paginacion/paginacion-local';
@@ -128,6 +129,8 @@ export default class IngresosPage {
       if (this.rangoInvalido()) return;
       untracked(() => void this.cargar(d, h));
     });
+    // Pagos nuevos sin recargar a mano, solo con la pantalla visible.
+    recargaAutomatica(() => void this.cargar(this.desde(), this.hasta(), true), () => !this.cargando() && !this.rangoInvalido());
   }
 
   protected elegirPreset(id: string | null): void {
@@ -144,16 +147,19 @@ export default class IngresosPage {
     this[campo].set(valor);
   }
 
-  protected async cargar(desde = this.desde(), hasta = this.hasta()): Promise<void> {
-    this.cargando.set(true);
+  /** `silenciosa`: recarga automática, sin indicador, sin volver a la página 1 y sin mostrar errores. */
+  protected async cargar(desde = this.desde(), hasta = this.hasta(), silenciosa = false): Promise<void> {
+    if (!silenciosa) this.cargando.set(true);
     try {
-      this.datos.set(await firstValueFrom(this.repositorio.obtener(desde, hasta)));
-      this.paginacion.reiniciar();
+      const datos = await firstValueFrom(this.repositorio.obtener(desde, hasta));
+      if (this.desde() !== desde || this.hasta() !== hasta) return;
+      this.datos.set(datos);
+      if (!silenciosa) this.paginacion.reiniciar();
       this.error.set(null);
     } catch (e) {
-      this.error.set(mensajeDeError(e));
+      if (!silenciosa) this.error.set(mensajeDeError(e));
     } finally {
-      this.cargando.set(false);
+      if (!silenciosa) this.cargando.set(false);
     }
   }
 

@@ -231,15 +231,25 @@ describe('Pantallas de GPS, comunicación, configuración y plataforma', () => {
     await estabilizar(fixture);
     expect(el.textContent).toContain('Este campo es obligatorio');
 
-    // Nota interna: no la ve la empresa.
-    ui.boton('Responder').click();
+    // Terminar el ticket (p. ej. la empresa no responde) también exige justificación.
+    (el.querySelector('input[type="radio"][value="CERRADO"]') as HTMLInputElement).click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Justificación del cierre');
+    ui.boton('Terminar ticket').click();
+    await estabilizar(fixture);
+    expect(el.textContent).toContain('Este campo es obligatorio');
+    expect((await firstValueFrom(repo.detallePlataforma(ticket.id))).estado).toBe('EN_REVISION');
+
+    // Seguimiento como nota interna: no la ve la empresa y el ticket sigue en su estado.
+    ui.boton('Seguimiento').click();
     await estabilizar(fixture);
     (el.querySelector('#form-respuesta-ticket textarea') as HTMLTextAreaElement).value = 'Revisar el cálculo del mes';
     el.querySelector('#form-respuesta-ticket textarea')!.dispatchEvent(new Event('input'));
     (el.querySelector('#form-respuesta-ticket input[type="checkbox"]') as HTMLInputElement).click();
-    ui.boton('Enviar').click();
+    ui.boton('Guardar seguimiento').click();
     await estabilizar(fixture, 4);
     expect(el.textContent).toContain('Nota interna (la empresa no la ve)');
     expect((await firstValueFrom(repo.obtener(ticket.id))).eventos.some((e) => e.interno)).toBe(false);
+    expect((await firstValueFrom(repo.detallePlataforma(ticket.id))).estado).toBe('EN_REVISION');
   });
 });

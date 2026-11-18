@@ -11,7 +11,8 @@ import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo
 import { EncabezadoListado } from 'src/app/shared/encabezado-listado/encabezado-listado';
 import { Modal } from 'src/app/shared/modal/modal';
 import { Paginacion } from 'src/app/shared/paginacion/paginacion';
-import { FILTROS_ASIGNACION_VACIOS } from '../asignaciones/asignacion';
+import { FILTROS_ASIGNACION_VACIOS, asignacionVigente } from '../asignaciones/asignacion';
+import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { AsignacionesRepositorio } from '../asignaciones/asignaciones-repositorio';
 import { ColegiosRepositorio } from '../colegios/colegios-repositorio';
 import { VehiculosRepositorio } from '../vehiculos/vehiculos-repositorio';
@@ -37,12 +38,22 @@ export default class RutasPage extends PaginaCrud<Ruta, FiltrosRuta> {
   protected readonly colegios = toSignal(inject(ColegiosRepositorio).opciones().pipe(catchError(() => of([]))), { initialValue: [] });
   protected readonly nombresColegio = computed(() => aMapa(this.colegios()));
 
-  /** Estudiantes del colegio elegido en el formulario. */
-  protected readonly colegioFormulario = signal('');
+  /** Colegio y jornada elegidos en el formulario. */
+  protected readonly filtroEstudiantes = signal({ colegioId: '', jornada: '' });
+  /** Todos los estudiantes del colegio (nombres de los que ya iban en la ruta). */
   protected readonly estudiantesColegio = toSignal(
-    toObservable(this.colegioFormulario).pipe(
+    toObservable(computed(() => this.filtroEstudiantes().colegioId)).pipe(
       switchMap((colegioId) =>
         colegioId ? this.estudiantesRepo.opciones({ colegioId }).pipe(catchError(() => of([]))) : of([]),
+      ),
+    ),
+    { initialValue: [] },
+  );
+  /** Los que se pueden agregar: del colegio y la jornada de la ruta. */
+  protected readonly estudiantesJornada = toSignal(
+    toObservable(this.filtroEstudiantes).pipe(
+      switchMap(({ colegioId, jornada }) =>
+        colegioId && jornada ? this.estudiantesRepo.opciones({ colegioId, jornada }).pipe(catchError(() => of([]))) : of([]),
       ),
     ),
     { initialValue: [] },
@@ -58,7 +69,22 @@ export default class RutasPage extends PaginaCrud<Ruta, FiltrosRuta> {
       map(([{ items }, vehiculos, conductores]) => {
         const placas = new Map(vehiculos.map((v) => [v.id, v.nombre.split(' · ')[0]]));
         const nombres = aMapa(conductores);
-        return new Map(items.map((a) => [a.rutaId, `${placas.get(a.vehiculoId) ?? '—'} · ${nombres.get(a.conductorId) ?? '—'}`]));
+        // La que cubre hoy (o la próxima); si la ruta tiene más asignaciones activas (otras semanas u horarios), se indica.
+        const hoy = fechaIso();
+        const vigentes = items.filter((a) => !a.fechaFin || a.fechaFin >= hoy);
+        const etiquetas = new Map<string, string>();
+        for (const rutaId of new Set(vigentes.map((a) => a.rutaId))) {
+          const deLaRuta = vigentes.filter((a) => a.rutaId === rutaId);
+          const a =
+            asignacionVigente(deLaRuta, rutaId, hoy, new Date().toTimeString().slice(0, 5)) ??
+            [...deLaRuta].sort((x, y) => x.fechaInicio.localeCompare(y.fechaInicio))[0];
+          const otras = deLaRuta.length - 1;
+          etiquetas.set(
+            rutaId,
+            `${placas.get(a.vehiculoId) ?? '—'} · ${nombres.get(a.conductorId) ?? '—'}${otras ? ` (+${otras} más)` : ''}`,
+          );
+        }
+        return etiquetas;
       }),
       catchError(() => of(new Map<string, string>())),
     ),

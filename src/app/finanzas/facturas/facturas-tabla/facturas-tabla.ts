@@ -46,7 +46,12 @@ import { Factura, mesesFactura, totalFactura } from '../factura';
                 <td class="hidden @3xl:table-cell text-right whitespace-nowrap font-semibold">{{ f.valorContratacion | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
                 <td class="hidden @6xl:table-cell whitespace-nowrap text-sm">
                   {{ nombrePeriodo(f.periodoInicio) }} – {{ nombrePeriodo(f.periodoFin) }}
-                  <div class="text-xs text-base-content/70">{{ meses(f) }} meses</div>
+                  <div class="text-xs text-base-content/70">
+                    {{ meses(f) }} meses
+                    @if (f.periodoRetiro) {
+                      <span class="badge badge-soft badge-warning badge-xs ml-1">Retiro {{ nombrePeriodo(f.periodoRetiro) }}</span>
+                    }
+                  </div>
                 </td>
                 <td class="hidden @6xl:table-cell text-right whitespace-nowrap">{{ total(f) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
                 <td><app-badge-estado [estado]="f.estado" textoActivo="Vigente" textoInactivo="Anulada" /></td>

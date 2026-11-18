@@ -1,22 +1,35 @@
 import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { distinctUntilChanged } from 'rxjs';
 import { Campo, TituloSeccion } from 'src/app/shared/campo/campo';
 import { OpcionCatalogo } from 'src/app/shared/catalogos/catalogos';
 import { DatosRegistro, ModoFormulario } from 'src/app/shared/crud/crud';
-import { fechaIso } from 'src/app/shared/fechas/fechas';
-import { mensajeError, telefono } from 'src/app/shared/formularios/formularios';
+import { fechaIso, periodoDe, sumarMeses } from 'src/app/shared/fechas/fechas';
+import { mensajeError, posteriorA, telefono } from 'src/app/shared/formularios/formularios';
 import { SelectorBusqueda } from 'src/app/shared/selector-busqueda/selector-busqueda';
-import { Cotizacion, ESTADOS_COTIZACION, EstadoCotizacion, EstudianteCotizado, calcularTotal } from '../cotizacion';
+import { Cotizacion, ESTADOS_COTIZACION, EstadoCotizacion, EstudianteCotizado, calcularValores } from '../cotizacion';
+
+/** Estudiante del acudiente elegido, con su colegio (lo trae la página). */
+export interface EstudianteParaCotizar extends OpcionCatalogo {
+  colegioId: string;
+}
+
+/** Opción del selector de colegio para escribir uno que no está registrado. */
+const OTRO_COLEGIO = '__otro';
 
 /**
- * Cotización para un acudiente registrado (se eligen acudiente y sus
- * estudiantes) o para un cliente nuevo (se escriben los nombres). Los
- * estudiantes se agregan a una tabla y el total = valor por estudiante ×
- * cantidad de estudiantes.
+ * Cotización para un acudiente registrado (se eligen acudiente y sus estudiantes; el colegio sale del registro) o
+ * para un cliente nuevo (se escriben los nombres y se elige o escribe el colegio). Cada estudiante tiene su propio
+ * valor mensual (pueden ser de colegios distintos) y el servicio va de un mes inicial a uno final, como la factura:
+ * total = suma mensual × meses.
  */
+/** Cada estudiante con valor mensual ≥ 1. */
+function valoresValidos(control: AbstractControl<EstudianteCotizado[]>): ValidationErrors | null {
+  return control.value.some((e) => !(e.valor >= 1)) ? { valores: true } : null;
+}
+
 @Component({
   selector: 'app-cotizacion-formulario',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,7 +42,8 @@ export class CotizacionFormulario {
   readonly modo = input.required<ModoFormulario>();
   readonly acudientes = input<OpcionCatalogo[]>([]);
   /** Estudiantes del acudiente elegido. */
-  readonly estudiantesAcudiente = input<OpcionCatalogo[]>([]);
+  readonly estudiantesAcudiente = input<EstudianteParaCotizar[]>([]);
+  readonly colegios = input<OpcionCatalogo[]>([]);
 
   readonly guardar = output<DatosRegistro<Cotizacion>>();
   readonly acudienteCambiado = output<string>();
@@ -44,21 +58,29 @@ export class CotizacionFormulario {
     acudienteId: [''],
     nombreAcudiente: [''],
     telefonoAcudiente: ['', telefono],
-    estudiantes: this.fb.control<EstudianteCotizado[]>([], Validators.minLength(1)),
-    valorPorEstudiante: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
+    estudiantes: this.fb.control<EstudianteCotizado[]>([], [Validators.minLength(1), valoresValidos]),
+    periodoInicio: [periodoDe(), Validators.required],
+    periodoFin: [sumarMeses(periodoDe(), 9), Validators.required],
     estado: this.fb.control<EstadoCotizacion>('PENDIENTE', Validators.required),
     observaciones: ['', Validators.maxLength(500)],
-  });
+  }, { validators: posteriorA('periodoInicio', 'periodoFin', 'rangoMeses', true) });
 
   // Campos para agregar un estudiante a la tabla (no se guardan directamente).
   protected readonly estudianteElegido = signal('');
   protected readonly nombreNuevo = signal('');
+  protected readonly colegioElegido = signal('');
+  protected readonly colegioEscrito = signal('');
+  protected readonly valorNuevo = signal<number | null>(null);
   protected readonly errorAgregar = signal<string | null>(null);
+  protected readonly otroColegio = OTRO_COLEGIO;
+  protected readonly opcionesColegio = computed<OpcionCatalogo[]>(() => [...this.colegios(), { id: OTRO_COLEGIO, nombre: 'Otro colegio (escribirlo)' }]);
 
   private readonly valores = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly registrados = computed(() => this.valores().registrados ?? true);
   protected readonly lista = computed(() => this.valores().estudiantes ?? []);
-  protected readonly total = computed(() => calcularTotal(this.valores().valorPorEstudiante ?? 0, this.lista().length));
+  protected readonly calculo = computed(() =>
+    calcularValores(this.lista(), this.valores().periodoInicio ?? '', this.valores().periodoFin ?? ''),
+  );
   protected readonly disponibles = computed(() => {
     const elegidos = new Set(this.lista().map((e) => e.estudianteId));
     return this.estudiantesAcudiente().filter((o) => !elegidos.has(o.id));
@@ -84,8 +106,18 @@ export class CotizacionFormulario {
       const cotizacion = this.cotizacion();
       this.reiniciando = true;
       if (cotizacion) {
-        const { id: _id, fechaCreacion: _c, fechaActualizacion: _a, numero: _n, valorTotal: _t, ...datos } = cotizacion;
-        this.form.reset({ ...datos, acudienteId: datos.acudienteId ?? '' });
+        this.form.reset({
+          fecha: cotizacion.fecha,
+          registrados: cotizacion.registrados,
+          acudienteId: cotizacion.acudienteId ?? '',
+          nombreAcudiente: cotizacion.nombreAcudiente,
+          telefonoAcudiente: cotizacion.telefonoAcudiente,
+          estudiantes: cotizacion.estudiantes,
+          periodoInicio: cotizacion.periodoInicio,
+          periodoFin: cotizacion.periodoFin,
+          estado: cotizacion.estado,
+          observaciones: cotizacion.observaciones,
+        });
       } else {
         this.form.reset();
       }
@@ -105,11 +137,32 @@ export class CotizacionFormulario {
 
   protected errorLista(): string | null {
     const control = this.form.controls.estudiantes;
-    return control.invalid && control.touched ? 'Agrega al menos un estudiante a la cotización.' : null;
+    if (!control.touched) return null;
+    if (control.hasError('minlength') || !control.value.length) return 'Agrega al menos un estudiante a la cotización.';
+    return control.hasError('valores') ? 'Cada estudiante necesita un valor mensual mayor que cero.' : null;
+  }
+
+  protected errorMeses(): string | null {
+    const c = this.form.controls.periodoFin;
+    if (c.errors?.['rangoMeses'] && (c.touched || c.dirty)) return 'Debe ser igual o posterior al mes inicial.';
+    return this.error('periodoFin');
+  }
+
+  /** Colegio del estudiante registrado elegido (sale de su registro). */
+  protected readonly colegioDelElegido = computed(() => {
+    const e = this.estudiantesAcudiente().find((o) => o.id === this.estudianteElegido());
+    return e ? (this.colegios().find((c) => c.id === e.colegioId)?.nombre ?? '') : '';
+  });
+
+  protected cambiarValor(indice: number, valor: number | null): void {
+    const lista = this.form.controls.estudiantes.value.map((e, i) => (i === indice ? { ...e, valor: Number(valor) || 0 } : e));
+    this.form.controls.estudiantes.setValue(lista);
+    this.form.controls.estudiantes.markAsTouched();
   }
 
   protected agregar(): void {
     const actuales = this.form.controls.estudiantes.value;
+    const valor = Number(this.valorNuevo()) || 0;
     let nuevo: EstudianteCotizado;
     if (this.registrados()) {
       const opcion = this.estudiantesAcudiente().find((o) => o.id === this.estudianteElegido());
@@ -117,7 +170,17 @@ export class CotizacionFormulario {
         this.errorAgregar.set('Elige un estudiante del acudiente.');
         return;
       }
-      nuevo = { estudianteId: opcion.id, nombre: opcion.nombre };
+      if (valor < 1) {
+        this.errorAgregar.set('Escribe el valor mensual del estudiante.');
+        return;
+      }
+      nuevo = {
+        estudianteId: opcion.id,
+        nombre: opcion.nombre,
+        colegioId: opcion.colegioId || null,
+        nombreColegio: this.colegioDelElegido(),
+        valor,
+      };
     } else {
       const nombre = this.nombreNuevo().trim().replace(/\s+/g, ' ');
       if (nombre.length < 3) {
@@ -128,13 +191,32 @@ export class CotizacionFormulario {
         this.errorAgregar.set('Ese estudiante ya está en la cotización.');
         return;
       }
-      nuevo = { estudianteId: null, nombre };
+      const colegioId = this.colegioElegido();
+      const escrito = this.colegioEscrito().trim().replace(/\s+/g, ' ');
+      if (!colegioId || (colegioId === OTRO_COLEGIO && escrito.length < 3)) {
+        this.errorAgregar.set(colegioId ? 'Escribe el nombre del colegio.' : 'Elige el colegio del estudiante.');
+        return;
+      }
+      if (valor < 1) {
+        this.errorAgregar.set('Escribe el valor mensual del estudiante.');
+        return;
+      }
+      const registrado = colegioId !== OTRO_COLEGIO;
+      nuevo = {
+        estudianteId: null,
+        nombre,
+        colegioId: registrado ? colegioId : null,
+        nombreColegio: registrado ? (this.colegios().find((c) => c.id === colegioId)?.nombre ?? '') : escrito,
+        valor,
+      };
     }
     this.errorAgregar.set(null);
     this.form.controls.estudiantes.setValue([...actuales, nuevo]);
     this.form.controls.estudiantes.markAsTouched();
     this.estudianteElegido.set('');
     this.nombreNuevo.set('');
+    this.colegioEscrito.set('');
+    // El colegio y el valor se conservan: suelen repetirse entre hermanos.
   }
 
   protected quitar(indice: number): void {
@@ -150,15 +232,14 @@ export class CotizacionFormulario {
     const nombreAcudiente = v.registrados
       ? (this.acudientes().find((a) => a.id === v.acudienteId)?.nombre ?? v.nombreAcudiente)
       : v.nombreAcudiente.trim();
-    const valorPorEstudiante = v.valorPorEstudiante ?? 0;
     this.guardar.emit({
       ...v,
       numero: this.cotizacion()?.numero ?? '',
       acudienteId: v.registrados ? v.acudienteId : null,
       nombreAcudiente,
       telefonoAcudiente: v.telefonoAcudiente.trim(),
-      valorPorEstudiante,
-      valorTotal: calcularTotal(valorPorEstudiante, v.estudiantes.length),
+      ...calcularValores(v.estudiantes, v.periodoInicio, v.periodoFin),
+      facturas: this.cotizacion()?.facturas ?? [],
       observaciones: v.observaciones.trim(),
     });
   }

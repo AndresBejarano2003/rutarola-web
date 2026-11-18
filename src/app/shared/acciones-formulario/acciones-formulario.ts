@@ -22,10 +22,12 @@ import { ModoFormulario } from '../crud/crud';
       {{ soloLectura() ? 'Cerrar' : 'Cancelar' }}
     </button>
     @if (soloLectura()) {
+      @if (editable()) {
       <button type="button" class="btn btn-primary" (click)="editar.emit()">
         <i class="fa-solid fa-pen"></i>
         Editar
       </button>
+      }
     } @else {
       <button type="submit" class="btn btn-primary" [attr.form]="formulario()" [disabled]="guardando() || bloqueado()">
         @if (guardando()) {
@@ -43,6 +45,8 @@ export class AccionesFormulario {
   /** `id` del `<form>` que envía el botón Guardar. */
   readonly formulario = input.required<string>();
   readonly modo = input.required<ModoFormulario>();
+  /** En consulta, `false` oculta "Editar" (registro de solo lectura, p. ej. una cotización ya facturada). */
+  readonly editable = input(true);
   readonly guardando = input(false);
   /** Deshabilita Guardar (p. ej. mientras se carga el registro). */
   readonly bloqueado = input(false);

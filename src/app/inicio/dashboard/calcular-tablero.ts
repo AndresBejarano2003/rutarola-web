@@ -1,9 +1,10 @@
 import { Cotizacion } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { Factura } from 'src/app/finanzas/facturas/factura';
 import { EnvioProgramado, Programacion } from 'src/app/finanzas/programacion/programacion';
-import { Recibo } from 'src/app/finanzas/recibos/recibo';
+import { mesesCobrables, ultimoMesCobrable } from 'src/app/finanzas/cuotas';
+import { Recibo, mesesRecibo } from 'src/app/finanzas/recibos/recibo';
 import { CuotaPendiente } from 'src/app/finanzas/reportes/reportes';
-import { Asignacion } from 'src/app/operacion/asignaciones/asignacion';
+import { Asignacion, asignacionVigente, cubreFecha } from 'src/app/operacion/asignaciones/asignacion';
 import { Colegio } from 'src/app/operacion/colegios/colegio';
 import { Ruta, etiquetaRuta } from 'src/app/operacion/rutas/ruta';
 import { Vehiculo } from 'src/app/operacion/vehiculos/vehiculo';
@@ -48,9 +49,13 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
 
   const facturas = d.facturas.filter((f) => f.estado === 'ACTIVO');
   const recibos = d.recibos.filter((r) => r.estado === 'ACTIVO');
-  const esperado = (p: string) =>
-    facturas.filter((f) => f.periodoInicio <= p && p <= f.periodoFin).reduce((s, f) => s + f.valorContratacion, 0);
-  const recaudadoDe = (p: string) => recibos.filter((r) => r.periodo === p);
+  // Esperado: meses que se cobran (sin retiros). Recaudado: lo que cada recibo aplicó a ese mes (un recibo de varios
+  // meses o un abono cuenta en cada mes por su parte).
+  const esperado = (p: string) => facturas.filter((f) => mesesCobrables(f).includes(p)).reduce((s, f) => s + f.valorContratacion, 0);
+  const recaudadoDe = (p: string) =>
+    recibos.flatMap((r) => mesesRecibo(r).filter((m) => m.periodo === p).map((m) => ({ id: r.id, valor: m.valor })));
+  /** Fin del contrato = último mes que se cobra (un retiro lo adelanta). */
+  const fin = (f: Factura) => ultimoMesCobrable(f) ?? '';
   const suma = (lista: { valor: number }[]) => lista.reduce((s, x) => s + x.valor, 0);
 
   // Cartera
@@ -63,11 +68,13 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
   const rutas = d.rutas.filter((r) => r.estado === 'ACTIVO');
   const enRuta = new Set(rutas.flatMap((r) => r.estudianteIds));
   const sinRuta = estudiantes.filter((e) => !enRuta.has(e.id));
-  const asignaciones = d.asignaciones.filter((a) => a.estado === 'ACTIVO');
+  // Las que cubren hoy (una ruta puede tener varias en fechas u horarios distintos).
+  const asignaciones = d.asignaciones.filter((a) => a.estado === 'ACTIVO' && cubreFecha(a, hoy));
+  const horaActual = ahora.toTimeString().slice(0, 5);
   const vehiculoPorId = new Map(d.vehiculos.map((v) => [v.id, v]));
   const ocupacionRutas = rutas
     .map((r) => {
-      const asignacion = asignaciones.find((a) => a.rutaId === r.id);
+      const asignacion = asignacionVigente(asignaciones, r.id, hoy, horaActual);
       return {
         ruta: etiquetaRuta(r),
         estudiantes: r.estudianteIds.length,
@@ -92,9 +99,9 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
   const licenciasPorVencer = licencias.filter((e) => e === 'POR_VENCER').length;
 
   // Contratos, cotizaciones, programación, envíos
-  const contratosPorTerminar = facturas.filter((f) => f.periodoFin === periodo || f.periodoFin === sumarMeses(periodo, 1));
+  const contratosPorTerminar = facturas.filter((f) => fin(f) === periodo || fin(f) === sumarMeses(periodo, 1));
   const conProgramacion = new Set(d.programaciones.filter((p) => p.estado === 'ACTIVO').map((p) => p.facturaId));
-  const sinProgramacion = facturas.filter((f) => f.periodoFin >= periodo && !conProgramacion.has(f.id));
+  const sinProgramacion = facturas.filter((f) => fin(f) >= periodo && !conProgramacion.has(f.id));
   const cotizacionesPendientes = d.cotizaciones.filter((c) => c.estado === 'PENDIENTE');
   const enviosFallidos = d.envios.filter((e) => e.estado === 'FALLIDO' && diasEntre(e.fecha.slice(0, 10), hoy) <= DIAS_AGENDA);
 
@@ -150,7 +157,7 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
       icono: 'fa-solid fa-route',
       titulo: 'Rutas sin vehículo ni conductor',
       detalle: 'Crea su asignación en Operación',
-      cantidad: rutas.length - asignaciones.filter((a) => rutas.some((r) => r.id === a.rutaId)).length,
+      cantidad: rutas.filter((r) => !asignaciones.some((a) => a.rutaId === r.id)).length,
       enlace: '/operacion/asignaciones',
     },
     {
@@ -229,9 +236,9 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
     });
   }
   for (const f of contratosPorTerminar) {
-    const fecha = diaDelPeriodo(f.periodoFin, 31);
+    const fecha = diaDelPeriodo(fin(f), 31);
     if (enAgenda(fecha)) {
-      agenda.push({ fecha, tipo: 'CONTRATO', titulo: `Termina contrato ${f.numero}`, detalle: `${f.nombreEstudiante} · ${nombrePeriodo(f.periodoFin)}`, enlace: '/finanzas/facturas' });
+      agenda.push({ fecha, tipo: 'CONTRATO', titulo: `Termina contrato ${f.numero}`, detalle: `${f.nombreEstudiante} · ${nombrePeriodo(fin(f))}`, enlace: '/finanzas/facturas' });
     }
   }
   agenda.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -246,7 +253,7 @@ export function calcularTablero(d: DatosTablero, ahora = new Date()): Tablero {
     recaudo: {
       recaudado: suma(recaudadoDe(periodo)),
       esperado: esperado(periodo),
-      pagos: recaudadoDe(periodo).length,
+      pagos: new Set(recaudadoDe(periodo).map((r) => r.id)).size,
       anterior: suma(recaudadoDe(sumarMeses(periodo, -1))),
     },
     cartera: {
