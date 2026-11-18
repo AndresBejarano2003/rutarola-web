@@ -2,9 +2,10 @@
  * Planes y suscripción de la empresa (contrato: `Application/Suscripciones` del API).
  * Quien se registra elige cómo empezar (`ComienzoRegistro`): el plan Gratis (no vence: sigue en Gratis hasta que pague
  * un plan o inicie la prueba), la prueba del plan Profesional con los días que fija la plataforma (15 por defecto; cada
- * empresa conserva los que recibió) o pagar un plan de una vez. Al vencer la prueba o el plan pagado, al entrar el
- * administrador elige pagar o seguir en Gratis; en Gratis (o al bajar de plan) se inactiva lo que supere los límites.
- * El anual = 10 meses.
+ * empresa conserva los que recibió) o pagar un plan de una vez. El plan o la prueba duran hasta el final de su último día:
+ * desde los días de aviso que fija la plataforma se avisa a todos los administradores, y al día siguiente, sin pago, la
+ * empresa queda en Gratis automáticamente (se inactiva lo que supere los límites). El anual = 10 meses. Los precios los
+ * fija la plataforma (`GET /suscripcion/planes`); `PLANES` es la copia por defecto.
  */
 export type PlanSuscripcion = 'GRATIS' | 'ESENCIAL' | 'PROFESIONAL' | 'EMPRESARIAL';
 export type EstadoSuscripcion = 'PRUEBA' | 'ACTIVA' | 'GRATIS';
@@ -20,6 +21,7 @@ export const FUNCIONES_PLAN = {
   SOPORTE_PRIORITARIO: 'SOPORTE_PRIORITARIO',
   ACOMPANAMIENTO: 'ACOMPANAMIENTO',
   REPORTES: 'REPORTES',
+  CRONOGRAMA: 'CRONOGRAMA',
 } as const;
 export type FuncionPlan = (typeof FUNCIONES_PLAN)[keyof typeof FUNCIONES_PLAN];
 
@@ -30,6 +32,7 @@ export const NOMBRES_FUNCION: Record<FuncionPlan, string> = {
   SOPORTE_PRIORITARIO: 'el soporte prioritario',
   ACOMPANAMIENTO: 'el acompañamiento',
   REPORTES: 'los reportes financieros',
+  CRONOGRAMA: 'el cronograma de la operación',
 };
 
 /** `null` = sin límite. */
@@ -66,24 +69,18 @@ export interface Suscripcion {
   funciones: string[];
   pagosEnLinea: boolean;
   nota: string;
-  /** Venció la prueba o el plan (o se registró para pagar de una vez): al entrar, pagar o seguir en Gratis. */
-  pendienteDecision: boolean;
-  /** Plan que venció (`''` si no aplica) y cuándo. */
+  /** Plan que venció (`''` si no aplica) y cuándo: al día siguiente quedó en Gratis. */
   planVencido: PlanSuscripcion | '';
   fechaVencimiento: string | null;
   /** Días de prueba que recibió la empresa al registrarse (0 = sin prueba o anterior). */
   diasPrueba: number;
 }
 
-/** "Continuar con el plan Gratis": lo que quedó inactivo por superar los límites. */
-export interface DecisionGratis {
-  suscripcion: Suscripcion;
-  inactivados: { vehiculos: string[]; estudiantes: number };
-}
-
 /** `GET /suscripcion/condiciones` (público). */
 export interface CondicionesRegistro {
   diasPrueba: number;
+  /** Desde cuántos días antes del fin del plan se avisa (parámetro de la plataforma). */
+  diasAvisoVencimiento: number;
   planPrueba: PlanSuscripcion;
   nombrePlanPrueba: string;
 }
@@ -96,12 +93,22 @@ export interface ParametroPlataforma {
   valor: string;
   minimo: number;
   maximo: number;
+  /** `DIAS` o `PESOS`. */
+  tipo: 'DIAS' | 'PESOS';
+  /** `MEMBRESIAS` (prueba y avisos) o `PRECIOS` (valor mensual de cada plan pagado). */
+  grupo: 'MEMBRESIAS' | 'PRECIOS';
 }
 
 export const CLAVE_DIAS_PRUEBA = 'suscripcion.dias_prueba';
+export const CLAVE_DIAS_AVISO_VENCIMIENTO = 'suscripcion.dias_aviso_vencimiento';
+export const DIAS_AVISO_VENCIMIENTO_POR_DEFECTO = 5;
+/** `plan.esencial.precio_mensual` … (pesos con IVA). */
+export function clavePrecio(plan: PlanSuscripcion): string {
+  return `plan.${plan.toLowerCase()}.precio_mensual`;
+}
 
 /** Situación de la membresía en la tabla de la plataforma (`ServicioSuscripcion.Situacion`). */
-export type SituacionMembresia = 'PRUEBA' | 'PRUEBA_POR_VENCER' | 'ACTIVA' | 'POR_VENCER' | 'VENCIDA' | 'GRATIS';
+export type SituacionMembresia = 'PRUEBA' | 'PRUEBA_POR_VENCER' | 'ACTIVA' | 'POR_VENCER' | 'GRATIS';
 
 export interface MembresiaEmpresa {
   plan: PlanSuscripcion;
@@ -123,8 +130,7 @@ export const SITUACIONES_MEMBRESIA: { id: SituacionMembresia; nombre: string; ba
   { id: 'PRUEBA_POR_VENCER', nombre: 'Prueba por vencer', badge: 'badge-warning', icono: 'fa-solid fa-hourglass-half', descripcion: 'Le quedan 3 días o menos' },
   { id: 'ACTIVA', nombre: 'Al día', badge: 'badge-success', icono: 'fa-solid fa-circle-check', descripcion: 'Plan pagado vigente' },
   { id: 'POR_VENCER', nombre: 'Por vencer', badge: 'badge-warning', icono: 'fa-solid fa-clock', descripcion: 'Vence en 7 días o menos' },
-  { id: 'VENCIDA', nombre: 'Se pasó el pago', badge: 'badge-error', icono: 'fa-solid fa-circle-exclamation', descripcion: 'Venció y no ha pagado ni elegido Gratis' },
-  { id: 'GRATIS', nombre: 'Gratis', badge: 'bg-base-300', icono: 'fa-solid fa-seedling', descripcion: 'Eligió seguir en el plan Gratis' },
+  { id: 'GRATIS', nombre: 'Gratis', badge: 'bg-base-300', icono: 'fa-solid fa-seedling', descripcion: 'Plan Gratis (elegido o tras vencer sin pago)' },
 ];
 
 export function situacionMembresia(id: SituacionMembresia) {
@@ -165,6 +171,8 @@ export interface AjusteSuscripcion {
   nota: string;
   /** Opcional (solo ACTIVA): registra el uso del código y anota el descuento del primer mes en la nota. */
   codigoPromocional?: string;
+  /** Opcional (solo ACTIVA), pesos: lo que pagó por fuera; queda como pago MANUAL y cuenta en los ingresos. 0 = sin pago. */
+  valorPagado?: number;
 }
 
 /** Días de prueba por defecto (la plataforma los cambia; `GET /suscripcion/condiciones`). */
@@ -219,10 +227,17 @@ export const PLANES: Plan[] = [
     precioDesde: false,
     destacado: true,
     limites: { vehiculos: 15, estudiantes: 400 },
-    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.REPORTES, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO],
+    funciones: [
+      FUNCIONES_PLAN.RECORDATORIOS,
+      FUNCIONES_PLAN.REPORTES,
+      FUNCIONES_PLAN.GPS_EN_VIVO,
+      FUNCIONES_PLAN.SOPORTE_PRIORITARIO,
+      FUNCIONES_PLAN.CRONOGRAMA,
+    ],
     incluye: [
       'Todo lo del plan Esencial',
       'GPS en vivo desde los teléfonos del conductor y la monitora',
+      'Cronograma de rutas, ausencias y vencimientos por semana, mes y año',
       'Mapa del recorrido para los acudientes',
       'Monitoreo de todas las rutas en tiempo real e historial con trayecto',
       'Soporte prioritario',
@@ -237,7 +252,14 @@ export const PLANES: Plan[] = [
     precioDesde: true,
     destacado: false,
     limites: { vehiculos: null, estudiantes: null },
-    funciones: [FUNCIONES_PLAN.RECORDATORIOS, FUNCIONES_PLAN.REPORTES, FUNCIONES_PLAN.GPS_EN_VIVO, FUNCIONES_PLAN.SOPORTE_PRIORITARIO, FUNCIONES_PLAN.ACOMPANAMIENTO],
+    funciones: [
+      FUNCIONES_PLAN.RECORDATORIOS,
+      FUNCIONES_PLAN.REPORTES,
+      FUNCIONES_PLAN.GPS_EN_VIVO,
+      FUNCIONES_PLAN.SOPORTE_PRIORITARIO,
+      FUNCIONES_PLAN.CRONOGRAMA,
+      FUNCIONES_PLAN.ACOMPANAMIENTO,
+    ],
     incluye: [
       'Todo lo del plan Profesional',
       'Vehículos y estudiantes sin límite',
@@ -319,11 +341,10 @@ export function puedeIniciarPrueba(s: Pick<Suscripcion, 'estado' | 'pruebaUsada'
 
 /**
  * Recordatorio del plan Gratis para el shell del administrador (aviso, insignia FREE y menú): el nivel lo da el límite
- * más lleno, para que "Llegaste al límite" se vea antes que el recordatorio general. null fuera de Gratis o con la
- * decisión pendiente (allí manda `<app-decision-plan>`).
+ * más lleno, para que "Llegaste al límite" se vea antes que el recordatorio general. null fuera de Gratis.
  */
 export function recordatorioGratis(s: Suscripcion | null): { nivel: NivelUso; texto: string } | null {
-  if (!s || s.estado !== 'GRATIS' || s.pendienteDecision) return null;
+  if (!s || s.estado !== 'GRATIS') return null;
   const limites = [
     { nivel: nivelUso(s.uso.vehiculos, s.limites.vehiculos), texto: `${s.uso.vehiculos} de ${s.limites.vehiculos} vehículo(s)` },
     { nivel: nivelUso(s.uso.estudiantes, s.limites.estudiantes), texto: `${s.uso.estudiantes} de ${s.limites.estudiantes} estudiantes` },
@@ -341,4 +362,33 @@ export function recordatorioGratis(s: Suscripcion | null): { nivel: NivelUso; te
     nivel: 'NORMAL',
     texto: `Estás en el plan Gratis (hasta ${s.limites.vehiculos} vehículo(s) y ${s.limites.estudiantes} estudiantes). Mejora tu plan${extra} para tener GPS en vivo, recordatorios de cobro y reportes.`,
   };
+}
+
+/** Fecha `YYYY-MM-DD` de Colombia de un instante ISO (el último día del plan). */
+export function diaColombia(iso: string): string {
+  return new Date(new Date(iso).getTime() - 5 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Hoy en Colombia (`YYYY-MM-DD`). */
+export function hoyColombia(ahora = Date.now()): string {
+  return new Date(ahora - 5 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Días hasta el último día del plan (0 = vence hoy; dura hasta el final de ese día). Igual que `ServicioSuscripcion.DiasRestantes`. */
+export function diasHastaFin(fechaFin: string, ahora = Date.now()): number {
+  const dia = (f: string) => Date.parse(`${f}T00:00:00Z`) / 86_400_000;
+  return Math.max(0, Math.round(dia(diaColombia(fechaFin)) - dia(hoyColombia(ahora))));
+}
+
+/** Venció si ya pasó su último día (Colombia): al día siguiente queda en Gratis. Igual que `ServicioSuscripcion.VencidaEn`. */
+export function planVencido(s: Pick<Suscripcion, 'estado' | 'fechaFin'>, ahora = Date.now()): boolean {
+  return s.estado !== 'GRATIS' && (!s.fechaFin || diaColombia(s.fechaFin) < hoyColombia(ahora));
+}
+
+/** Los planes con los precios que fijó la plataforma (anual = 10 mensualidades). */
+export function conPrecios(precios: Partial<Record<PlanSuscripcion, number>>, planes: Plan[] = PLANES): Plan[] {
+  return planes.map((p) => {
+    const mensual = precios[p.id];
+    return p.precioMensual > 0 && mensual ? { ...p, precioMensual: mensual, precioAnual: mensual * MESES_PAGADOS_POR_ANIO } : p;
+  });
 }

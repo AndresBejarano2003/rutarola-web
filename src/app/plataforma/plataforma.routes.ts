@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
 
-/** Plataforma RutaRola (SUPER_ADMIN, layout `shell-plataforma`): empresas, códigos promocionales, ajustes globales (días de prueba) y tickets de soporte. */
+/** Plataforma RutaRola (SUPER_ADMIN, layout `shell-plataforma`): ingresos (inicio), empresas, códigos promocionales, ajustes globales (prueba, avisos, precios) y tickets de soporte. */
 export default [
-  { path: '', pathMatch: 'full', redirectTo: 'empresas' },
+  { path: '', pathMatch: 'full', redirectTo: 'ingresos' },
+  { path: 'ingresos', loadComponent: () => import('./ingresos/ingresos-page'), data: { breadcrumb: ['Plataforma', 'Ingresos'] } },
   { path: 'empresas', loadComponent: () => import('./empresas/empresas-page'), data: { breadcrumb: ['Plataforma', 'Empresas'] } },
   {
     path: 'codigos-promocionales',

@@ -20,7 +20,6 @@ export interface ResumenMembresias {
   pruebaPorVencer: number;
   activa: number;
   porVencer: number;
-  vencida: number;
   gratis: number;
 }
 
@@ -29,7 +28,6 @@ export const CLAVE_RESUMEN: Record<SituacionMembresia, keyof ResumenMembresias> 
   PRUEBA_POR_VENCER: 'pruebaPorVencer',
   ACTIVA: 'activa',
   POR_VENCER: 'porVencer',
-  VENCIDA: 'vencida',
   GRATIS: 'gratis',
 };
 

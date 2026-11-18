@@ -83,8 +83,8 @@
                       @if (m.situacion === 'PRUEBA' || m.situacion === 'PRUEBA_POR_VENCER') { · prueba de {{ m.diasPrueba }} días }
                       @if (m.periodo) { · {{ m.periodo === 'ANUAL' ? 'anual' : 'mensual' }} }
                     </div>
-                    <div class="text-xs" [class.text-error]="m.situacion === 'VENCIDA'" [class.text-warning]="m.situacion === 'POR_VENCER' || m.situacion === 'PRUEBA_POR_VENCER'"
-                      [class.text-base-content/70]="m.situacion !== 'VENCIDA' && m.situacion !== 'POR_VENCER' && m.situacion !== 'PRUEBA_POR_VENCER'">{{ vigencia(m) }}</div>
+                    <div class="text-xs" [class.text-warning]="m.situacion === 'POR_VENCER' || m.situacion === 'PRUEBA_POR_VENCER'"
+                      [class.text-base-content/70]="m.situacion !== 'POR_VENCER' && m.situacion !== 'PRUEBA_POR_VENCER'">{{ vigencia(m) }}</div>
                   } @else {
                     <span class="text-sm text-base-content/70">—</span>
                   }

@@ -4,7 +4,7 @@
     <span class="badge badge-soft badge-info gap-1"><i class="fa-solid fa-crown" aria-hidden="true"></i> Planes y membresías</span>
     <h1 class="text-2xl sm:text-4xl font-bold mt-3">Transporte escolar organizado, <span class="text-primary">cobros a tiempo</span> y familias tranquilas</h1>
     <p class="text-base-content/70 mt-3">
-      Mejora tu plan cuando lo necesites. Sin permanencia: si un plan pagado vence, sigues en Gratis con todos tus datos.
+      Mejora tu plan cuando lo necesites. Sin permanencia: si no renuevas, al día siguiente del vencimiento sigues en Gratis con todos tus datos.
     </p>
   </header>
 
@@ -40,19 +40,13 @@
     </div>
   }
 
-  @if (pendienteDecision()) {
-    <div role="alert" class="alert alert-soft alert-warning flex-col sm:flex-row items-start sm:items-center">
+  @if (vencioReciente(); as v) {
+    <div role="status" class="alert alert-soft alert-warning flex-col sm:flex-row items-start sm:items-center">
       <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
       <span class="grow">
-        @if (suscripcion()!.planVencido) {
-          Tu plan {{ nombrePlan(suscripcion()!.planVencido || 'GRATIS') }} venció
-          @if (suscripcion()!.fechaVencimiento) { el {{ suscripcion()!.fechaVencimiento | date: 'd MMM y' }} }.
-        } @else {
-          Elige el plan que quieres pagar.
-        }
-        Elige un plan para pagarlo o sigue en el plan Gratis.
+        Tu plan {{ v.plan }} venció el {{ v.fecha | date: 'd MMM y' }} sin pago y ahora estás en el plan Gratis. Elige un plan abajo para
+        recuperar sus funciones.
       </span>
-      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="confirmarGratis.set(true)">Seguir en Gratis</button>
     </div>
   }
 
@@ -84,7 +78,7 @@
             @if (s.estado === 'PRUEBA') {
               <p class="text-sm">Te quedan <span class="font-semibold text-primary">{{ s.diasRestantes }} días</span> de prueba (hasta el {{ s.fechaFin | date: 'd MMM y' }}).</p>
               <progress class="progress progress-info w-full" [value]="progresoPrueba()" max="100" aria-label="Avance de la prueba"></progress>
-              <p class="text-xs text-base-content/70">Al terminar pasas al plan Gratis si no eliges otro. No perderás ningún dato.</p>
+              <p class="text-xs text-base-content/70">Si no pagas, al día siguiente pasas al plan Gratis. No perderás ningún dato.</p>
             } @else if (s.estado === 'ACTIVA') {
               <p class="text-sm">Vigente hasta el <span class="font-semibold">{{ s.fechaFin | date: 'd MMM y' }}</span> ({{ s.diasRestantes }} días).</p>
               <p class="text-xs text-base-content/70">Renueva antes de esa fecha para no bajar al plan Gratis; los días que te queden se conservan.</p>
@@ -154,7 +148,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
     @for (p of planes(); track p.id) {
       <app-tarjeta-plan [plan]="p" [periodo]="periodo()" [actual]="esActual(p)" [textoBoton]="accion(p)"
-        [deshabilitado]="cargando() || (p.precioMensual === 0 && !pendienteDecision())" (elegir)="elegir(p)" />
+        [deshabilitado]="cargando() || p.precioMensual === 0" (elegir)="elegir(p)" />
     }
   </div>
 
@@ -256,10 +250,12 @@
         <h2 class="card-title"><i class="fa-solid fa-circle-question text-info" aria-hidden="true"></i> Preguntas frecuentes</h2>
         <div class="flex flex-col gap-2">
           <details class="collapse collapse-arrow bg-base-100 border border-base-300">
-            <summary class="collapse-title font-medium">¿Qué pasa cuando termina la prueba?</summary>
+            <summary class="collapse-title font-medium">¿Qué pasa cuando termina la prueba o mi plan?</summary>
             <div class="collapse-content text-sm text-base-content/80">
-              Pasas automáticamente al plan Gratis. No se borra nada: estudiantes, rutas, facturas y recibos siguen ahí. Solo no podrás
-              activar más vehículos o estudiantes que los del plan, y se pausan el GPS en vivo y los recordatorios automáticos hasta que elijas un plan.
+              Unos días antes te avisamos (a todos los administradores, en la campana y por correo). Si no pagas, al día siguiente del
+              vencimiento pasas automáticamente al plan Gratis. No se borra nada: estudiantes, rutas, facturas y recibos siguen ahí; se
+              inactivan los vehículos y estudiantes que superen el límite y se pausan el GPS en vivo, el cronograma y los recordatorios
+              automáticos hasta que pagues un plan.
             </div>
           </details>
           <details class="collapse collapse-arrow bg-base-100 border border-base-300">
@@ -403,5 +399,3 @@
   }
 </app-modal>
 
-<app-dialogo-confirmacion [(abierto)]="confirmarGratis" titulo="¿Seguir en el plan Gratis?" [mensaje]="mensajeGratis()"
-  textoConfirmar="Seguir en Gratis" [procesando]="pasandoAGratis()" (confirmar)="seguirEnGratis()" />

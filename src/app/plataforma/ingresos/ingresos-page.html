@@ -1,0 +1,191 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Ingresos</h1>
+      <p class="text-sm text-base-content/70">Lo que pagaron las empresas por sus planes, con IVA y ya con descuentos.</p>
+    </div>
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex flex-col w-full sm:w-52">
+        <app-selector-busqueda [opciones]="presets" [ngModel]="preset()" (ngModelChange)="elegirPreset($event)" etiqueta="Periodo" />
+      </div>
+      <label class="flex flex-col gap-1 grow sm:grow-0">
+        <span class="label-text text-base-content/90">Desde</span>
+        <input type="date" class="input input-bordered bg-base-100 border-neutral" [ngModel]="desde()" (ngModelChange)="cambiarFecha('desde', $event)" />
+      </label>
+      <label class="flex flex-col gap-1 grow sm:grow-0">
+        <span class="label-text text-base-content/90">Hasta</span>
+        <input type="date" class="input input-bordered bg-base-100 border-neutral" [ngModel]="hasta()" (ngModelChange)="cambiarFecha('hasta', $event)" />
+      </label>
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="!datos()?.detalle?.length" (click)="exportar()">
+        <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Exportar CSV
+      </button>
+    </div>
+  </div>
+
+  @if (rangoInvalido(); as e) {
+    <div role="alert" class="alert alert-soft alert-warning text-sm"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>{{ e }}</span></div>
+  }
+  @if (error()) {
+    <div role="alert" class="alert alert-soft alert-error text-sm">
+      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span class="grow">{{ error() }}</span>
+      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (cargando() && !datos()) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="skeleton bg-base-300 h-28"></div>
+      }
+    </div>
+    <div class="skeleton bg-base-300 h-80"></div>
+  } @else if (datos(); as d) {
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" [class.opacity-60]="cargando()">
+      <div class="card bg-base-200 border border-base-300 shadow-xl">
+        <div class="card-body gap-1 p-5">
+          <p class="text-sm text-base-content/70 flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-success" aria-hidden="true"></i> Ingresos del periodo</p>
+          <p class="text-2xl font-bold">{{ d.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+          <p class="text-xs text-base-content/70">
+            @if (cambio() !== null) {
+              <span [class.text-success]="cambio()! >= 0" [class.text-error]="cambio()! < 0">
+                <i class="fa-solid" [class.fa-arrow-trend-up]="cambio()! >= 0" [class.fa-arrow-trend-down]="cambio()! < 0" aria-hidden="true"></i>
+                {{ cambio()! >= 0 ? '+' : '' }}{{ cambio() }} %
+              </span>
+              vs. periodo anterior ({{ d.totalAnterior | currency: 'COP' : 'symbol-narrow' : '1.0-0' }})
+            } @else {
+              Sin ingresos en el periodo anterior
+            }
+          </p>
+        </div>
+      </div>
+      <div class="card bg-base-200 border border-base-300 shadow-xl">
+        <div class="card-body gap-1 p-5">
+          <p class="text-sm text-base-content/70 flex items-center gap-2"><i class="fa-solid fa-receipt text-info" aria-hidden="true"></i> Pagos</p>
+          <p class="text-2xl font-bold">{{ d.pagos }}</p>
+          <p class="text-xs text-base-content/70">
+            De {{ d.empresas }} empresa(s) · promedio {{ d.ticketPromedio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </p>
+        </div>
+      </div>
+      <div class="card bg-base-200 border border-base-300 shadow-xl">
+        <div class="card-body gap-1 p-5">
+          <p class="text-sm text-base-content/70 flex items-center gap-2"><i class="fa-solid fa-arrows-rotate text-primary" aria-hidden="true"></i> Recurrente mensual hoy</p>
+          <p class="text-2xl font-bold">{{ d.recurrenteMensual | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+          <p class="text-xs text-base-content/70">{{ d.empresasPagando }} empresa(s) con plan pagado vigente (anual ÷ 12)</p>
+        </div>
+      </div>
+      <div class="card bg-base-200 border border-base-300 shadow-xl">
+        <div class="card-body gap-1 p-5">
+          <p class="text-sm text-base-content/70 flex items-center gap-2"><i class="fa-solid fa-ticket text-warning" aria-hidden="true"></i> Descuentos otorgados</p>
+          <p class="text-2xl font-bold">{{ d.descuentos | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+          <p class="text-xs text-base-content/70">Por códigos promocionales en el periodo</p>
+        </div>
+      </div>
+    </div>
+
+    <section class="card bg-base-200 border border-base-300 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Ingresos por {{ d.agrupacion === 'DIA' ? 'día' : 'mes' }}</h2>
+        <p class="text-sm text-base-content/70">{{ d.desde | date: 'd MMM y' }} – {{ d.hasta | date: 'd MMM y' }}</p>
+        @if (d.total === 0) {
+          <div class="flex flex-col items-center gap-2 py-12 text-center text-base-content/70">
+            <i class="fa-solid fa-chart-line text-4xl text-base-content/50" aria-hidden="true"></i>
+            <p>No hubo pagos aprobados en este periodo.</p>
+            <p class="text-xs">Mientras los pagos en línea están en pausa, registra el valor recibido al activar el plan en Empresas › Plan.</p>
+          </div>
+        } @else if (grafico(); as g) {
+          <apx-chart [series]="g.series" [chart]="g.chart" [dataLabels]="g.dataLabels" [stroke]="g.stroke" [fill]="g.fill"
+            [xaxis]="g.xaxis" [yaxis]="g.yaxis" [grid]="g.grid" [tooltip]="g.tooltip" [colors]="g.colors" />
+        }
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      @for (bloque of [
+        { titulo: 'Por plan', icono: 'fa-solid fa-layer-group', grupos: d.porPlan },
+        { titulo: 'Por periodo', icono: 'fa-solid fa-calendar', grupos: d.porPeriodo },
+        { titulo: 'Por medio de pago', icono: 'fa-solid fa-credit-card', grupos: d.porMetodo }
+      ]; track bloque.titulo) {
+        <section class="card bg-base-200 border border-base-300 shadow-xl">
+          <div class="card-body gap-3">
+            <h2 class="card-title text-base"><i class="{{ bloque.icono }} text-info" aria-hidden="true"></i> {{ bloque.titulo }}</h2>
+            @for (g of bloque.grupos; track g.clave) {
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between gap-2 text-sm">
+                  <span class="truncate">{{ g.nombre }} <span class="text-base-content/70">· {{ g.pagos }}</span></span>
+                  <span class="font-semibold whitespace-nowrap">{{ g.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                </div>
+                <progress class="progress progress-primary h-2" [value]="porcentaje(g, d.total)" max="100" [attr.aria-label]="g.nombre + ': ' + porcentaje(g, d.total) + ' %'"></progress>
+              </div>
+            } @empty {
+              <p class="text-sm text-base-content/70">Sin pagos.</p>
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <section class="card bg-base-200 border border-base-300 shadow-xl">
+        <div class="card-body gap-3">
+          <h2 class="card-title text-base"><i class="fa-solid fa-trophy text-primary" aria-hidden="true"></i> Empresas que más pagaron</h2>
+          <ol class="flex flex-col divide-y divide-base-300">
+            @for (e of d.topEmpresas; track e.empresaId; let i = $index) {
+              <li class="flex items-center gap-3 py-2 text-sm">
+                <span class="badge badge-sm bg-base-300 border-neutral">{{ i + 1 }}</span>
+                <span class="grow min-w-0 truncate">{{ e.nombre }}</span>
+                <span class="font-semibold whitespace-nowrap">{{ e.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+              </li>
+            } @empty {
+              <li class="py-2 text-sm text-base-content/70">Sin pagos en el periodo.</li>
+            }
+          </ol>
+        </div>
+      </section>
+
+      <section class="card bg-base-200 border border-base-300 shadow-xl xl:col-span-2">
+        <div class="card-body gap-3">
+          <h2 class="card-title text-base"><i class="fa-solid fa-list text-info" aria-hidden="true"></i> Detalle de pagos</h2>
+          <div class="@container overflow-x-auto rounded-box border border-base-300">
+            <table class="table table-sm">
+              <thead>
+                <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+                  <th>Fecha</th>
+                  <th>Empresa</th>
+                  <th class="hidden @3xl:table-cell">Plan</th>
+                  <th class="hidden @5xl:table-cell">Medio</th>
+                  <th class="text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of paginacion.visibles(); track p.id) {
+                  <tr class="border-base-300 hover:bg-base-300/50">
+                    <td>{{ p.fecha | date: 'd MMM y' }}</td>
+                    <td class="max-w-48 truncate">{{ p.empresa }}</td>
+                    <td class="hidden @3xl:table-cell">{{ nombrePlan(p.plan) }} {{ p.periodo === 'ANUAL' ? 'anual' : 'mensual' }}
+                      @if (p.codigoPromocional) {
+                        <span class="text-xs text-success"><i class="fa-solid fa-ticket" aria-hidden="true"></i> {{ p.codigoPromocional }}</span>
+                      }
+                    </td>
+                    <td class="hidden @5xl:table-cell">{{ p.metodo }}</td>
+                    <td class="text-right font-semibold">{{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center py-8 text-base-content/70">
+                      <i class="fa-solid fa-inbox text-2xl text-base-content/50 block mb-2" aria-hidden="true"></i> Sin pagos en el periodo.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (paginacion.total() > 0) {
+            <app-paginacion [pagina]="paginacion.pagina()" [tamano]="paginacion.tamano()" [total]="paginacion.total()"
+              [totalPaginas]="paginacion.totalPaginas()" (cambiarPagina)="paginacion.irA($event)" (cambiarTamano)="paginacion.cambiarTamano($event)" />
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>

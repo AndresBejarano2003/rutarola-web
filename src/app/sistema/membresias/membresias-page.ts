@@ -7,7 +7,6 @@ import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { ValidacionCodigo, textoDescuento } from 'src/app/plataforma/codigos-promocionales/codigo-promocional';
 import { PlanEmpresa } from 'src/app/core/plan-empresa';
-import { DialogoConfirmacion } from 'src/app/shared/dialogo-confirmacion/dialogo-confirmacion';
 import { Modal } from 'src/app/shared/modal/modal';
 import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
 import {
@@ -23,7 +22,6 @@ import {
   PeriodoPago,
   Plan,
   Suscripcion,
-  excedentes,
   leerRetornoPago,
   nombrePlan,
   planDesdeConFuncion,
@@ -50,7 +48,7 @@ const ESPERA_CONFIRMACION_MS = 5000;
 @Component({
   selector: 'app-membresias-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, DatePipe, DialogoConfirmacion, Modal, RouterLink, TarjetaPlan],
+  imports: [CurrencyPipe, DatePipe, Modal, RouterLink, TarjetaPlan],
   templateUrl: './membresias-page.html',
 })
 export default class MembresiasPage {
@@ -65,21 +63,12 @@ export default class MembresiasPage {
   protected readonly diasPrueba = signal(DIAS_PRUEBA_POR_DEFECTO);
   /** Llegó desde una pantalla que su plan no incluye (`?funcion=`). */
   protected readonly funcionBloqueada = signal<{ nombre: string; plan: string } | null>(null);
-  // "Seguir en Gratis" cuando venció la prueba o el plan.
-  protected readonly confirmarGratis = signal(false);
-  protected readonly pasandoAGratis = signal(false);
-  protected readonly pendienteDecision = computed(() => this.suscripcion()?.pendienteDecision ?? false);
-  protected readonly mensajeGratis = computed(() => {
+  /** Venció hace 30 días o menos y quedó en Gratis: aviso informativo (ya no hay que decidir). */
+  protected readonly vencioReciente = computed(() => {
     const s = this.suscripcion();
-    if (!s) return '';
-    const sobra = excedentes(s, PLANES[0]);
-    const partes = [
-      sobra.vehiculos ? `${sobra.vehiculos} vehículo(s)` : '',
-      sobra.estudiantes ? `${sobra.estudiantes} estudiante(s)` : '',
-    ].filter(Boolean);
-    return partes.length
-      ? `El plan Gratis permite ${PLANES[0].limites.vehiculos} vehículo y ${PLANES[0].limites.estudiantes} estudiantes activos: se inactivarán ${partes.join(' y ')} (se conservan primero los que están en rutas). Tus datos no se borran; para activar otro, inactiva primero uno activo o mejora tu plan.`
-      : 'Seguirás en el plan Gratis con todos tus datos. Puedes mejorar tu plan cuando quieras.';
+    if (!s || s.estado !== 'GRATIS' || !s.planVencido || !s.fechaVencimiento) return null;
+    const dias = (Date.now() - new Date(s.fechaVencimiento).getTime()) / 86_400_000;
+    return dias <= 30 ? { plan: nombrePlan(s.planVencido), fecha: s.fechaVencimiento } : null;
   });
   protected readonly mesesGratisAnual = 12 - MESES_PAGADOS_POR_ANIO;
   protected readonly estadosPago = ESTADOS_PAGO;
@@ -178,26 +167,6 @@ export default class MembresiasPage {
     void this.router.navigate([], { queryParams: { plan: null, periodo: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
-  /** No quiere pagar: sigue en Gratis (el servidor inactiva lo que sobre). */
-  protected async seguirEnGratis(): Promise<void> {
-    this.pasandoAGratis.set(true);
-    try {
-      const d = await this.planEmpresa.continuarGratis();
-      this.confirmarGratis.set(false);
-      const total = d.inactivados.vehiculos.length + d.inactivados.estudiantes;
-      this.avisos.exito(
-        total
-          ? `Sigues en el plan Gratis. Se inactivaron ${d.inactivados.vehiculos.length} vehículo(s) y ${d.inactivados.estudiantes} estudiante(s) que superaban el límite.`
-          : 'Sigues en el plan Gratis con todos tus datos.',
-      );
-      await this.cargar();
-    } catch (e) {
-      this.avisos.error(mensajeDeError(e));
-    } finally {
-      this.pasandoAGratis.set(false);
-    }
-  }
-
   /** Inicia la prueba del plan Profesional (una sola vez). */
   protected async probarProfesional(): Promise<void> {
     this.iniciandoPrueba.set(true);
@@ -248,17 +217,14 @@ export default class MembresiasPage {
   /** Texto del botón de cada plan. */
   protected accion(p: Plan): string {
     const s = this.suscripcion();
-    if (p.precioMensual === 0) return s?.pendienteDecision ? 'Seguir en Gratis' : s?.plan === 'GRATIS' ? 'Tu plan actual' : 'Incluido al terminar';
+    if (p.precioMensual === 0) return s?.plan === 'GRATIS' ? 'Tu plan actual' : 'Si no pagas';
     if (!s) return `Elegir ${p.nombre}`;
     if (s.plan === p.id) return s.estado === 'PRUEBA' ? `Quedarme con ${p.nombre}` : 'Renovar';
     return ORDEN_PLAN[p.id] > ORDEN_PLAN[s.plan] ? `Mejorar a ${p.nombre}` : `Cambiar a ${p.nombre}`;
   }
 
   protected elegir(p: Plan): void {
-    if (p.precioMensual === 0) {
-      if (this.pendienteDecision()) this.confirmarGratis.set(true);
-      return;
-    }
+    if (p.precioMensual === 0) return;
     this.elegido.set(p);
     this.quitarCodigo();
     this.modalPago.set(true);

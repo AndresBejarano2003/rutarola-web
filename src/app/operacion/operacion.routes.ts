@@ -34,6 +34,12 @@ export default [
     data: { breadcrumb: ['Operación', 'Recorridos'] },
   },
   {
+    path: 'cronograma',
+    canActivate: [conFuncion('CRONOGRAMA')],
+    loadComponent: () => import('./cronograma/cronograma-page'),
+    data: { breadcrumb: ['Operación', 'Cronograma'] },
+  },
+  {
     path: 'monitoreo',
     canActivate: [conFuncion('GPS_EN_VIVO')],
     loadComponent: () => import('./monitoreo/monitoreo-page'),

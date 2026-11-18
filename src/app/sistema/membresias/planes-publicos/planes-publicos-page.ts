@@ -8,7 +8,8 @@ import { TarjetaPlan } from '../tarjeta-plan/tarjeta-plan';
 
 /**
  * Planes sin iniciar sesión (`/offline-membership`, enlazada desde el login): invita a registrarse con la prueba o a pagar
- * un plan de una vez. Está fuera de los repositorios, así que lee los días de prueba con `GET /suscripcion/condiciones`.
+ * un plan de una vez. Está fuera de los repositorios, así que lee los días de prueba con `GET /suscripcion/condiciones` y
+ * los precios que fija la plataforma con `GET /suscripcion/planes` (sin API, la copia `PLANES`).
  */
 @Component({
   selector: 'app-planes-publicos-page',
@@ -18,17 +19,22 @@ import { TarjetaPlan } from '../tarjeta-plan/tarjeta-plan';
 })
 export default class PlanesPublicosPage {
   private readonly router = inject(Router);
-  protected readonly planes = PLANES;
+  protected readonly planes = signal<Plan[]>(PLANES);
   protected readonly diasPrueba = signal(DIAS_PRUEBA_POR_DEFECTO);
   protected readonly mesesGratisAnual = 12 - MESES_PAGADOS_POR_ANIO;
   protected readonly periodo = signal<PeriodoPago>('MENSUAL');
 
   constructor() {
     if (environment.usarApi) {
-      inject(HttpClient)
+      const http = inject(HttpClient);
+      http
         .get<CondicionesRegistro>(`${environment.apiUrl}/suscripcion/condiciones`)
         .pipe(takeUntilDestroyed())
         .subscribe({ next: (c) => this.diasPrueba.set(c.diasPrueba), error: () => undefined });
+      http
+        .get<Plan[]>(`${environment.apiUrl}/suscripcion/planes`)
+        .pipe(takeUntilDestroyed())
+        .subscribe({ next: (lista) => lista.length && this.planes.set(lista), error: () => undefined });
     }
   }
 

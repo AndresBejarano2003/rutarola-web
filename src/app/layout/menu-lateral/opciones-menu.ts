@@ -73,6 +73,7 @@ export const MENU_OPERATIVO: OpcionMenu[] = [
       { icono: 'fa-solid fa-diagram-project', etiqueta: 'Asignaciones', ruta: '/operacion/asignaciones' },
       { icono: 'fa-solid fa-clock-rotate-left', etiqueta: 'Recorridos', ruta: '/operacion/recorridos' },
       { icono: 'fa-solid fa-map-location-dot', etiqueta: 'Monitoreo en vivo', ruta: '/operacion/monitoreo', funcion: 'GPS_EN_VIVO' },
+      { icono: 'fa-solid fa-calendar-days', etiqueta: 'Cronograma', ruta: '/operacion/cronograma', funcion: 'CRONOGRAMA' },
     ],
   },
 ];

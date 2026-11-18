@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { FILTROS_COTIZACION_VACIOS } from 'src/app/finanzas/cotizaciones/cotizacion';
 import { CotizacionesRepositorio } from 'src/app/finanzas/cotizaciones/cotizaciones-repositorio';
 import { FILTROS_FACTURA_VACIOS } from 'src/app/finanzas/facturas/factura';
@@ -17,6 +17,7 @@ import { CambiosDatos } from 'src/app/shared/crud/cambios-datos';
 import { Pagina, Paginacion } from 'src/app/shared/crud/crud';
 import { FuenteLocal, LATENCIA_LOCAL, SIN_PAGINAR, responderLocal } from 'src/app/shared/crud/repositorio-local';
 import { normalizar } from 'src/app/shared/formularios/formularios';
+import { SuscripcionRepositorio } from 'src/app/sistema/membresias/suscripcion-repositorio';
 import { DatosNotificables, generarNotificaciones } from './generar-notificaciones';
 import {
   BandejaNotificaciones,
@@ -51,6 +52,7 @@ export class NotificacionesLocal extends NotificacionesRepositorio implements Fu
   private readonly cotizaciones = inject(CotizacionesRepositorio);
   private readonly programaciones = inject(ProgramacionesRepositorio);
   private readonly reportes = inject(ReportesRepositorio);
+  private readonly suscripcion = inject(SuscripcionRepositorio);
 
   private ultimaRevision = 0;
   private versionRevisada = -1;
@@ -159,6 +161,11 @@ export class NotificacionesLocal extends NotificacionesRepositorio implements Fu
       cotizaciones: this.cotizaciones.listar(FILTROS_COTIZACION_VACIOS, SIN_PAGINAR).pipe(map((p) => p.items)),
       envios,
       morosos: this.reportes.morosos({ texto: '', diasMinimos: 0 }),
+      suscripcion: this.suscripcion.actual().pipe(catchError(() => of(null))),
+      diasAvisoVencimiento: this.suscripcion.condiciones().pipe(
+        map((c) => c.diasAvisoVencimiento),
+        catchError(() => of(5)),
+      ),
     });
   }
 

@@ -57,6 +57,14 @@
             <input formControlName="codigoPromocional" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Ej. BIENVENIDA20"
               class="input input-bordered bg-base-100 border-neutral w-full font-mono uppercase" />
           </label>
+          <label app-campo class="md:col-span-2" etiqueta="Valor recibido (opcional)" [error]="errorDe('valorPagado')"
+            [ayuda]="'Lo que pagó por transferencia u otro medio: queda en sus pagos y en Plataforma › Ingresos. Precio del plan: ' + (precioSugerido() | currency: 'COP' : 'symbol-narrow' : '1.0-0') + '. Deja 0 si no hubo pago (convenio, cortesía).'">
+            <div class="join w-full">
+              <input type="number" formControlName="valorPagado" min="0" step="100" inputmode="numeric"
+                class="input input-bordered bg-base-100 border-neutral join-item w-full" />
+              <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral join-item" (click)="usarPrecio()">Usar precio</button>
+            </div>
+          </label>
         }
         <label app-campo class="md:col-span-2" etiqueta="Nota (la ve la empresa)" [error]="errorDe('nota')">
           <input formControlName="nota" maxlength="500" placeholder="Pago por transferencia del 5 de noviembre" class="input input-bordered bg-base-100 border-neutral w-full" />
@@ -91,7 +99,7 @@
         }
       </ul>
     } @else {
-      <p class="text-xs text-base-content/70">Sin pagos en línea.</p>
+      <p class="text-xs text-base-content/70">Sin pagos registrados.</p>
     }
   } @else {
     <div class="skeleton bg-base-300 h-16 w-full"></div>

@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { catchError, map, of } from 'rxjs';
 import { PlanEmpresa } from 'src/app/core/plan-empresa';
-import { recordatorioGratis } from '../suscripcion';
+import { DIAS_AVISO_VENCIMIENTO_POR_DEFECTO, nombrePlan, recordatorioGratis } from '../suscripcion';
+import { SuscripcionRepositorio } from '../suscripcion-repositorio';
 
 const CLAVE_OCULTO = 'rutarola.aviso-plan.oculto';
-/** Se avisa cuando a la prueba o al periodo pagado le quedan estos días o menos. */
-export const DIAS_AVISO_PLAN = 15;
+/** Días tras el vencimiento en que se sigue mostrando "Tu plan X venció: ahora estás en Gratis". */
+export const DIAS_AVISO_VENCIDO = 30;
 /** El recordatorio general del plan Gratis se puede ocultar por estos días; los demás avisos, hasta el día siguiente. */
 export const DIAS_OCULTAR_RECORDATORIO_GRATIS = 7;
 
@@ -18,9 +21,10 @@ interface MensajePlan {
 }
 
 /**
- * Aviso del plan en el shell del administrador: la prueba o el periodo pagado terminan pronto, o la empresa está en el
- * plan Gratis (recordatorio con sus límites y, si llegó o está cerca de uno, ese aviso primero). "Ocultar" guarda el
- * tipo de aviso en este navegador: el recordatorio general de Gratis por 7 días, los demás hasta el día siguiente.
+ * Aviso del plan en el shell del administrador: la prueba o el periodo pagado terminan pronto (desde los días de aviso que
+ * fija la plataforma, `GET /suscripcion/condiciones`), el plan venció y quedó en Gratis, o la empresa está en el plan
+ * Gratis (recordatorio con sus límites y, si llegó o está cerca de uno, ese aviso primero). "Ocultar" guarda el tipo de
+ * aviso en este navegador: el recordatorio general de Gratis por 7 días, los demás hasta el día siguiente.
  */
 @Component({
   selector: 'app-aviso-plan',
@@ -32,7 +36,7 @@ interface MensajePlan {
         <i [class]="m.icono" aria-hidden="true"></i>
         <span class="grow text-sm">{{ m.texto }}</span>
         <div class="flex gap-2">
-          <a routerLink="/sistema/membership" class="btn btn-sm btn-secondary">{{ m.tipo.startsWith('GRATIS') ? 'Mejorar mi plan' : 'Ver planes' }}</a>
+          <a routerLink="/sistema/membership" class="btn btn-sm btn-secondary">{{ m.tipo.startsWith('GRATIS') || m.tipo.startsWith('VENCIDO') ? 'Mejorar mi plan' : 'Ver planes' }}</a>
           <button type="button" class="btn btn-sm btn-ghost" (click)="ocultar(m.tipo)" aria-label="Ocultar aviso"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
@@ -43,6 +47,15 @@ export class AvisoPlan {
   private readonly plan = inject(PlanEmpresa);
   private readonly suscripcion = this.plan.suscripcion;
   private readonly ocultos = signal(leerOcultos());
+  private readonly diasAviso = toSignal(
+    inject(SuscripcionRepositorio)
+      .condiciones()
+      .pipe(
+        map((c) => c.diasAvisoVencimiento || DIAS_AVISO_VENCIMIENTO_POR_DEFECTO),
+        catchError(() => of(DIAS_AVISO_VENCIMIENTO_POR_DEFECTO)),
+      ),
+    { initialValue: DIAS_AVISO_VENCIMIENTO_POR_DEFECTO },
+  );
 
   protected readonly mensaje = computed<MensajePlan | null>(() => {
     const m = this.calcular();
@@ -55,19 +68,35 @@ export class AvisoPlan {
 
   private calcular(): MensajePlan | null {
     const s = this.suscripcion();
-    // Con la decisión pendiente manda la pasarela (app-decision-plan).
-    if (!s || s.pendienteDecision) return null;
+    if (!s) return null;
     const dias = s.diasRestantes ?? 0;
-    if (s.estado === 'PRUEBA' && dias <= DIAS_AVISO_PLAN) {
+    const cuando = dias === 0 ? 'hoy' : `en ${dias} día(s)`;
+    if (s.estado === 'PRUEBA' && dias <= this.diasAviso()) {
       return {
         tipo: 'PRUEBA',
-        urgente: dias <= 5,
+        urgente: dias <= 3,
         icono: 'fa-solid fa-gift',
-        texto: `Tu prueba gratuita termina en ${dias} día(s). Si no eliges un plan, quedas en el plan Gratis con todos tus datos.`,
+        texto: `Tu prueba gratuita termina ${cuando}. Si no eliges un plan, al día siguiente quedas en el plan Gratis con todos tus datos.`,
       };
     }
-    if (s.estado === 'ACTIVA' && dias <= DIAS_AVISO_PLAN) {
-      return { tipo: 'ACTIVA', urgente: dias <= 5, icono: 'fa-solid fa-crown', texto: `Tu plan ${s.nombrePlan} vence en ${dias} día(s). Renuévalo para no bajar al plan Gratis.` };
+    if (s.estado === 'ACTIVA' && dias <= this.diasAviso()) {
+      return {
+        tipo: 'ACTIVA',
+        urgente: dias <= 3,
+        icono: 'fa-solid fa-crown',
+        texto: `Tu plan ${s.nombrePlan} vence ${cuando}. Renuévalo: si no pagas, al día siguiente quedas en el plan Gratis.`,
+      };
+    }
+    if (s.estado === 'GRATIS' && s.planVencido && s.fechaVencimiento) {
+      const desde = (Date.now() - new Date(s.fechaVencimiento).getTime()) / 86_400_000;
+      if (desde <= DIAS_AVISO_VENCIDO) {
+        return {
+          tipo: `VENCIDO_${s.fechaVencimiento.slice(0, 10)}`,
+          urgente: true,
+          icono: 'fa-solid fa-circle-exclamation',
+          texto: `Tu plan ${nombrePlan(s.planVencido)} venció sin pago y ahora estás en el plan Gratis: las funciones de tu plan se desactivaron y lo que superaba los límites quedó inactivo (no se borró nada).`,
+        };
+      }
     }
     const gratis = recordatorioGratis(s);
     if (gratis) {

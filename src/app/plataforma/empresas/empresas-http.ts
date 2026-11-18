@@ -11,7 +11,7 @@ import { EmpresasRepositorio } from './empresas-repositorio';
 /**
  * `empresas.gestionar` (SUPER_ADMIN):
  * - `GET /empresas?texto=&estado=&membresia=&plan=&pagina=&tamano=` → `Pagina<Empresa>` (por nombre) con la `membresia`
- *   de cada una (plan, situación PRUEBA|PRUEBA_POR_VENCER|ACTIVA|POR_VENCER|VENCIDA|GRATIS, fechas, días, último pago);
+ *   de cada una (plan, situación PRUEBA|PRUEBA_POR_VENCER|ACTIVA|POR_VENCER|GRATIS, fechas, días, último pago);
  * - `GET /empresas/resumen-membresias` → `ResumenMembresias`;
  * - `POST /empresas` → 201 con la configuración por defecto y, si viene `administrador`, su primer
  *   usuario ADMINISTRADOR (409 NIT repetido o usuario/correo ya en uso);

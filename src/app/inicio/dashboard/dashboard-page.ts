@@ -16,7 +16,7 @@ import {
   ApexYAxis,
   NgApexchartsModule,
 } from 'ng-apexcharts';
-import { TemaApp } from 'src/app/core/tema';
+import { COLORES_TEMA, TemaApp } from 'src/app/core/tema';
 import { AuthService } from 'src/app/core/auth';
 import { MEDIOS_PAGO, MedioPago } from 'src/app/finanzas/recibos/recibo';
 import { CambiosDatos } from 'src/app/shared/crud/cambios-datos';
@@ -29,24 +29,6 @@ import { TableroRepositorio } from './tablero-repositorio';
 
 const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const pesosCortos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
-
-/** Colores de cada tema (`rutarola` / `rutarola-claro`) para ApexCharts (no lee variables CSS). */
-const COLORES_TEMA = {
-  OSCURO: {
-    texto: '#d1d5db',
-    rejilla: '#374151',
-    facturado: '#38bdf8',
-    recaudado: '#4ade80',
-    serie: ['#facc15', '#38bdf8', '#4ade80', '#f87171', '#a78bfa', '#9ca3af'],
-  },
-  CLARO: {
-    texto: '#374151',
-    rejilla: '#e5e7eb',
-    facturado: '#0369a1',
-    recaudado: '#15803d',
-    serie: ['#ca8a04', '#0369a1', '#15803d', '#b91c1c', '#7c3aed', '#6b7280'],
-  },
-};
 
 /** Máximo de colegios en la dona; el resto se agrupa en "Otros". */
 const COLEGIOS_EN_DONA = 5;

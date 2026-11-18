@@ -2,7 +2,8 @@ import { Factura } from 'src/app/finanzas/facturas/factura';
 import { Recibo } from 'src/app/finanzas/recibos/recibo';
 import { Vehiculo } from 'src/app/operacion/vehiculos/vehiculo';
 import { Empleado } from 'src/app/personas/empleados/empleado';
-import { DatosNotificables, generarNotificaciones } from './generar-notificaciones';
+import { Suscripcion } from 'src/app/sistema/membresias/suscripcion';
+import { DatosNotificables, avisosMembresia, generarNotificaciones } from './generar-notificaciones';
 
 const AHORA = new Date('2026-11-05T10:00:00');
 
@@ -100,5 +101,43 @@ describe('generarNotificaciones', () => {
     const datos = { ...vacios(), vehiculos: [vehiculo({ vencimientoSoat: '2026-10-01', vencimientoTecnomecanica: '2026-10-01' })] };
     const claves = generarNotificaciones(datos, AHORA).map((n) => n.clave);
     expect(new Set(claves).size).toBe(claves.length);
+  });
+});
+
+describe('Avisos de la membresía', () => {
+  const base: Suscripcion = {
+    plan: 'PROFESIONAL',
+    estado: 'ACTIVA',
+    fechaFin: null,
+    nombrePlan: 'Profesional',
+    periodo: 'MENSUAL',
+    fechaInicio: '2026-10-01T00:00:00Z',
+    diasRestantes: null,
+    pruebaUsada: true,
+    limites: { vehiculos: 15, estudiantes: 400 },
+    uso: { vehiculos: 0, estudiantes: 0 },
+    funciones: [],
+    pagosEnLinea: false,
+    nota: '',
+    planVencido: '',
+    fechaVencimiento: null,
+    diasPrueba: 0,
+  };
+  const ahora = new Date('2026-11-10T15:00:00Z');
+
+  it('avisa desde los días configurados, el último día y al pasar a Gratis', () => {
+    // Termina el 15 nov (23:59 Colombia = 04:59Z del 16).
+    const activa: Suscripcion = { ...base, fechaFin: '2026-11-16T04:59:00Z' };
+    expect(avisosMembresia(activa, '2026-11-10', 3, ahora)).toHaveLength(0);
+    const porVencer = avisosMembresia(activa, '2026-11-10', 5, ahora);
+    expect(porVencer).toMatchObject([{ nivel: 'ADVERTENCIA', clave: 'membresia:activa:2026-11-15:por-vencer', enlace: '/sistema/membership' }]);
+    expect(porVencer[0].titulo).toContain('vence en 5 días');
+    expect(porVencer[0].mensaje).toContain('quedas en el plan Gratis');
+    const hoy = avisosMembresia(activa, '2026-11-15', 5, new Date('2026-11-15T20:00:00Z'));
+    expect(hoy).toMatchObject([{ nivel: 'CRITICA', clave: 'membresia:activa:2026-11-15:ultimo-dia' }]);
+
+    const gratis: Suscripcion = { ...base, plan: 'GRATIS', estado: 'GRATIS', periodo: '', planVencido: 'PROFESIONAL', fechaVencimiento: '2026-11-16T04:59:00Z' };
+    expect(avisosMembresia(gratis, '2026-11-16', 5, ahora)).toMatchObject([{ nivel: 'CRITICA', clave: 'membresia:vencida:profesional:2026-11-15' }]);
+    expect(avisosMembresia(gratis, '2027-01-20', 5, ahora)).toHaveLength(0);
   });
 });

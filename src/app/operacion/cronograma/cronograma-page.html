@@ -1,0 +1,269 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Cronograma</h1>
+      <p class="text-sm text-base-content/70">Rutas programadas, recorridos, ausencias avisadas por los acudientes y vencimientos de cada día.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div role="tablist" aria-label="Vista" class="join">
+        @for (v of vistas; track v.id) {
+          <button type="button" role="tab" class="btn btn-sm join-item border-neutral" [attr.aria-selected]="vista() === v.id"
+            [class.btn-primary]="vista() === v.id" [class.bg-base-300]="vista() !== v.id" (click)="cambiarVista(v.id)">{{ v.nombre }}</button>
+        }
+      </div>
+      <div class="join">
+        <button type="button" class="btn btn-sm join-item bg-base-300 border-neutral hover:bg-neutral" (click)="mover(-1)" aria-label="Anterior">
+          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="btn btn-sm join-item bg-base-300 border-neutral hover:bg-neutral" (click)="irAHoy()">Hoy</button>
+        <button type="button" class="btn btn-sm join-item bg-base-300 border-neutral hover:bg-neutral" (click)="mover(1)" aria-label="Siguiente">
+          <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold first-letter:uppercase" aria-live="polite">{{ titulo() }}</h2>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <span class="badge badge-soft bg-base-300 border-neutral"><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> {{ resumen().habiles }} días hábiles</span>
+      <span class="badge badge-soft badge-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ resumen().recorridos }} recorridos</span>
+      <span class="badge badge-soft badge-warning"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i> {{ resumen().ausencias }} ausencias</span>
+      @if (resumen().vencidos) {
+        <span class="badge badge-soft badge-error"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ resumen().vencidos }} vencidos</span>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert alert-soft alert-error text-sm">
+      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span class="grow">{{ error() }}</span>
+      <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  <section class="card bg-base-200 border border-base-300 shadow-xl" [class.opacity-60]="cargando()" [attr.aria-busy]="cargando()">
+    <div class="card-body p-3 sm:p-5">
+      @if (cargando() && !cronograma()) {
+        <div class="skeleton bg-base-300 h-64 w-full"></div>
+      } @else {
+        @switch (vista()) {
+          @case ('SEMANA') {
+            <div class="grid grid-cols-1 md:grid-cols-7 gap-2">
+              @for (d of semana(); track d.fecha; let i = $index) {
+                <button type="button" class="text-left rounded-box border p-3 flex flex-col gap-2 min-h-28 transition-colors hover:bg-base-300/50"
+                  [class.border-primary]="d.fecha === fecha()" [class.bg-primary/10]="d.fecha === fecha()" [class.border-base-300]="d.fecha !== fecha()"
+                  [class.bg-base-100]="d.fecha !== fecha()" [attr.aria-pressed]="d.fecha === fecha()" (click)="elegir(d.fecha)">
+                  <span class="flex items-baseline justify-between gap-2">
+                    <span class="text-xs uppercase tracking-wide text-base-content/70">{{ diasSemana[i] }}</span>
+                    <span class="font-semibold" [class.text-primary]="d.fecha === hoy">{{ d.fecha | date: 'd MMM' }}</span>
+                  </span>
+                  @if (d.habil || d.rutas) {
+                    <span class="text-sm"><i class="fa-solid fa-route text-info" aria-hidden="true"></i> {{ d.rutas }} ruta(s)</span>
+                  } @else {
+                    <span class="text-sm text-base-content/70">Sin rutas</span>
+                  }
+                  @if (d.finalizados || d.enCurso) {
+                    <span class="text-xs text-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ d.finalizados }} hechos
+                      @if (d.enCurso) { · {{ d.enCurso }} en curso }</span>
+                  }
+                  @if (d.ausencias) {
+                    <span class="text-xs text-warning"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i> {{ d.ausencias }} no viaja(n)</span>
+                  }
+                  @for (e of d.eventos.slice(0, 3); track $index) {
+                    <span class="text-xs flex items-start gap-1.5">
+                      <span class="mt-1.5 size-2 shrink-0 rounded-full {{ tonoNivel[e.nivel] }}" aria-hidden="true"></span>
+                      <span class="min-w-0">{{ e.titulo }}</span>
+                    </span>
+                  }
+                  @if (d.eventos.length > 3) {
+                    <span class="text-xs text-base-content/70">+{{ d.eventos.length - 3 }} más</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+          @case ('MES') {
+            <div class="grid grid-cols-7 gap-1 text-center text-xs uppercase tracking-wide text-base-content/70 mb-1">
+              @for (n of diasSemana; track n) { <span>{{ n }}</span> }
+            </div>
+            <div class="flex flex-col gap-1">
+              @for (semanaMes of mes(); track $index) {
+                <div class="grid grid-cols-7 gap-1">
+                  @for (f of semanaMes; track $index) {
+                    @if (f) {
+                      @let d = dia(f);
+                      <button type="button" class="rounded-box border p-1 sm:p-2 min-h-14 sm:min-h-24 flex flex-col items-start gap-1 text-left hover:bg-base-300/50"
+                        [class.border-primary]="f === fecha()" [class.bg-primary/10]="f === fecha()" [class.border-base-300]="f !== fecha()"
+                        [class.bg-base-100]="f !== fecha()" [attr.aria-pressed]="f === fecha()" (click)="elegir(f)"
+                        [attr.aria-label]="(f | date: 'EEEE d MMMM') + ': ' + (d?.rutas ?? 0) + ' rutas, ' + (d?.ausencias ?? 0) + ' ausencias, ' + (d?.eventos?.length ?? 0) + ' eventos'">
+                        <span class="text-sm font-semibold" [class.text-primary]="f === hoy">{{ +f.slice(8, 10) }}</span>
+                        @if (d) {
+                          <span class="hidden sm:flex flex-col gap-0.5 text-[0.7rem] leading-tight w-full">
+                            @if (d.rutas) { <span class="text-base-content/80 truncate"><i class="fa-solid fa-route text-info" aria-hidden="true"></i> {{ d.rutas }}</span> }
+                            @if (d.ausencias) { <span class="text-warning truncate"><i class="fa-solid fa-user-xmark" aria-hidden="true"></i> {{ d.ausencias }}</span> }
+                            @if (d.eventos.length) {
+                              <span class="flex items-center gap-1 truncate">
+                                <span class="size-2 rounded-full {{ tonoNivel[nivelDelDia(d) ?? 'INFORMATIVA'] }}" aria-hidden="true"></span>{{ d.eventos.length }} evento(s)
+                              </span>
+                            }
+                          </span>
+                          <span class="flex sm:hidden gap-0.5" aria-hidden="true">
+                            @if (d.ausencias) { <span class="size-1.5 rounded-full bg-warning"></span> }
+                            @if (d.eventos.length) { <span class="size-1.5 rounded-full {{ tonoNivel[nivelDelDia(d) ?? 'INFORMATIVA'] }}"></span> }
+                          </span>
+                        }
+                      </button>
+                    } @else {
+                      <span aria-hidden="true"></span>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
+          @case ('ANIO') {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+              @for (m of anio(); track m.inicio) {
+                <div class="rounded-box border border-base-300 bg-base-100 p-3 flex flex-col gap-2">
+                  <button type="button" class="flex items-center justify-between gap-2 text-left hover:text-primary" (click)="abrirMes(m.inicio)">
+                    <span class="font-semibold first-letter:uppercase">{{ m.nombre }}</span>
+                    @if (m.ausencias) { <span class="badge badge-soft badge-warning badge-sm">{{ m.ausencias }} ausencias</span> }
+                  </button>
+                  <div class="grid grid-cols-7 gap-0.5">
+                    @for (semanaMes of m.semanas; track $index) {
+                      @for (f of semanaMes; track $index) {
+                        @if (f) {
+                          @let d = dia(f);
+                          <button type="button" class="aspect-square rounded text-[0.65rem] flex flex-col items-center justify-center hover:bg-base-300"
+                            [class.ring-1]="f === fecha()" [class.ring-primary]="f === fecha()" [class.text-base-content/70]="!d?.habil"
+                            [class.font-bold]="f === hoy" (click)="elegir(f)"
+                            [attr.aria-label]="(f | date: 'd MMMM') + ': ' + (d?.ausencias ?? 0) + ' ausencias, ' + (d?.eventos?.length ?? 0) + ' eventos'">
+                            {{ +f.slice(8, 10) }}
+                            @if (d && (d.eventos.length || d.ausencias)) {
+                              <span class="size-1 rounded-full {{ d.eventos.length ? tonoNivel[nivelDelDia(d) ?? 'INFORMATIVA'] : 'bg-warning' }}" aria-hidden="true"></span>
+                            }
+                          </button>
+                        } @else {
+                          <span aria-hidden="true"></span>
+                        }
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+        <p class="text-xs text-base-content/70 flex flex-wrap gap-x-4 gap-y-1 mt-3">
+          <span><span class="inline-block size-2 rounded-full bg-error" aria-hidden="true"></span> Vencido</span>
+          <span><span class="inline-block size-2 rounded-full bg-warning" aria-hidden="true"></span> Por atender / ausencias</span>
+          <span><span class="inline-block size-2 rounded-full bg-info" aria-hidden="true"></span> Informativo</span>
+        </p>
+      }
+    </div>
+  </section>
+
+  <section id="detalle-dia" class="scroll-mt-4 card bg-base-200 border border-base-300 shadow-xl" [attr.aria-busy]="cargandoDia()">
+    <div class="card-body gap-5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="card-title text-lg first-letter:uppercase">{{ fecha() | date: 'EEEE d MMMM y' }}</h2>
+        @if (detalle(); as dd) {
+          @if (!dd.habil && !dd.rutas.length) { <span class="badge badge-soft bg-base-300 border-neutral">Fin de semana · sin rutas</span> }
+        }
+      </div>
+
+      @if (cargandoDia() && !detalle()) {
+        <div class="skeleton bg-base-300 h-32 w-full"></div>
+      } @else if (detalle(); as dd) {
+        <div class="flex flex-col gap-2">
+          <h3 class="text-info uppercase text-xs font-semibold tracking-wide">Ausencias avisadas por los acudientes ({{ dd.ausencias.length }})</h3>
+          @for (a of dd.ausencias; track a.id) {
+            <div class="rounded-box border border-warning/40 bg-warning/10 p-3 flex flex-col sm:flex-row sm:items-center gap-2">
+              <i class="fa-solid fa-user-xmark text-warning" aria-hidden="true"></i>
+              <div class="grow min-w-0">
+                <p class="font-semibold">{{ a.estudiante }} @if (a.ruta) { <span class="text-sm font-normal text-base-content/70">· {{ a.ruta }}</span> }</p>
+                <p class="text-sm">{{ textoAusencia(a) }}</p>
+                @if (a.nota) { <p class="text-sm text-base-content/70">"{{ a.nota }}"</p> }
+                <p class="text-xs text-base-content/70">Avisó {{ a.acudiente }}</p>
+              </div>
+              @if (a.confirmadoPor) {
+                <span class="badge badge-soft badge-success shrink-0"><i class="fa-solid fa-check" aria-hidden="true"></i> Confirmado por {{ a.confirmadoPor }}</span>
+              } @else {
+                <span class="badge badge-soft bg-base-300 border-neutral shrink-0">Sin confirmar en la ruta</span>
+              }
+            </div>
+          } @empty {
+            <p class="text-sm text-base-content/70">Ningún acudiente avisó ausencias para este día.</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <h3 class="text-info uppercase text-xs font-semibold tracking-wide">Rutas ({{ dd.rutas.length }})</h3>
+          @if (dd.rutas.length) {
+            <div class="@container overflow-x-auto rounded-box border border-base-300">
+              <table class="table table-sm">
+                <thead>
+                  <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+                    <th>Ruta</th>
+                    <th class="hidden @3xl:table-cell">Colegio</th>
+                    <th class="hidden @5xl:table-cell">Vehículo · personal</th>
+                    <th>Estudiantes</th>
+                    <th>Recogida · entrega</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of dd.rutas; track r.rutaId) {
+                    <tr class="border-base-300 hover:bg-base-300/50">
+                      <td><span class="font-semibold">{{ r.codigo }}</span> <span class="text-base-content/70">{{ r.nombre }} · {{ r.jornada }}</span></td>
+                      <td class="hidden @3xl:table-cell">{{ r.colegio }}</td>
+                      <td class="hidden @5xl:table-cell">
+                        @if (r.vehiculo) { {{ r.vehiculo }} · {{ r.conductor }} @if (r.monitora) { / {{ r.monitora }} } }
+                        @else { <span class="text-warning">Sin asignación</span> }
+                      </td>
+                      <td>
+                        {{ r.estudiantes }}
+                        @if (r.ausencias) { <span class="badge badge-soft badge-warning badge-sm">−{{ r.ausencias }}</span> }
+                      </td>
+                      <td>
+                        <span class="flex flex-wrap gap-1">
+                          @for (t of r.trayectos; track t.trayecto) {
+                            <span class="badge badge-soft badge-sm {{ estadosTrayecto[t.estado].badge }}"
+                              [attr.title]="t.horaInicio ? t.horaInicio + (t.horaFin ? ' – ' + t.horaFin : '') : null">
+                              <i class="{{ estadosTrayecto[t.estado].icono }}" aria-hidden="true"></i>
+                              {{ t.trayecto === 'RECOGIDA' ? 'Recogida' : 'Entrega' }}: {{ estadosTrayecto[t.estado].nombre }}
+                              @if (t.horaInicio) { {{ t.horaInicio }} }
+                            </span>
+                          }
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-sm text-base-content/70">No hay rutas programadas este día.</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <h3 class="text-info uppercase text-xs font-semibold tracking-wide">Agenda ({{ dd.eventos.length }})</h3>
+          @for (e of dd.eventos; track $index) {
+            <a [routerLink]="e.enlace" class="rounded-box border border-base-300 bg-base-100 p-3 flex items-center gap-3 hover:bg-base-300/50">
+              <i class="{{ iconosEvento[e.tipo] }}" [class.text-error]="e.nivel === 'CRITICA'" [class.text-warning]="e.nivel === 'ADVERTENCIA'"
+                [class.text-info]="e.nivel === 'INFORMATIVA'" aria-hidden="true"></i>
+              <span class="grow min-w-0">
+                <span class="block font-semibold">{{ e.titulo }}</span>
+                <span class="block text-sm text-base-content/70">{{ e.detalle }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-base-content/50" aria-hidden="true"></i>
+            </a>
+          } @empty {
+            <p class="text-sm text-base-content/70">Sin vencimientos ni fechas de pago este día.</p>
+          }
+        </div>
+      }
+    </div>
+  </section>
+</div>

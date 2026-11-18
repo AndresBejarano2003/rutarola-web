@@ -48,7 +48,7 @@ export class EmpresasLocal extends EmpresasRepositorio implements FuenteLocal {
   resumenMembresias(): Observable<ResumenMembresias> {
     return defer(() =>
       responderLocal(
-        () => ({ total: this.leer().length, prueba: 0, pruebaPorVencer: 0, activa: 0, porVencer: 0, vencida: 0, gratis: 0 }),
+        () => ({ total: this.leer().length, prueba: 0, pruebaPorVencer: 0, activa: 0, porVencer: 0, gratis: 0 }),
         this.latenciaMs,
       ),
     );

@@ -16,7 +16,6 @@ function gratis(cambios: Partial<Suscripcion> = {}): Suscripcion {
     funciones: plan.funciones,
     pagosEnLinea: false,
     nota: '',
-    pendienteDecision: false,
     planVencido: '',
     fechaVencimiento: null,
     diasPrueba: 0,
@@ -42,9 +41,8 @@ describe('Recordatorios del plan Gratis', () => {
     expect(lleno.texto).toContain('1 de 1 vehículo');
   });
 
-  it('no aplica fuera de Gratis ni con la decisión pendiente; la prueba solo si no la ha usado', () => {
+  it('no aplica fuera de Gratis; la prueba solo si no la ha usado', () => {
     expect(recordatorioGratis(gratis({ estado: 'PRUEBA' }))).toBeNull();
-    expect(recordatorioGratis(gratis({ pendienteDecision: true }))).toBeNull();
     expect(puedeIniciarPrueba(gratis())).toBe(true);
     expect(puedeIniciarPrueba(gratis({ pruebaUsada: true }))).toBe(false);
     expect(puedeIniciarPrueba(gratis({ estado: 'ACTIVA' }))).toBe(false);

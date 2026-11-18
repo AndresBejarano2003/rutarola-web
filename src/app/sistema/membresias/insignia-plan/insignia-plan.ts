@@ -30,7 +30,7 @@ export class InsigniaPlan {
 
   protected readonly insignia = computed(() => {
     const s = this.plan?.suscripcion();
-    if (!s || s.pendienteDecision) return null;
+    if (!s) return null;
     if (s.estado === 'PRUEBA') {
       const dias = s.diasRestantes ?? 0;
       return {

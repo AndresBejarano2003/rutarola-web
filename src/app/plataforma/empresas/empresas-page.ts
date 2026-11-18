@@ -137,14 +137,13 @@ export default class EmpresasPage implements OnInit {
     void this.cargarResumen();
   }
 
-  /** "Vence el 3 dic · 5 días", "Venció el 1 nov", "Sin vencimiento". */
+  /** "Hasta el 3 dic · 5 días", "Sin vencimiento". */
   protected vigencia(m: MembresiaEmpresa): string {
     const f = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
-    if (m.situacion === 'VENCIDA') return m.fechaVencimiento ? `Venció el ${f(m.fechaVencimiento)}` : 'Vencida';
     if (m.situacion === 'GRATIS') return m.planVencido && m.fechaVencimiento ? `Desde que venció ${nombrePlan(m.planVencido)} (${f(m.fechaVencimiento)})` : 'Sin vencimiento';
     if (!m.fechaFin) return 'Sin vencimiento';
     const dias = m.diasRestantes ?? 0;
-    return `Hasta el ${f(m.fechaFin)} · ${dias === 1 ? '1 día' : `${dias} días`}`;
+    return `Hasta el ${f(m.fechaFin)} · ${dias === 0 ? 'vence hoy' : dias === 1 ? '1 día' : `${dias} días`}`;
   }
 
   private ajustarAdministrador(con: boolean): void {

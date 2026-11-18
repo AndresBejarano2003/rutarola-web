@@ -206,6 +206,17 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   vehículo o persona no cubre dos rutas de la misma jornada. Arriba de la tabla, **Avisos de ausencia**
   (`<app-avisos-del-dia>`, fecha elegible, hoy por defecto): estudiantes que su acudiente avisó que no viajan, su
   ruta, lo que avisó y si la ruta ya lo confirmó.
+- **Cronograma (`operacion/cronograma/`, Operación › Cronograma, planes con CRONOGRAMA = Profesional y Empresarial,
+  guardia `conFuncion('CRONOGRAMA')`):** la programación por **semana** (lunes–domingo), **mes** o **año**
+  (`?vista=&fecha=`), con flechas y "Hoy". Por día (`GET /cronograma?desde=&hasta=`, máx. 400 días): rutas
+  programadas (activas con asignación vigente, solo lunes a viernes, más las que tuvieron recorrido), recorridos
+  finalizados/en curso, **ausencias avisadas por los acudientes** y la agenda (vencimiento de documentos de vehículos y
+  de licencias, fecha límite de pago de las cuotas con cuántas siguen pendientes, fin de contratos y de asignaciones;
+  rojo = vencido, amarillo = por atender). El detalle del día (`GET /cronograma/dia?fecha=`) lista cada ruta con
+  colegio, vehículo, conductor/monitora, estudiantes (−N ausentes) y la recogida y la entrega (Programado, En curso,
+  Finalizado o Sin registro si el día pasó), los avisos de ausencia (qué avisó, nota, quién avisó, si la ruta lo
+  confirmó) y la agenda con enlace a la pantalla que lo resuelve. Reglas puras en `calcular-cronograma.ts`, iguales a
+  `Cronograma.cs`.
 - **Conductores:** vista de solo lectura de los empleados conductores con su licencia y ruta asignada;
   se editan en Personas › Empleados y se asignan en Operación › Asignaciones.
 - **Cotizaciones:** acudiente/estudiantes registrados (selectores) o cliente nuevo (texto);
@@ -265,27 +276,32 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   de campana por cada respuesta pública.
 - **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
   (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,
-  soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
-  mensualidades. En el registro público (`/registro`, `comienzo`) la empresa **elige cómo empezar**: **plan Gratis**
+  cronograma, soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
+  mensualidades. **Los precios mensuales los fija el SuperAdmin** en Plataforma › Ajustes (`plan.{esencial|profesional|empresarial}.precio_mensual`);
+  `GET /suscripcion/planes` los devuelve y todas las pantallas (página pública, Planes y membresías, pago, códigos)
+  los leen de allí (`PLANES` es solo la copia por defecto). Un precio nuevo aplica a los pagos desde ese momento. En el registro público (`/registro`, `comienzo`) la empresa **elige cómo empezar**: **plan Gratis**
   (no vence ni pide decidir: se queda en Gratis hasta que pague un plan —se activa al pagar— o inicie la prueba desde
   Planes y membresías, una sola vez, `POST /suscripcion/prueba`), **prueba gratuita** o **pagar un plan ahora**. La
   tarjeta Gratis de la página pública lleva a `/registro?comienzo=GRATIS`. La prueba (elegida en el registro, iniciada
   desde Gratis o de una empresa creada por la plataforma) es del **plan Profesional por 15 días**, parametrizable por el SuperAdmin (Plataforma › Ajustes, `suscripcion.dias_prueba`,
   1–90); **cada prueba conserva los días con que empezó** (`Suscripcion.diasPrueba`): si la plataforma cambia 15 → 20,
   solo las empresas nuevas reciben 20. En el registro también se puede **pagar un plan de una vez** ("Pagar un plan
-  ahora", `comienzo: 'PAGAR'`): la empresa empieza en Gratis con la decisión pendiente y se abre el pago del plan
-  elegido (`/registro?plan=&periodo=` desde la página pública de precios).
-  - **Al vencer la prueba o un plan pagado** (`pendienteDecision`): apenas entra el administrador ve la pasarela
-    (`<app-decision-plan>` en el shell, no se cierra sin decidir; no tapa Planes y membresías ni Soporte): elegir
-    plan y periodo → pago, o "No quiero pagar, seguir en Gratis" (con confirmación de lo que se inactiva,
-    `POST /suscripcion/continuar-gratis`).
+  ahora", `comienzo: 'PAGAR'`): la empresa empieza en Gratis y se abre el pago del plan elegido
+  (`/registro?plan=&periodo=` desde la página pública de precios).
+  - **Vencimiento sin "pagos atrasados":** el plan o la prueba duran hasta el final de su último día (Colombia).
+    Desde **N días antes** (`suscripcion.dias_aviso_vencimiento`, 1–60, por defecto 5, Plataforma › Ajustes) se avisa
+    a **todos los administradores** de la empresa (campana + correo: "vence en N días", y "vence hoy" el último día;
+    `<app-aviso-plan>` en el shell usa los mismos días vía `GET /suscripcion/condiciones`). **Al día siguiente, sin
+    pago, la empresa queda automáticamente en Gratis** (proceso del servidor o al consultar la suscripción): se
+    desactivan las funciones del plan, se inactiva lo que supere los límites y llega "Tu plan X venció: ahora estás en
+    Gratis". No existe la situación "vencida" ni una decisión pendiente; pagar cuando quiera reactiva el plan.
   - **Bajar a un plan con menos límite** (Gratis o uno pagado menor) **inactiva lo que sobra** (no se borra): se
     conservan primero los vehículos con asignación vigente y los estudiantes en rutas activas, luego los más antiguos;
     un vehículo inactivado también inactiva sus asignaciones. Inactivos no salen en listas de activos, rutas ni
     asignaciones; para activar otro hay que inactivar primero uno activo (422 por encima del límite) o mejorar el plan.
   - **Funciones por plan** (`FUNCIONES_PLAN`, `PlanEmpresa` + guardia `conFuncion`): Programación de cobros
     (RECORDATORIOS: se ve, pero guardar exige el plan; aviso `<app-aviso-funcion>`), Reportes financieros (REPORTES)
-    y Monitoreo en vivo / mapas (GPS_EN_VIVO) se muestran con candado en el menú y llevan a Planes y membresías
+    , Monitoreo en vivo / mapas (GPS_EN_VIVO) y el Cronograma (CRONOGRAMA) se muestran con candado en el menú y llevan a Planes y membresías
     (`?funcion=`) con el plan desde el que están; el servidor responde 403 con el mismo mensaje. El mapa del
     acudiente también exige GPS en vivo.
   Los límites solo bloquean crear o activar vehículos o estudiantes por encima del plan; sin GPS el teléfono muestra
@@ -295,7 +311,7 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   **Hoy Wompi está pausado** (sin llaves en el servidor, `pagosEnLinea` = false): la página ofrece "Solicitar por
   Soporte" y la plataforma activa el plan en Empresas › Plan; el correo también está simulado (avisos solo por
   la campana). `suscripcion.ts` debe coincidir con `CatalogoPlanes.cs`. `/offline-membership` es la página pública de precios y
-  `<app-aviso-plan>` avisa en el shell 15 días antes del fin.
+  `<app-aviso-plan>` avisa en el shell desde los días de aviso de la plataforma.
   - **Recordatorios del plan Gratis** (puros en `suscripcion.ts`: `recordatorioGratis`, `nivelUso` —cerca ≥ 80 %, lleno
     100 %— y `puedeIniciarPrueba`): insignia **FREE** (`<app-insignia-plan>`, icono de brote, borde `primary`; punto
     rojo/amarillo en el límite o cerca; durante la prueba `PRUEBA · N d`; nada en planes pagados) en la barra superior,
@@ -320,10 +336,18 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   cada empresa, los crea, edita, inactiva y les cambia la contraseña (revoca sus sesiones), y ajusta su plan.
 - **Membresías en Plataforma › Empresas:** tarjetas por situación (`GET /empresas/resumen-membresias`) que filtran la
   tabla, filtros de membresía y plan, y la columna **Membresía**: plan, situación (`SITUACIONES_MEMBRESIA`: En prueba,
-  Prueba por vencer ≤ 3 días, Al día, Por vencer ≤ 7 días, **Se pasó el pago** = venció sin pagar ni elegir Gratis,
-  Gratis), desde cuándo, hasta cuándo y días que quedan, días de la prueba, y el último pago (columna desde 1024 px).
-- **Plataforma › Ajustes (`plataforma/ajustes/`):** parámetros globales (`GET/PUT /plataforma/parametros`); hoy los
-  días de la prueba gratuita.
+  Prueba por vencer ≤ 3 días, Al día, Por vencer ≤ 7 días, Gratis —elegido o tras vencer sin pago—), desde cuándo, hasta cuándo y días que quedan, días de la prueba, y el último pago (columna desde 1024 px).
+- **Plataforma › Ajustes (`plataforma/ajustes/`):** parámetros globales (`GET/PUT /plataforma/parametros`) en dos
+  grupos: **Membresías** (días de prueba 1–90, días de aviso antes del vencimiento 1–60) y **Precios** (valor mensual
+  con IVA de Esencial, Profesional y Empresarial, con vista previa del anual = ×10).
+- **Plataforma › Ingresos (`plataforma/ingresos/`, inicio del SuperAdmin):** cuánto se ganó en un periodo (este mes,
+  mes pasado, últimos 3/6/12 meses, este año, año pasado o personalizado, máximo 3 años; `GET /plataforma/ingresos`):
+  ingresos vs. el periodo anterior de igual duración, pagos y promedio, recurrente mensual de los planes pagados
+  vigentes hoy (anual ÷ 12), descuentos, serie por día (≤ 62 días) o por mes, reparto por plan, periodo y medio de
+  pago, empresas que más pagaron y detalle paginado con exportación CSV. Cuenta los pagos APROBADOS por la fecha en que
+  se aplicaron: Wompi y los **registrados a mano** — al activar un plan en Empresas › Plan, "Valor recibido" (botón
+  "Usar precio") crea un pago APROBADO con método MANUAL (`valorPagado`). Funciones puras en `ingresos.ts`
+  (`calcularIngresos`, `rangoPreset`) iguales a `IngresosPlataforma.cs`.
 
 ### Tipos de usuario y acceso (`core/auth.ts`, `core/guardias.ts`, `autenticacion/`)
 Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar sesión.

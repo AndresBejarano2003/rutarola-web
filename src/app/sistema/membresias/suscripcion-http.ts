@@ -7,7 +7,6 @@ import {
   AjusteSuscripcion,
   Checkout,
   CondicionesRegistro,
-  DecisionGratis,
   PagoSuscripcion,
   ParametroPlataforma,
   PeriodoPago,
@@ -32,13 +31,14 @@ import { SuscripcionRepositorio } from './suscripcion-repositorio';
  *   la transacción en Wompi; el plan se activa SOLO con la confirmación de Wompi, también por el evento firmado
  *   `POST /pagos/wompi/eventos`); 404 si el pago no es de la empresa;
  * - Plataforma (`empresas.gestionar`): `GET/PUT /empresas/{id}/suscripcion` (422 fecha de fin pasada o código que no
- *   aplica; `codigoPromocional` solo con ACTIVA) y
- *   `GET /empresas/{id}/suscripcion/pagos`.
- * - `GET /suscripcion/condiciones` (público) → `{diasPrueba, planPrueba, nombrePlanPrueba}`;
- * - `POST /suscripcion/continuar-gratis` (`suscripcion.gestionar`) → `DecisionGratis` (inactiva los vehículos y
- *   estudiantes que superan Gratis, conservando primero los que están en uso); 422 si no hay decisión pendiente;
+ *   aplica; `codigoPromocional` y `valorPagado` —pago por fuera, queda APROBADO con método MANUAL y cuenta en los
+ *   ingresos— solo con ACTIVA) y `GET /empresas/{id}/suscripcion/pagos`.
+ * - `GET /suscripcion/condiciones` (público) → `{diasPrueba, planPrueba, nombrePlanPrueba, diasAvisoVencimiento}`;
  * - Plataforma: `GET /plataforma/parametros`, `PUT /plataforma/parametros/{clave} {valor}` (`empresas.gestionar`;
- *   400 fuera de rango; `suscripcion.dias_prueba` 1–90).
+ *   400 fuera de rango): `suscripcion.dias_prueba` 1–90, `suscripcion.dias_aviso_vencimiento` 1–60 y
+ *   `plan.{esencial|profesional|empresarial}.precio_mensual` (pesos; los precios de `GET /suscripcion/planes`).
+ * El plan dura hasta el final de su último día; al día siguiente, sin pago, la empresa queda en Gratis (el servidor
+ * inactiva lo que sobre y avisa por la campana y el correo, también desde los días de aviso antes de vencer).
  * Crear o activar vehículos/estudiantes por encima del plan responde 422 con el límite. Una función que el plan no
  * incluye responde 403 con el mensaje (reportes, GPS en vivo, crear recordatorios).
  */
@@ -74,10 +74,6 @@ export class SuscripcionHttp extends SuscripcionRepositorio {
 
   condiciones(): Observable<CondicionesRegistro> {
     return this.http.get<CondicionesRegistro>(`${this.url}/condiciones`);
-  }
-
-  continuarGratis(): Observable<DecisionGratis> {
-    return this.http.post<DecisionGratis>(`${this.url}/continuar-gratis`, {});
   }
 
   iniciarPrueba(): Observable<Suscripcion> {

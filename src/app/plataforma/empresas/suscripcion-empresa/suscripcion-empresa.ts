@@ -69,9 +69,19 @@ export class SuscripcionEmpresa {
     fechaFin: [''],
     nota: ['', Validators.maxLength(500)],
     codigoPromocional: ['', Validators.maxLength(30)],
+    valorPagado: [0, [Validators.min(0), Validators.max(1_000_000_000)]],
   });
   protected readonly estadoForm = toSignal(this.form.controls.estado.valueChanges, { initialValue: this.form.controls.estado.value });
   protected readonly conVigencia = computed(() => this.estadoForm() !== 'GRATIS');
+  // Precios vigentes (los que fija la plataforma) para sugerir el valor recibido.
+  private readonly catalogo = toSignal(this.repositorio.planes(), { initialValue: PLANES });
+  private readonly planForm = toSignal(this.form.controls.plan.valueChanges, { initialValue: this.form.controls.plan.value });
+  private readonly periodoForm = toSignal(this.form.controls.periodo.valueChanges, { initialValue: this.form.controls.periodo.value });
+  protected readonly precioSugerido = computed(() => {
+    const p = this.catalogo().find((x) => x.id === this.planForm());
+    if (!p) return 0;
+    return this.periodoForm() === 'ANUAL' ? p.precioAnual : p.precioMensual;
+  });
 
   constructor() {
     effect(() => {
@@ -94,11 +104,15 @@ export class SuscripcionEmpresa {
   protected editar(): void {
     const s = this.suscripcion();
     if (!s) return;
-    this.form.reset({ plan: s.plan, estado: s.estado, periodo: s.periodo, fechaFin: fechaLocal(s.fechaFin), nota: s.nota, codigoPromocional: '' });
+    this.form.reset({ plan: s.plan, estado: s.estado, periodo: s.periodo, fechaFin: fechaLocal(s.fechaFin), nota: s.nota, codigoPromocional: '', valorPagado: 0 });
     this.editando.set(true);
   }
 
-  protected errorDe(campo: 'fechaFin' | 'nota' | 'codigoPromocional'): string | null {
+  protected usarPrecio(): void {
+    this.form.controls.valorPagado.setValue(this.precioSugerido());
+  }
+
+  protected errorDe(campo: 'fechaFin' | 'nota' | 'codigoPromocional' | 'valorPagado'): string | null {
     return mensajeError(this.form.controls[campo]);
   }
 
@@ -128,6 +142,7 @@ export class SuscripcionEmpresa {
             periodo: final.estado === 'ACTIVA' ? final.periodo || 'MENSUAL' : '',
             fechaFin: fin,
             codigoPromocional: final.estado === 'ACTIVA' ? final.codigoPromocional.trim().toUpperCase() : '',
+            valorPagado: final.estado === 'ACTIVA' ? Math.round(Number(final.valorPagado) || 0) : 0,
           }),
         ),
       );

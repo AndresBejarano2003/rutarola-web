@@ -12,6 +12,12 @@ import { EmpresasRepositorio } from "../plataforma/empresas/empresas-repositorio
 import { CodigosPromocionalesHttp } from "../plataforma/codigos-promocionales/codigos-promocionales-http";
 import { CodigosPromocionalesLocal } from "../plataforma/codigos-promocionales/codigos-promocionales-local";
 import { CodigosPromocionalesRepositorio } from "../plataforma/codigos-promocionales/codigos-promocionales-repositorio";
+import { CronogramaHttp } from "../operacion/cronograma/cronograma-http";
+import { CronogramaLocal } from "../operacion/cronograma/cronograma-local";
+import { CronogramaRepositorio } from "../operacion/cronograma/cronograma-repositorio";
+import { IngresosHttp } from "../plataforma/ingresos/ingresos-http";
+import { IngresosLocal } from "../plataforma/ingresos/ingresos-local";
+import { IngresosRepositorio } from "../plataforma/ingresos/ingresos-repositorio";
 import { TicketsHttp } from "../sistema/soporte/tickets/tickets-http";
 import { TicketsLocal } from "../sistema/soporte/tickets/tickets-local";
 import { TicketsRepositorio } from "../sistema/soporte/tickets/tickets-repositorio";
@@ -152,6 +158,8 @@ export function proveerRepositorios({
     // Acceso (el login local resuelve el rol con los empleados) y ruta del día de conductores/monitoras
     api(AutenticacionRepositorio, AutenticacionLocal, AutenticacionHttp),
     api(RecorridosRepositorio, RecorridosLocal, RecorridosHttp),
+    // Cronograma de la operación (rutas, ausencias y agenda por día)
+    api(CronogramaRepositorio, CronogramaLocal, CronogramaHttp),
     // Ubicación de los vehículos (Ruta del día la envía; mapas del administrador y del acudiente)
     api(GpsRepositorio, GpsLocal, GpsHttp),
     // Portal del acudiente (lee todos los módulos)
@@ -159,6 +167,7 @@ export function proveerRepositorios({
     // Plataforma (SUPER_ADMIN, solo existe con el API)
     api(EmpresasRepositorio, EmpresasLocal, EmpresasHttp),
     api(CodigosPromocionalesRepositorio, CodigosPromocionalesLocal, CodigosPromocionalesHttp),
+    api(IngresosRepositorio, IngresosLocal, IngresosHttp),
     // Tickets de soporte (empresa y plataforma)
     api(TicketsRepositorio, TicketsLocal, TicketsHttp),
     // Plan de la empresa y pagos en línea (Wompi)

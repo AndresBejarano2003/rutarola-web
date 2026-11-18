@@ -24,29 +24,27 @@ describe('Prueba gratuita y plan Gratis (modo local)', () => {
   it('la prueba conserva los días con que empezó aunque la plataforma los cambie', async () => {
     const repo = TestBed.inject(SuscripcionRepositorio);
     const s = await firstValueFrom(repo.actual());
-    expect(s).toMatchObject({ estado: 'PRUEBA', plan: 'PROFESIONAL', diasPrueba: 15, pendienteDecision: false });
+    expect(s).toMatchObject({ estado: 'PRUEBA', plan: 'PROFESIONAL', diasPrueba: 15 });
 
     await firstValueFrom(repo.actualizarParametroPlataforma(CLAVE_DIAS_PRUEBA, '20'));
     expect((await firstValueFrom(repo.condiciones())).diasPrueba).toBe(20);
     expect((await firstValueFrom(repo.actual())).diasPrueba).toBe(15);
   });
 
-  it('al vencer pide decidir y "seguir en Gratis" inactiva los vehículos que sobran', async () => {
+  it('dura hasta el final de su último día y al día siguiente queda en Gratis e inactiva lo que sobra', async () => {
     const repo = TestBed.inject(SuscripcionRepositorio);
     const vehiculos = TestBed.inject(VehiculosRepositorio);
     await firstValueFrom(repo.actual());
     const activosAntes = (await firstValueFrom(vehiculos.listar({ ...FILTROS_VEHICULO_VACIOS, estado: 'ACTIVO' }, SIN_PAGINAR))).total;
     expect(activosAntes).toBeGreaterThan(1);
 
+    vi.setSystemTime(ahora + 15 * dia);
+    expect(await firstValueFrom(repo.actual())).toMatchObject({ estado: 'PRUEBA', diasRestantes: 0 });
+
     vi.setSystemTime(ahora + 16 * dia);
     const vencida = await firstValueFrom(repo.actual());
-    expect(vencida).toMatchObject({ plan: 'GRATIS', pendienteDecision: true, planVencido: 'PROFESIONAL' });
-
-    const decision = await firstValueFrom(repo.continuarGratis());
-    expect(decision.suscripcion.pendienteDecision).toBe(false);
-    expect(decision.inactivados.vehiculos).toHaveLength(activosAntes - 1);
+    expect(vencida).toMatchObject({ plan: 'GRATIS', estado: 'GRATIS', planVencido: 'PROFESIONAL' });
     expect((await firstValueFrom(vehiculos.listar({ ...FILTROS_VEHICULO_VACIOS, estado: 'ACTIVO' }, SIN_PAGINAR))).total).toBe(1);
-    await expect(firstValueFrom(repo.continuarGratis())).rejects.toThrow();
   });
 
   it('quien se registró en Gratis puede iniciar la prueba una sola vez', async () => {
@@ -55,14 +53,13 @@ describe('Prueba gratuita y plan Gratis (modo local)', () => {
     await firstValueFrom(repo.actual());
     vi.setSystemTime(ahora + 16 * dia);
     await firstValueFrom(repo.actual());
-    await firstValueFrom(repo.continuarGratis());
     await expect(firstValueFrom(repo.iniciarPrueba())).rejects.toThrow(/ya usó la prueba/);
 
     // Registro en Gratis (sin prueba usada): no vence ni pide decidir; puede probar Profesional.
     const gratis = await firstValueFrom(repo.actual());
     localStorage.setItem(CLAVE_SUSCRIPCION_LOCAL, JSON.stringify({ ...gratis, pruebaUsada: false, diasPrueba: 0, planVencido: '', fechaVencimiento: null }));
     vi.setSystemTime(ahora + 400 * dia);
-    expect(await firstValueFrom(repo.actual())).toMatchObject({ estado: 'GRATIS', pendienteDecision: false, pruebaUsada: false });
+    expect(await firstValueFrom(repo.actual())).toMatchObject({ estado: 'GRATIS', pruebaUsada: false });
 
     const prueba = await firstValueFrom(repo.iniciarPrueba());
     expect(prueba).toMatchObject({ estado: 'PRUEBA', plan: 'PROFESIONAL', pruebaUsada: true, diasPrueba: 15 });

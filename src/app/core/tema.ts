@@ -53,3 +53,21 @@ export class TemaApp {
     this.auth.actualizarEmpresa({ tema });
   }
 }
+
+/** Colores de cada tema (`rutarola` / `rutarola-claro`) para ApexCharts (no lee variables CSS). */
+export const COLORES_TEMA = {
+  OSCURO: {
+    texto: '#d1d5db',
+    rejilla: '#374151',
+    facturado: '#38bdf8',
+    recaudado: '#4ade80',
+    serie: ['#facc15', '#38bdf8', '#4ade80', '#f87171', '#a78bfa', '#9ca3af'],
+  },
+  CLARO: {
+    texto: '#374151',
+    rejilla: '#e5e7eb',
+    facturado: '#0369a1',
+    recaudado: '#15803d',
+    serie: ['#ca8a04', '#0369a1', '#15803d', '#b91c1c', '#7c3aed', '#6b7280'],
+  },
+};

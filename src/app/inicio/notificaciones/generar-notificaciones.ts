@@ -8,6 +8,7 @@ import { nombreCompleto } from 'src/app/personas/compartido/persona';
 import { Empleado } from 'src/app/personas/empleados/empleado';
 import { diasEntre, fechaCorta, fechaIso, nombrePeriodo, periodoDe, sumarMeses } from 'src/app/shared/fechas/fechas';
 import { estadoVencimiento } from 'src/app/shared/vencimiento/vencimiento';
+import { Suscripcion, diaColombia, nombrePlan, planVencido } from 'src/app/sistema/membresias/suscripcion';
 import { NuevaNotificacion } from './notificacion-sistema';
 
 /**
@@ -26,6 +27,9 @@ export interface DatosNotificables {
   cotizaciones: Cotizacion[];
   envios: { programacion: Programacion; envio: EnvioProgramado }[];
   morosos: Moroso[];
+  /** Plan de la empresa y desde cuántos días antes de vencer se avisa (parámetro de la plataforma). */
+  suscripcion?: Suscripcion | null;
+  diasAvisoVencimiento?: number;
 }
 
 const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
@@ -237,5 +241,68 @@ export function generarNotificaciones(datos: DatosNotificables, ahora = new Date
     });
   }
 
+  if (datos.suscripcion) {
+    resultado.push(...avisosMembresia(datos.suscripcion, hoy, datos.diasAvisoVencimiento ?? 5, ahora));
+  }
+  return resultado;
+}
+
+/** Suma días a `YYYY-MM-DD`. */
+function masDias(fecha: string, dias: number): string {
+  return new Date(Date.parse(`${fecha}T00:00:00Z`) + dias * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * Igual que `GeneradorNotificaciones.AvisosMembresia`: desde `diasAviso` días antes del último día del plan o de la prueba
+ * ("vence en N días"), el último día ("vence hoy", crítica) y, ya en Gratis, "Tu plan X venció" durante 30 días.
+ * El servidor además manda el aviso por correo a cada administrador.
+ */
+export function avisosMembresia(s: Suscripcion, hoy: string, diasAviso: number, ahora = new Date()): NuevaNotificacion[] {
+  const enlace = '/sistema/membership';
+  const resultado: NuevaNotificacion[] = [];
+  if (s.estado !== 'GRATIS' && s.fechaFin && !planVencido(s, ahora.getTime())) {
+    const ultimo = diaColombia(s.fechaFin);
+    const dias = diasEntre(hoy, ultimo);
+    const nombre = nombrePlan(s.plan);
+    const que = s.estado === 'PRUEBA' ? `Tu prueba gratuita del plan ${nombre}` : `Tu plan ${nombre}`;
+    const consecuencia = `Si no pagas, desde el ${fechaCorta(masDias(ultimo, 1))} quedas en el plan Gratis: se desactivan las funciones de tu plan y se inactivan los vehículos y estudiantes que superen sus límites (no se borra nada).`;
+    const clave = `membresia:${s.estado.toLowerCase()}:${ultimo}`;
+    if (dias === 0) {
+      resultado.push({
+        clave: `${clave}:ultimo-dia`,
+        categoria: 'SISTEMA',
+        nivel: 'CRITICA',
+        titulo: `${que} vence hoy`,
+        mensaje: `${que} termina hoy ${fechaCorta(ultimo)}. ${consecuencia}`,
+        enlace,
+        textoEnlace: 'Ver planes',
+      });
+    } else if (dias <= diasAviso) {
+      resultado.push({
+        clave: `${clave}:por-vencer`,
+        categoria: 'SISTEMA',
+        nivel: 'ADVERTENCIA',
+        titulo: `${que} vence en ${dias} ${dias === 1 ? 'día' : 'días'}`,
+        mensaje: `${que} termina el ${fechaCorta(ultimo)}. ${consecuencia}`,
+        enlace,
+        textoEnlace: 'Ver planes',
+      });
+    }
+  }
+  if (s.estado === 'GRATIS' && s.planVencido && s.fechaVencimiento) {
+    const ultimo = diaColombia(s.fechaVencimiento);
+    if (diasEntre(ultimo, hoy) <= VENTANA_EVENTOS_DIAS) {
+      const nombre = nombrePlan(s.planVencido);
+      resultado.push({
+        clave: `membresia:vencida:${s.planVencido.toLowerCase()}:${ultimo}`,
+        categoria: 'SISTEMA',
+        nivel: 'CRITICA',
+        titulo: `Tu plan ${nombre} venció: ahora estás en Gratis`,
+        mensaje: `Tu plan ${nombre} terminó el ${fechaCorta(ultimo)} sin pago y desde el ${fechaCorta(masDias(ultimo, 1))} estás en el plan Gratis. Los vehículos y estudiantes que superaban sus límites quedaron inactivos (no se borró nada). Paga un plan para recuperar sus funciones.`,
+        enlace,
+        textoEnlace: 'Mejorar mi plan',
+      });
+    }
+  }
   return resultado;
 }
