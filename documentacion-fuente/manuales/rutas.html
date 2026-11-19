@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Rutas y operación · RutaRola</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<section class="portada">
+  <div><img class="logo" src="../../public/logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola"></div>
+  <div>
+    <span class="etiqueta">Manual de usuario</span>
+    <h1>Rutas y operación</h1>
+    <p class="subtitulo">Colegios y cursos, rutas, vehículos con sus documentos, conductores, asignaciones, la Ruta del día del conductor y la monitora, monitoreo en vivo y cronograma.</p>
+  </div>
+  <div class="pie"><span>Para administradores de la empresa de transporte</span><span>Versión noviembre 2026</span></div>
+</section>
+
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li>El orden para configurar la operación <span>De un vistazo</span></li>
+    <li>Colegios y cursos</li>
+    <li>Vehículos <span>Documentos, novedades y gastos</span></li>
+    <li>Conductores y monitoras</li>
+    <li>Rutas <span>Estudiantes y orden</span></li>
+    <li>Asignaciones <span>Quién cubre cada ruta y cuándo</span></li>
+    <li>La Ruta del día <span>App del conductor y la monitora</span></li>
+    <li>Monitoreo, historial y cronograma</li>
+    <li>Preguntas frecuentes</li>
+  </ol>
+  <div class="nota"><strong>¿Cómo leer este manual?</strong>
+    Menús: <span class="menu">Operación › Rutas</span>. Botones: <span class="boton">Nueva ruta</span>. Campos: <span class="campo">negrita</span>. Los campos con <b style="color:#dc2626">*</b> son obligatorios.</div>
+</section>
+
+<section class="capitulo">
+  <h2>1. El orden para configurar la operación</h2>
+  <p class="intro">Cada pieza se apoya en la anterior. Siguiendo este orden nunca te faltará una opción en las listas.</p>
+  <table>
+    <tr><th>Paso</th><th>Dónde</th><th>Para qué</th></tr>
+    <tr><td>1. Colegios y sus cursos</td><td><span class="menu">Operación › Colegios</span></td><td>Los estudiantes y las rutas pertenecen a un colegio y una jornada.</td></tr>
+    <tr><td>2. Estudiantes</td><td><span class="menu">Personas › Estudiantes</span></td><td>Ver el manual <i>Gestión de estudiantes</i>.</td></tr>
+    <tr><td>3. Vehículos</td><td><span class="menu">Operación › Vehículos</span></td><td>Con capacidad y documentos al día.</td></tr>
+    <tr><td>4. Conductores y monitoras</td><td><span class="menu">Personas › Empleados</span></td><td>Con licencia vigente y su acceso a la app.</td></tr>
+    <tr><td>5. Rutas</td><td><span class="menu">Operación › Rutas</span></td><td>Qué estudiantes recoge cada ruta y en qué orden.</td></tr>
+    <tr><td>6. Asignaciones</td><td><span class="menu">Operación › Asignaciones</span></td><td>Qué vehículo, conductor y monitora hacen cada ruta y desde cuándo.</td></tr>
+  </table>
+</section>
+
+<section class="capitulo">
+  <h2>2. Colegios y cursos</h2>
+  <figure><img src="../capturas/operacion-colegios.jpg" alt=""><figcaption>Lista de colegios.</figcaption></figure>
+  <ol class="pasos">
+    <li>En <span class="menu">Operación › Colegios</span> toca <span class="boton">Nuevo colegio</span>.</li>
+    <li><b>Datos del colegio:</b> <span class="campo">NIT</span> (único), <span class="campo">Razón social</span>, <span class="campo">Dirección</span>, <span class="campo">Teléfono</span> y <span class="campo">Estado</span>.</li>
+    <li><b>Parametrizar cursos:</b> un curso es un <b>grado + jornada</b> con su horario. Elige <i>Un curso</i> o <i>Varios cursos</i>; con <i>Varios cursos</i> indicas <span class="campo">Desde</span> y <span class="campo">Hasta</span> (por ejemplo, Jardín a 5°) y se crean todos de una vez.</li>
+    <li>Elige la <span class="campo">Jornada</span> (Mañana, Tarde, Única…), la <span class="campo">Hora entrada</span> y la <span class="campo">Hora salida</span>, y toca <span class="boton sec">Agregar cursos</span>. Repite para otras jornadas u horarios.</li>
+    <li>Toca <span class="boton">Registrar colegio</span>.</li>
+  </ol>
+  <figure><img src="../capturas/operacion-colegio-nuevo.jpg" alt=""><figcaption>Nuevo colegio con la sección para parametrizar cursos.</figcaption></figure>
+  <div class="consejo"><strong>Cambiar un horario</strong>Si agregas un curso que ya existe en esa jornada, solo se actualiza su horario. Un mismo grado puede estar en varias jornadas con horarios distintos.</div>
+</section>
+
+<section class="capitulo">
+  <h2>3. Vehículos</h2>
+  <figure><img src="../capturas/operacion-vehiculos.jpg" alt=""><figcaption>Flota con el estado de sus documentos.</figcaption></figure>
+  <h3>Registrar un vehículo</h3>
+  <ol class="pasos">
+    <li>En <span class="menu">Operación › Vehículos</span> toca <span class="boton">Nuevo vehículo</span>.</li>
+    <li>Foto opcional, <span class="campo">Placa</span>, <span class="campo">Número interno</span>, <span class="campo">Tipo de vehículo</span>, <span class="campo">Capacidad (estudiantes)</span> (solo puestos para estudiantes, sin contar conductor ni monitora), <span class="campo">Marca</span>, <span class="campo">Línea</span>, <span class="campo">Modelo (año)</span> y <span class="campo">Color</span>.</li>
+    <li><b>Documentos:</b> fecha de vencimiento del <span class="campo">SOAT</span>, la <span class="campo">Revisión técnico-mecánica</span>, la <span class="campo">Tarjeta de operación</span> y las <span class="campo">Pólizas RCC / RCE</span>.</li>
+    <li>Toca <span class="boton">Registrar vehículo</span>.</li>
+  </ol>
+  <figure><img src="../capturas/operacion-vehiculo-nuevo.jpg" alt=""><figcaption>Nuevo vehículo.</figcaption></figure>
+  <h3>Historial de documentos, novedades y gastos</h3>
+  <p>Al consultar un vehículo, debajo de sus datos encuentras tres secciones:</p>
+  <ul>
+    <li><b>Historial de documentos:</b> con <span class="boton sec">Registrar documento</span> guardas cada renovación con su número, entidad, fechas y el PDF o foto (hasta 2 MB). El más reciente de cada tipo es el vigente y actualiza solo la fecha de vencimiento del vehículo.</li>
+    <li><b>Novedades:</b> averías o daños que reportan el conductor y la monitora desde su app (o que registras tú). Las mueves de <i>Pendiente</i> a <i>En proceso</i> y a <i>Resuelta</i> escribiendo qué se hizo.</li>
+    <li><b>Gastos:</b> <span class="boton sec">Ver gastos</span> abre el registro de tanqueadas, mantenimientos, repuestos, llantas, peajes, etc., con su tablero de totales.</li>
+  </ul>
+  <figure><img src="../capturas/operacion-vehiculo-consulta.jpg" alt=""><figcaption>Detalle de un vehículo.</figcaption></figure>
+  <div class="importante"><strong>Documentos vencidos</strong>Un vehículo con algún documento vencido no se puede asignar a una ruta. RutaRola avisa desde 30 días antes en <span class="menu">Inicio</span> y en la campana de notificaciones.</div>
+</section>
+
+<section class="capitulo">
+  <h2>4. Conductores y monitoras</h2>
+  <p>Se registran como empleados en <span class="menu">Personas › Empleados</span> con <span class="boton">Nuevo empleado</span>:</p>
+  <ol class="pasos">
+    <li>Datos personales y de contacto (el celular es obligatorio: es el que usa la pareja de la ruta para llamar).</li>
+    <li>El <b>tipo de empleado</b>: <i>Conductor</i> o <i>Monitora</i>. Al conductor se le piden la categoría y el vencimiento de su <b>licencia</b>.</li>
+    <li><b>Acceso a la app:</b> un <span class="campo">Usuario</span> y una <span class="campo">Contraseña</span>. Con ellos el conductor o la monitora entran a su Ruta del día. El tipo de empleado decide qué ve al entrar.</li>
+  </ol>
+  <figure><img src="../capturas/empleados-lista.jpg" alt=""><figcaption>Empleados.</figcaption></figure>
+  <p><span class="menu">Operación › Conductores</span> es una vista de consulta: cada conductor con su licencia, su vencimiento y la ruta asignada.</p>
+  <figure><img src="../capturas/operacion-conductores.jpg" alt=""><figcaption>Conductores con su licencia y ruta.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <h2>5. Rutas</h2>
+  <figure><img src="../capturas/operacion-rutas.jpg" alt=""><figcaption>Lista de rutas.</figcaption></figure>
+  <ol class="pasos">
+    <li>En <span class="menu">Operación › Rutas</span> toca <span class="boton">Nueva ruta</span>. El <b>código</b> (R-01, R-02…) lo pone el sistema al guardar.</li>
+    <li>Escribe el <span class="campo">Nombre</span> (ej. “Norte”), elige el <span class="campo">Colegio</span> y la <span class="campo">Jornada</span>, y describe el <span class="campo">Sector / barrios que recorre</span>.</li>
+    <li>En <b>Estudiantes de la ruta</b> agrega los estudiantes: solo aparecen los de ese colegio y esa jornada. El orden de la lista es el orden de recogida; la entrega se hace en orden inverso.</li>
+    <li>Deja el <span class="campo">Estado</span> en <i>Activo</i> y toca <span class="boton">Registrar ruta</span>.</li>
+  </ol>
+  <figure><img src="../capturas/operacion-ruta-consulta.jpg" alt=""><figcaption>Ruta con sus estudiantes en orden.</figcaption></figure>
+  <div class="nota"><strong>Regla</strong>Un estudiante no puede estar en dos rutas activas de la misma jornada.</div>
+</section>
+
+<section class="capitulo">
+  <h2>6. Asignaciones</h2>
+  <p class="intro">La asignación dice qué vehículo, qué conductor y qué monitora hacen una ruta, desde qué fecha y en qué horario. Sin asignación vigente, la ruta no le aparece a nadie en su Ruta del día.</p>
+  <figure><img src="../capturas/operacion-asignaciones.jpg" alt=""><figcaption>Arriba, los avisos de ausencia del día; abajo, las asignaciones.</figcaption></figure>
+  <ol class="pasos">
+    <li>En <span class="menu">Operación › Asignaciones</span> toca <span class="boton">Nueva asignación</span>.</li>
+    <li>Elige la <span class="campo">Ruta</span> y el <span class="campo">Vehículo</span>.</li>
+    <li>Elige el <span class="campo">Conductor</span> y, si hay, la <span class="campo">Monitora</span>.</li>
+    <li>Indica la <span class="campo">Fecha de inicio</span> y, si se sabe, la <span class="campo">Fecha de fin</span> (vacía = sin fecha de fin). Las <span class="campo">Hora de inicio</span> y <span class="campo">Hora de fin</span> vacías significan toda la jornada.</li>
+    <li>Toca <span class="boton">Registrar asignación</span>.</li>
+  </ol>
+  <figure><img src="../capturas/operacion-asignacion-nueva.jpg" alt=""><figcaption>Nueva asignación.</figcaption></figure>
+  <div class="importante"><strong>Al guardar, RutaRola verifica</strong>
+    <ul style="margin:1mm 0 0">
+      <li>que el vehículo tenga puestos para todos los estudiantes de la ruta;</li>
+      <li>que la licencia del conductor y los documentos del vehículo estén vigentes;</li>
+      <li>que no se cruce en fechas y horas con otra asignación activa de la misma ruta, vehículo o persona.</li>
+    </ul>
+    Una ruta puede tener varias asignaciones en fechas distintas (por ejemplo, una por semana) o el mismo día en horarios distintos.</div>
+</section>
+
+<section class="capitulo">
+  <h2>7. La Ruta del día (conductor y monitora)</h2>
+  <p class="intro">El conductor y la monitora entran con su usuario desde el celular (app RutaRola o app.rutarola.com) y ven solo sus rutas de hoy.</p>
+  <div class="dos-columnas">
+    <figure class="movil"><img src="../capturas/ruta-del-dia.jpg" alt=""><figcaption>Rutas de hoy del conductor.</figcaption></figure>
+    <div>
+      <ol class="pasos">
+        <li>Cada ruta muestra el colegio, el vehículo, cuántos estudiantes lleva y la pareja de trabajo, con botón para llamar.</li>
+        <li>Para la mañana toca <span class="boton">Iniciar recogida</span> (de la casa al colegio); para la tarde, <span class="boton">Iniciar entrega</span> (del colegio a la casa). Si la pareja ya lo inició, se unen al mismo recorrido.</li>
+        <li>La pantalla muestra la <b>próxima parada</b>, con la foto del estudiante, su dirección, y botones de Google Maps, llamar y WhatsApp.</li>
+        <li>Marca a cada estudiante cuando sube (queda <i>A bordo</i>) y cuando lo dejan (<i>Entregado</i>), o como ausente si no está. <span class="boton sec">Deshacer</span> corrige el último paso.</li>
+        <li>La monitora (o el conductor, si va sin monitora) puede cambiar el orden de las paradas arrastrando a un estudiante. La pareja ve el cambio al instante.</li>
+        <li>Al final toca <span class="boton">Finalizar recorrido</span>. Solo se puede finalizar cuando nadie queda a bordo.</li>
+      </ol>
+    </div>
+  </div>
+  <h3>Ubicación GPS</h3>
+  <p>Mientras el recorrido está en curso, los celulares del conductor y de la monitora comparten la ubicación. Con la <b>app RutaRola instalada</b> se sigue compartiendo aunque usen otra aplicación o bloqueen la pantalla; en el navegador, la pantalla debe quedar encendida.</p>
+  <div class="consejo"><strong>Prepara tu teléfono</strong>La primera vez que inician un recorrido en la app, aparece la guía “Prepara tu teléfono”: permitir notificaciones, quitar a RutaRola del ahorro de batería y el ajuste propio de la marca del celular. Hacerlo una sola vez evita que la ubicación se pause.</div>
+  <h3>Avisos de ausencia y novedades</h3>
+  <p>Si un acudiente avisó que el niño no va, la ruta lo muestra en la parada con la opción <b>“Confirmar: no va”</b>. Desde la Ruta del día también se reportan <b>novedades del vehículo</b> (una avería, un daño, una llanta baja) con foto.</p>
+</section>
+
+<section class="capitulo">
+  <h2>8. Monitoreo, historial y cronograma</h2>
+  <h3>Monitoreo en vivo</h3>
+  <p><span class="menu">Operación › Monitoreo en vivo</span> muestra en el mapa todos los recorridos en curso y se mueve en tiempo real. Si un vehículo no envía ubicación por más de 3 minutos, aparece “sin señal”. Incluido en los planes Profesional y Empresarial.</p>
+  <figure><img src="../capturas/operacion-monitoreo.jpg" alt=""><figcaption>Monitoreo en vivo.</figcaption></figure>
+  <h3>Historial de recorridos</h3>
+  <p><span class="menu">Operación › Recorridos</span> guarda cada recogida y entrega: quién la hizo, a qué hora subió y llegó cada estudiante, las ausencias y el trayecto en el mapa. Filtra por fechas, ruta, trayecto o estado y exporta con <span class="boton sec">Exportar CSV</span>.</p>
+  <figure><img src="../capturas/operacion-recorridos.jpg" alt=""><figcaption>Historial de recorridos.</figcaption></figure>
+  <h3>Cronograma</h3>
+  <p><span class="menu">Operación › Cronograma</span> muestra por semana, mes o año las rutas programadas, los recorridos hechos, las ausencias avisadas y los vencimientos (documentos, licencias, pagos, contratos). Toca un día y luego una ruta para ver su detalle.</p>
+  <figure><img src="../capturas/operacion-cronograma.jpg" alt=""><figcaption>Cronograma semanal.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <h2>9. Preguntas frecuentes</h2>
+  <h4>El conductor no ve su ruta hoy</h4>
+  <p>Revisa en <span class="menu">Operación › Asignaciones</span> que tenga una asignación <i>Activa</i> cuyas fechas incluyan hoy, y que la ruta esté <i>Activa</i>.</p>
+  <h4>“El vehículo no tiene capacidad”</h4>
+  <p>La ruta tiene más estudiantes que puestos. Usa un vehículo más grande o divide la ruta.</p>
+  <h4>No me deja agregar un estudiante a la ruta</h4>
+  <p>Debe ser del mismo colegio y la misma jornada de la ruta, y no estar ya en otra ruta activa de esa jornada.</p>
+  <h4>La ubicación se pausa en el celular</h4>
+  <p>Usa la app RutaRola instalada y completa la guía “Prepara tu teléfono” (ver la sección 7).</p>
+</section>
+
+</body>
+</html>

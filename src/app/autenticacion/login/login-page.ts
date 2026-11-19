@@ -18,7 +18,6 @@ import { mensajeDeError } from 'src/app/shared/crud/crud';
 import { SIN_PAGINAR, esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { AutenticacionRepositorio } from '../autenticacion-repositorio';
 import { ADMIN_LOCAL, CONTRASENA_DEMO } from '../credenciales-local';
-import { Presentacion } from './presentacion/presentacion';
 
 interface AccesoDemo {
   rol: RolUsuario;
@@ -39,10 +38,11 @@ const CARACTERISTICAS = [
  * Inicio de sesión. El ROL de la sesión decide el sistema: administrador → `/inicio`,
  * conductor/monitora → `/ruta-del-dia` (o la URL protegida que pidió, si es de su rol).
  */
+import { RESPONSABLE_DATOS } from 'src/app/sistema/privacidad/privacidad-page';
 @Component({
   selector: 'app-login-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Presentacion, ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
@@ -58,9 +58,9 @@ export default class LoginPage {
 
   protected readonly caracteristicas = CARACTERISTICAS;
   protected readonly anioActual = new Date().getFullYear();
+  /** Contacto antes de iniciar sesión (dentro del sistema está el Centro de Ayuda). */
+  protected readonly correoSoporte = RESPONSABLE_DATOS.correo;
   protected readonly modoLocal = esFuenteLocal(this.repositorio);
-  /** Animación de RutaRola antes de mostrar el login (cada vez que se abre). */
-  protected readonly presentando = signal(true);
   protected readonly mostrarContrasena = signal(false);
   private readonly campoContrasena = viewChild<ElementRef<HTMLInputElement>>('campoContrasena');
   protected readonly ingresando = signal(false);

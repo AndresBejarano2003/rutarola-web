@@ -61,13 +61,26 @@
               @if (gps.ultimaLectura(); as ultima) {
                 <span class="text-base-content/70">Última lectura {{ haceCuanto(ultima) }}</span>
               }
+              @if (gps.enSegundoPlano) {
+                @if (ajustesTelefono.estado() && !ajustesTelefono.estado()!.sinOptimizacionBateria) {
+                  <button type="button" class="btn btn-xs btn-soft btn-warning" (click)="guiaTelefono.set(true)">
+                    <i class="fa-solid fa-battery-quarter" aria-hidden="true"></i> El ahorro de batería puede pausarla · Prepara tu teléfono
+                  </button>
+                } @else {
+                  <span class="text-base-content/70">Sigue compartiendo aunque uses otra app o bloquees la pantalla.</span>
+                  <button type="button" class="link link-secondary text-xs" (click)="guiaTelefono.set(true)">Prepara tu teléfono</button>
+                }
+              }
             }
             @case ('BUSCANDO') {
               <span class="flex items-center gap-2 text-info"><span class="loading loading-spinner loading-xs" aria-hidden="true"></span> Buscando señal GPS…</span>
             }
             @case ('SIN_PERMISO') {
               <span class="flex items-center gap-2 text-warning"><i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i>
-                Permite la ubicación en el navegador para que el colegio y los acudientes vean la ruta.</span>
+                Permite la ubicación {{ gps.enSegundoPlano ? 'de RutaRola en los ajustes del teléfono' : 'en el navegador' }} para que el colegio y los acudientes vean la ruta.</span>
+              @if (gps.enSegundoPlano) {
+                <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="gps.abrirAjustes()">Abrir ajustes</button>
+              }
             }
             @case ('NO_DISPONIBLE') {
               <span class="flex items-center gap-2 text-warning"><i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i> Este equipo no tiene ubicación.</span>
@@ -427,3 +440,5 @@
     </div>
   </div>
 </ng-template>
+
+<app-preparar-telefono [(abierto)]="guiaTelefono" />

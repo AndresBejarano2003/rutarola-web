@@ -10,19 +10,8 @@ import { INTERVALO_RECARGA } from 'src/app/shared/crud/listado-store';
 
 /** Repositorios locales sin latencia. Llamar `localStorage.clear()` antes de cada prueba. */
 export function repositoriosDePrueba(): Provider[] {
-  simularVideo();
   // Las pruebas siempre usan los repositorios locales, sin importar el entorno.
   return [...proveerRepositorios({ usarApi: false }), { provide: LATENCIA_LOCAL, useValue: 0 }, { provide: INTERVALO_RECARGA, useValue: 0 }];
-}
-
-/**
- * jsdom no reproduce video (avisa "Not implemented" en cada `play()`): la animación del login
- * (`<app-presentacion>`) se queda en su primer cuadro y pasa al login por tiempo.
- */
-export function simularVideo(): void {
-  if (typeof HTMLMediaElement === 'undefined') return;
-  HTMLMediaElement.prototype.play = () => Promise.resolve();
-  HTMLMediaElement.prototype.pause = () => undefined;
 }
 
 /** jsdom no implementa `<dialog>.showModal/close`. */

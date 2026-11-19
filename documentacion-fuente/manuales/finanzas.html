@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Finanzas y facturas · RutaRola</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<section class="portada">
+  <div><img class="logo" src="../../public/logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola"></div>
+  <div>
+    <span class="etiqueta">Manual de usuario</span>
+    <h1>Finanzas y facturas</h1>
+    <p class="subtitulo">Cotizaciones, facturas mensuales, registro de pagos (completos o abonos), retiros y reportes de cartera.</p>
+  </div>
+  <div class="pie"><span>Para administradores de la empresa de transporte</span><span>Versión noviembre 2026</span></div>
+</section>
+
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li>Cómo funciona el cobro en RutaRola <span>Conceptos clave</span></li>
+    <li>Cotizaciones <span>Ofrecer el servicio y convertirlo en facturas</span></li>
+    <li>Facturas <span>El contrato mensual de cada estudiante</span></li>
+    <li>Estado de cuenta y retiros <span>Mes a mes</span></li>
+    <li>Recibos de pago <span>Pagos completos y abonos</span></li>
+    <li>Reportes financieros <span>Ingresos, pendientes y morosos</span></li>
+    <li>Descargar PDF <span>Facturas, recibos y cotizaciones</span></li>
+    <li>Preguntas frecuentes</li>
+  </ol>
+  <div class="nota"><strong>¿Cómo leer este manual?</strong>
+    Menús: <span class="menu">Finanzas › Facturas</span>. Botones: <span class="boton">Nueva factura</span>. Campos: <span class="campo">negrita</span>. Los campos con <b style="color:#dc2626">*</b> son obligatorios.</div>
+</section>
+
+<section class="capitulo">
+  <h2>1. Cómo funciona el cobro en RutaRola</h2>
+  <p class="intro">El flujo normal es: <b>cotización</b> (opcional) → <b>factura</b> (contrato por estudiante) → <b>recibos</b> (cada pago) → <b>reportes</b> (quién debe y cuánto).</p>
+  <table>
+    <tr><th>Concepto</th><th>Qué significa</th></tr>
+    <tr><td>Factura</td><td>El contrato del servicio de <b>un estudiante</b>: un valor <b>mensual</b> que se cobra desde un mes inicial hasta un mes final. Ej.: $420.000 de febrero a noviembre = 10 cuotas.</td></tr>
+    <tr><td>Cuota</td><td>Cada mes que cobra la factura. Está <i>Pagada</i> solo cuando los recibos cubren todo su valor.</td></tr>
+    <tr><td>Fecha límite</td><td>El día del mes en que vence cada cuota. Por defecto el día 5; se cambia por factura en la programación de facturación o para toda la empresa en <span class="menu">Configuración</span>.</td></tr>
+    <tr><td>Recibo</td><td>Un pago recibido. Puede pagar uno o varios meses completos, o ser un <b>abono</b> parcial.</td></tr>
+    <tr><td>Retiro</td><td>El mes desde el cual el estudiante deja el servicio: desde ese mes ya no se cobra.</td></tr>
+  </table>
+  <div class="consejo"><strong>Ejemplo de abono</strong>Si la cuota de noviembre es de $230.000 y el acudiente paga $130.000, noviembre queda pendiente con saldo de $100.000. Cuando pague los $100.000 restantes, noviembre quedará pagada.</div>
+</section>
+
+<section class="capitulo">
+  <h2>2. Cotizaciones</h2>
+  <p>Úsalas para ofrecer el servicio a una familia antes de contratar. Entra a <span class="menu">Finanzas › Cotizaciones</span>.</p>
+  <figure><img src="../capturas/finanzas-cotizaciones.jpg" alt=""><figcaption>Lista de cotizaciones con su estado.</figcaption></figure>
+  <h3>Crear una cotización</h3>
+  <ol class="pasos">
+    <li>Toca <span class="boton">Nueva cotización</span>.</li>
+    <li><b>Cliente:</b> indica si el acudiente y el estudiante <i>ya están registrados</i> (eliges el <span class="campo">Acudiente</span>) o si es <i>un cliente nuevo</i> (escribes su nombre y teléfono).</li>
+    <li><b>Servicio:</b> elige el <span class="campo">Mes inicial del servicio</span> y el <span class="campo">Mes final del servicio</span>.</li>
+    <li><b>Estudiantes a cotizar:</b> agrega cada estudiante con su colegio y su <b>valor mensual</b>, y toca <span class="boton sec">Agregar</span>. Repite para cada hermano. El sistema suma el valor mensual, cuenta los meses y calcula el <b>valor total</b>.</li>
+    <li><b>Seguimiento:</b> la <span class="campo">Fecha</span>, el <span class="campo">Estado</span> (<i>Pendiente</i>, <i>Aprobada</i> o <i>Rechazada</i>) y observaciones.</li>
+    <li>Toca <span class="boton">Registrar cotización</span>.</li>
+  </ol>
+  <figure><img src="../capturas/finanzas-cotizacion-nueva.jpg" alt=""><figcaption>Formulario de nueva cotización.</figcaption></figure>
+  <h3>Enviarla y convertirla en facturas</h3>
+  <figure><img src="../capturas/finanzas-cotizacion-consulta.jpg" alt=""><figcaption>Al consultarla: WhatsApp, Correo, Convertir en facturas y Descargar PDF.</figcaption></figure>
+  <ol class="pasos">
+    <li>Abre la cotización tocando su fila.</li>
+    <li>Toca <span class="boton sec">WhatsApp</span> o <span class="boton sec">Correo</span> para enviársela al cliente con el mensaje ya escrito, o <span class="boton sec">Descargar PDF</span> para adjuntarla.</li>
+    <li>Cuando el cliente acepte, toca <span class="boton sec">Convertir en facturas</span>: la cotización queda <i>Aprobada</i> y se crea una factura vigente por cada estudiante, con su valor y meses.</li>
+  </ol>
+  <div class="importante"><strong>Requisito</strong>Para convertirla en facturas, el acudiente y los estudiantes deben estar registrados. Si era un cliente nuevo, regístralos primero en <span class="menu">Personas</span> y edita la cotización para elegirlos. Una cotización ya facturada no se puede editar ni eliminar.</div>
+</section>
+
+<section class="capitulo">
+  <h2>3. Facturas</h2>
+  <p>Entra a <span class="menu">Finanzas › Facturas</span>. Cada fila es el contrato de un estudiante.</p>
+  <figure><img src="../capturas/finanzas-facturas.jpg" alt=""><figcaption>Lista de facturas.</figcaption></figure>
+  <h3>Crear una factura</h3>
+  <ol class="pasos">
+    <li>Toca <span class="boton">Nueva factura</span> (o desde <span class="menu">Inicio</span>).</li>
+    <li><b>Contratante:</b> elige primero el <span class="campo">Acudiente</span> y luego el <span class="campo">Estudiante</span>: solo aparecen los estudiantes de ese acudiente.</li>
+    <li><b>Contratación:</b> escribe el <span class="campo">Valor de la contratación (mensual)</span>, el <span class="campo">Concepto</span> (ej. “Transporte escolar 2026”) y elige el <span class="campo">Mes inicial del servicio</span> y el <span class="campo">Mes final del servicio</span>. El <b>total del contrato</b> se calcula solo (meses × valor).</li>
+    <li><b>Emisión:</b> la <span class="campo">Fecha de emisión</span>, el <span class="campo">Estado</span> (<i>Vigente</i>) y observaciones.</li>
+    <li>Toca <span class="boton">Registrar factura</span>. El número (FAC-0001, FAC-0002…) lo pone el sistema.</li>
+  </ol>
+  <figure><img src="../capturas/finanzas-factura-nueva.jpg" alt=""><figcaption>Formulario de nueva factura.</figcaption></figure>
+  <div class="nota"><strong>Reglas</strong>Un estudiante no puede tener dos facturas vigentes que se crucen en los mismos meses. Para cancelar una factura se cambia su estado a <i>Anulada</i>: deja de generar cuotas y de aparecer en la cartera.</div>
+  <div class="consejo"><strong>Siguiente paso</strong>Para que RutaRola le recuerde el pago al acudiente cada mes, crea su programación (ver el manual <i>Programación de facturación</i>).</div>
+</section>
+
+<section class="capitulo">
+  <h2>4. Estado de cuenta y retiros</h2>
+  <p>Al consultar una factura, abajo aparece su <b>estado de cuenta</b>: el total, lo pagado, el saldo y cada mes con su fecha límite, lo pagado, el saldo y su estado (<i>Pagada</i>, <i>Vencida</i>, <i>Pendiente</i>).</p>
+  <figure><img src="../capturas/finanzas-factura-cuenta.jpg" alt=""><figcaption>Estado de cuenta de una factura.</figcaption></figure>
+  <h3>Registrar el retiro de un estudiante</h3>
+  <ol class="pasos">
+    <li>Abre la factura y en el estado de cuenta toca <span class="boton sec">Registrar retiro</span>.</li>
+    <li>Elige el <b>mes de retiro</b> (desde ese mes ya no se cobra) y escribe el <b>motivo</b>.</li>
+    <li>Guarda. Los meses desde el retiro desaparecen de la cartera y de los recordatorios.</li>
+  </ol>
+  <div class="nota"><strong>Automático</strong>Si inactivas al estudiante o al acudiente, el retiro se registra solo desde el mes siguiente. No se puede retirar desde el primer mes ni desde un mes que ya tiene pagos; para quitar un retiro, déjalo vacío.</div>
+</section>
+
+<section class="capitulo">
+  <h2>5. Recibos de pago</h2>
+  <p>Cada vez que un acudiente paga, regístralo en <span class="menu">Finanzas › Recibos</span> con <span class="boton">Registrar pago</span> (también está en <span class="menu">Inicio</span>).</p>
+  <figure><img src="../capturas/finanzas-recibos.jpg" alt=""><figcaption>Lista de recibos.</figcaption></figure>
+  <ol class="pasos">
+    <li>Elige la <b>factura</b>. Arriba verás el acudiente, el estudiante, el valor mensual y el <b>saldo de la factura</b> con los meses ya pagados.</li>
+    <li>En <b>¿Cómo se aplica el pago?</b> elige:
+      <ul>
+        <li><b>Pagar meses</b>: marcas uno o varios meses con saldo. <span class="boton sec">Elegir vencidos y del mes</span> los marca de una vez.</li>
+        <li><b>Abonar al saldo de la factura</b>: el valor se aplica solo a los meses más antiguos con saldo.</li>
+      </ul></li>
+    <li>Escribe el <span class="campo">Valor pagado</span> (se sugiere el saldo de los meses elegidos) y la <span class="campo">Fecha de pago</span>.</li>
+    <li>Lee el mensaje verde o amarillo: te dice qué meses quedan cancelados y, si el valor no alcanza, cuánto queda como abono y qué sigue pendiente.</li>
+    <li>Elige el <span class="campo">Medio de pago</span> (efectivo, Nequi, transferencia…), escribe la <span class="campo">Referencia / comprobante</span> si la hay y toca <span class="boton">Registrar pago</span>.</li>
+  </ol>
+  <figure><img src="../capturas/finanzas-recibo-meses.jpg" alt=""><figcaption>Registrar pago: meses a pagar y resumen de cómo se aplica.</figcaption></figure>
+  <div class="importante"><strong>Lo que el sistema no permite</strong>Pagar más que el saldo de la factura, o pagar un mes que ya está pagado. Si un recibo se registró mal, edítalo y cámbialo a <i>Anulado</i>: deja de contar y el mes vuelve a quedar pendiente.</div>
+</section>
+
+<section class="capitulo">
+  <h2>6. Reportes financieros</h2>
+  <p>En <span class="menu">Finanzas › Reportes financieros</span> hay tres reportes. Todos se pueden filtrar y exportar a Excel con <span class="boton sec">Exportar CSV</span>.</p>
+  <h3>Ingresos</h3>
+  <p>Lo recaudado entre dos fechas: total, número de recibos, promedio y una gráfica por mes.</p>
+  <figure><img src="../capturas/finanzas-reporte-ingresos.jpg" alt=""><figcaption>Reporte de ingresos.</figcaption></figure>
+  <h3>Facturas pendientes</h3>
+  <p>Cada cuota sin pagar hasta el mes en curso, separando las <b>vencidas</b> de las que están <b>por vencer</b>. Desde ahí mismo puedes registrar el pago.</p>
+  <figure><img src="../capturas/finanzas-reporte-pendientes.jpg" alt=""><figcaption>Cuotas sin pago.</figcaption></figure>
+  <h3>Morosos</h3>
+  <p>Los acudientes con al menos una cuota vencida, ordenados por días de mora, con lo que deben y botones para contactarlos.</p>
+  <figure><img src="../capturas/finanzas-reporte-morosos.jpg" alt=""><figcaption>Acudientes en mora.</figcaption></figure>
+</section>
+
+<section class="capitulo">
+  <h2>7. Descargar PDF</h2>
+  <p>En las tablas de facturas, recibos y cotizaciones, el icono de PDF genera el documento con tu logo y tus datos; también está el botón <span class="boton sec">Descargar PDF</span> al consultar. Se abre la ventana de impresión: elige <b>“Guardar como PDF”</b> para guardarlo o imprímelo directamente.</p>
+  <p>El aspecto de los PDF (logo, nombre comercial, color, notas al pie) se configura en <span class="menu">Configuración › Documentos PDF</span>.</p>
+</section>
+
+<section class="capitulo">
+  <h2>8. Preguntas frecuentes</h2>
+  <h4>No aparece el estudiante al crear la factura</h4>
+  <p>Primero elige el acudiente: solo se listan sus estudiantes. Si no está, revisa en <span class="menu">Personas › Estudiantes</span> que tenga ese acudiente.</p>
+  <h4>“Ya existe una factura vigente que se cruza”</h4>
+  <p>El estudiante ya tiene una factura para alguno de esos meses. Ajusta los meses o anula la factura anterior.</p>
+  <h4>“El mes ya está pagado”</h4>
+  <p>Elige otro mes o usa <i>Abonar al saldo</i>. Revisa el estado de cuenta de la factura para ver qué falta.</p>
+  <h4>¿Por qué el recaudo del mes está en $0?</h4>
+  <p>El tablero de <span class="menu">Inicio</span> cuenta lo que los recibos aplicaron al mes en curso. Al comienzo del mes es normal que esté bajo; compáralo con el mes anterior que aparece debajo.</p>
+</section>
+
+</body>
+</html>

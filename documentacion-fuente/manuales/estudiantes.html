@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gestión de estudiantes · RutaRola</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<section class="portada">
+  <div><img class="logo" src="../../public/logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola"></div>
+  <div>
+    <span class="etiqueta">Manual de usuario</span>
+    <h1>Gestión de estudiantes</h1>
+    <p class="subtitulo">Cómo registrar a cada estudiante con su colegio, jornada, grado y acudiente, y cómo consultarlo, editarlo o retirarlo del servicio.</p>
+  </div>
+  <div class="pie"><span>Para administradores de la empresa de transporte</span><span>Versión noviembre 2026</span></div>
+</section>
+
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li>Antes de empezar <span>Qué necesitas tener listo</span></li>
+    <li>La lista de estudiantes <span>Buscar, filtrar y leer la tabla</span></li>
+    <li>Registrar un estudiante <span>Paso a paso</span></li>
+    <li>Consultar y editar <span>Ver o corregir los datos</span></li>
+    <li>Retirar o eliminar <span>Inactivar en vez de borrar</span></li>
+    <li>Preguntas frecuentes <span>Errores comunes y cómo resolverlos</span></li>
+  </ol>
+  <div class="nota"><strong>¿Cómo leer este manual?</strong>
+    Los nombres de menú aparecen así: <span class="menu">Personas › Estudiantes</span>. Los botones aparecen así: <span class="boton">Nuevo estudiante</span>. Los campos del formulario van en <span class="campo">negrita</span>. Los campos con <b style="color:#dc2626">*</b> son obligatorios.</div>
+</section>
+
+<section class="capitulo">
+  <h2>1. Antes de empezar</h2>
+  <p class="intro">Un estudiante en RutaRola siempre está unido a tres cosas: un <b>acudiente</b> (quien responde y paga), un <b>colegio</b> y un <b>curso</b> (grado + jornada) de ese colegio. Por eso conviene tenerlos listos antes.</p>
+  <table>
+    <tr><th>Necesitas</th><th>Dónde se crea</th><th>Por qué</th></tr>
+    <tr><td>El colegio, con sus cursos</td><td><span class="menu">Operación › Colegios</span></td><td>Los grados que puedes elegir salen de los cursos activos del colegio en la jornada del estudiante.</td></tr>
+    <tr><td>El acudiente</td><td><span class="menu">Personas › Acudientes</span></td><td>Todo estudiante tiene un acudiente. Si no existe, puedes crearlo desde el mismo formulario del estudiante.</td></tr>
+  </table>
+  <div class="consejo"><strong>Consejo</strong>Si el grado que buscas no aparece en la lista, es porque el colegio no tiene ese curso en esa jornada. Agrégalo en <span class="menu">Operación › Colegios</span> (ver el manual <i>Rutas y operación</i>).</div>
+</section>
+
+<section class="capitulo">
+  <h2>2. La lista de estudiantes</h2>
+  <p>Entra por el menú lateral a <span class="menu">Personas › Estudiantes</span>. Verás los filtros arriba y la tabla con todos los estudiantes de tu empresa.</p>
+  <figure><img src="../capturas/estudiantes-lista.jpg" alt=""><figcaption>Lista de estudiantes con sus filtros.</figcaption></figure>
+  <h3>Qué muestra cada columna</h3>
+  <ul>
+    <li><b>Estudiante</b>: foto (o sus iniciales), nombre completo y edad.</li>
+    <li><b>Documento</b>: tipo (RC, TI, CC…) y número.</li>
+    <li><b>Grado</b> y debajo la <b>jornada</b>.</li>
+    <li><b>Estado</b>: <i>Activo</i> (usa el servicio) o <i>Inactivo</i> (retirado).</li>
+    <li><b>Acciones</b>: <i class="menu">ojo</i> = consultar, <i class="menu">lápiz</i> = editar, <i class="menu">caneca</i> = eliminar.</li>
+  </ul>
+  <h3>Buscar y filtrar</h3>
+  <ol class="pasos">
+    <li>Escribe en <span class="campo">Nombre o documento</span>: la lista se filtra mientras escribes (no importan tildes ni mayúsculas).</li>
+    <li>Usa las listas <span class="campo">Acudiente</span>, <span class="campo">Colegio</span>, <span class="campo">Grado</span>, <span class="campo">Jornada</span> y <span class="campo">Estado</span>. En cada una puedes escribir para encontrar la opción más rápido.</li>
+    <li>Para ver de nuevo todo, toca <span class="boton sec">Limpiar</span>.</li>
+  </ol>
+  <figure class="movil"><img src="../capturas/estudiantes-filtros-movil.jpg" alt=""><figcaption>En el celular los filtros se pliegan; tócalos para abrirlos.</figcaption></figure>
+  <div class="nota"><strong>Paginación</strong>Abajo de la tabla puedes cambiar de página y elegir cuántas filas ver. El texto “Mostrando 1–10 de 25” te dice cuántos hay en total.</div>
+</section>
+
+<section class="capitulo">
+  <h2>3. Registrar un estudiante</h2>
+  <ol class="pasos">
+    <li>En <span class="menu">Personas › Estudiantes</span> toca <span class="boton">Nuevo estudiante</span>. También puedes hacerlo desde <span class="menu">Inicio</span> con el botón <span class="boton sec">Nuevo estudiante</span>.</li>
+    <li><b>Identificación.</b> Elige el <span class="campo">Tipo de documento</span> (Registro civil, Tarjeta de identidad…) y escribe el <span class="campo">Número de documento</span>. No puede repetirse con otro estudiante.</li>
+    <li><b>Datos personales.</b> Si quieres, toca <span class="boton sec">Subir foto</span>: la foto se recorta sola en un cuadrado y ayuda a la monitora a reconocer al niño en la ruta. Escribe <span class="campo">Primer nombre</span>, <span class="campo">Primer apellido</span> (y los segundos si los tiene), la <span class="campo">Fecha de nacimiento</span> y la <span class="campo">Dirección de residencia</span>, que es donde lo recogen y lo dejan.</li>
+  </ol>
+  <figure><img src="../capturas/estudiantes-nuevo.jpg" alt=""><figcaption>Primera parte del formulario: identificación y datos personales.</figcaption></figure>
+  <ol class="pasos" style="counter-reset: paso 3">
+    <li><b>Información escolar.</b> Elige el <span class="campo">Acudiente</span>. Si aún no está registrado, toca el botón azul con el icono de persona junto al campo: se abre un formulario encima para crearlo <b>sin perder</b> lo que ya escribiste.</li>
+    <li>Elige el <span class="campo">Colegio</span>, luego la <span class="campo">Jornada</span> y después el <span class="campo">Grado</span>. El grado solo muestra los cursos que ese colegio tiene en esa jornada.</li>
+    <li>Deja el <span class="campo">Estado</span> en <i>Activo</i> y escribe <span class="campo">Observaciones</span> si hay algo importante (alergias, quién puede recibirlo, etc.).</li>
+    <li>Toca <span class="boton">Registrar estudiante</span> (abajo a la derecha). Verás un mensaje verde de confirmación y el estudiante aparecerá en la lista.</li>
+  </ol>
+  <figure><img src="../capturas/estudiantes-nuevo-abajo.jpg" alt=""><figcaption>Segunda parte: información escolar y estado. Los botones siempre están abajo, sin tener que desplazarte.</figcaption></figure>
+  <div class="importante"><strong>Si algo falta</strong>El sistema marca en rojo el campo que falta o está mal y escribe debajo qué corregir. Nada se guarda hasta que todo esté correcto.</div>
+  <div class="consejo"><strong>Siguiente paso</strong>Un estudiante nuevo todavía no tiene ruta ni factura. Agrégalo a una ruta en <span class="menu">Operación › Rutas</span> y créale su factura en <span class="menu">Finanzas › Facturas</span>. En <span class="menu">Inicio</span>, la alerta “Estudiantes activos sin ruta” te recuerda los que faltan.</div>
+</section>
+
+<section class="capitulo">
+  <h2>4. Consultar y editar</h2>
+  <ol class="pasos">
+    <li>Toca cualquier fila de la tabla (o el icono del ojo) para <b>consultar</b>. Los datos se muestran sin poder cambiarlos, para evitar errores.</li>
+    <li>Si necesitas corregir algo, toca <span class="boton sec">Editar</span> en la parte de abajo de la ventana (o el lápiz en la tabla).</li>
+    <li>Cambia lo necesario y toca <span class="boton">Guardar cambios</span>.</li>
+  </ol>
+  <figure><img src="../capturas/estudiantes-consulta.jpg" alt=""><figcaption>Consulta de un estudiante.</figcaption></figure>
+  <div class="nota"><strong>Los documentos ya emitidos no cambian</strong>Si corriges el nombre del estudiante, las facturas, recibos y cotizaciones ya emitidos conservan el nombre con el que se hicieron, como un documento contable.</div>
+</section>
+
+<section class="capitulo">
+  <h2>5. Retirar o eliminar un estudiante</h2>
+  <h3>Cuando el estudiante deja el servicio: inactívalo</h3>
+  <ol class="pasos">
+    <li>Abre el estudiante y toca <span class="boton sec">Editar</span>.</li>
+    <li>Cambia el <span class="campo">Estado</span> a <i>Inactivo</i> y guarda.</li>
+  </ol>
+  <p>Al inactivarlo, RutaRola registra automáticamente el <b>retiro</b> en su factura desde el mes siguiente (o después del último mes pagado): ya no se le cobran los meses siguientes y su historial queda intacto.</p>
+  <h3>Eliminar</h3>
+  <p>Solo puedes eliminar (icono de caneca) un estudiante que <b>no se usa en ningún otro lugar</b>. Si ya está en una ruta, tiene facturas o recibos, el sistema te dirá por qué no se puede y te sugerirá dejarlo <i>Inactivo</i>.</p>
+  <div class="importante"><strong>Eliminar no se puede deshacer</strong>Antes de borrar, el sistema te pide confirmación. Úsalo solo para registros creados por error.</div>
+</section>
+
+<section class="capitulo">
+  <h2>6. Preguntas frecuentes</h2>
+  <h4>No me aparece el grado que necesito</h4>
+  <p>El colegio no tiene ese curso activo en la jornada elegida. Entra a <span class="menu">Operación › Colegios</span>, consulta el colegio, toca <span class="boton sec">Editar</span> y agrega el curso en “Parametrizar cursos”.</p>
+  <h4>Dice que el documento ya existe</h4>
+  <p>Ya hay un estudiante con ese número. Búscalo con el filtro <span class="campo">Nombre o documento</span>; puede estar <i>Inactivo</i>. Si es el mismo niño, actívalo en vez de crearlo de nuevo.</p>
+  <h4>No puedo agregar el estudiante a una ruta</h4>
+  <p>La ruta debe ser del mismo colegio <b>y</b> la misma jornada del estudiante, y un estudiante no puede estar en dos rutas activas de la misma jornada.</p>
+  <h4>Ya no puedo crear más estudiantes</h4>
+  <p>Llegaste al límite de tu plan. Revisa <span class="menu">Planes y Membresías</span> o inactiva estudiantes que ya no usan el servicio.</p>
+  <h4>¿Necesito ayuda?</h4>
+  <p>En <span class="menu">Centro de Ayuda</span> toca <span class="boton sec">Crear solicitud</span> y cuéntanos qué pasa; puedes adjuntar una captura de pantalla.</p>
+</section>
+
+</body>
+</html>

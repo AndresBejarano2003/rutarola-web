@@ -1,8 +1,12 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { CapacitorHttp } from '@capacitor/core';
+import { Observable, catchError, defer, map, switchMap, throwError } from 'rxjs';
 import { environment } from '@environments/environment';
+import { AuthService } from 'src/app/core/auth';
+import { RenovacionSesion } from 'src/app/core/interceptor-autenticacion';
 import { TiempoReal } from 'src/app/core/tiempo-real';
+import { esAppNativa } from './fuente-ubicacion';
 import { LecturaGps, PosicionGps, RecorridoEnMapa, ResultadoLoteGps } from './gps';
 import { GpsRepositorio } from './gps-repositorio';
 
@@ -19,6 +23,9 @@ import { GpsRepositorio } from './gps-repositorio';
  * Repetidas (misma fecha) y lecturas fuera de inicio − 5 min … fin + 5 min se descartan, así que un lote
  * guardado sin red se puede enviar aunque el recorrido ya haya terminado. Las ubicaciones se borran
  * a los `Gps:DiasRetencion` días (30 por defecto).
+ *
+ * En la app instalada el lote se envía con HTTP NATIVO (`CapacitorHttp`): tras 5 min en segundo plano Android frena
+ * las peticiones del WebView. Como no pasa por el interceptor, agrega el token y, ante un 401, renueva una vez.
  */
 @Injectable()
 export class GpsHttp extends GpsRepositorio {
@@ -26,8 +33,38 @@ export class GpsHttp extends GpsRepositorio {
   private readonly tiempoReal = inject(TiempoReal);
   private readonly url = `${environment.apiUrl}/recorridos`;
 
+  private readonly auth = inject(AuthService);
+  private readonly renovacion = inject(RenovacionSesion);
+
   enviar(recorridoId: string, lecturas: LecturaGps[]): Observable<ResultadoLoteGps> {
-    return this.http.post<ResultadoLoteGps>(`${this.url}/${encodeURIComponent(recorridoId)}/gps`, { posiciones: lecturas });
+    const url = `${this.url}/${encodeURIComponent(recorridoId)}/gps`;
+    const cuerpo = { posiciones: lecturas };
+    if (!esAppNativa()) return this.http.post<ResultadoLoteGps>(url, cuerpo);
+    return defer(() => this.postNativo(url, cuerpo)).pipe(
+      catchError((e: unknown) =>
+        e instanceof HttpErrorResponse && e.status === 401
+          ? this.renovacion.renovar().pipe(switchMap(() => this.postNativo(url, cuerpo)))
+          : throwError(() => e),
+      ),
+    );
+  }
+
+  private async postNativo(url: string, data: unknown): Promise<ResultadoLoteGps> {
+    const token = this.auth.tokens()?.accessToken;
+    let r;
+    try {
+      r = await CapacitorHttp.post({
+        url,
+        data,
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        connectTimeout: 20_000,
+        readTimeout: 20_000,
+      });
+    } catch {
+      throw new HttpErrorResponse({ status: 0, url, statusText: 'Sin conexión' });
+    }
+    if (r.status >= 200 && r.status < 300) return r.data as ResultadoLoteGps;
+    throw new HttpErrorResponse({ status: r.status, error: r.data, url });
   }
 
   ultima(recorridoId: string): Observable<PosicionGps | null> {

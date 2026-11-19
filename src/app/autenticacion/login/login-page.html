@@ -1,7 +1,4 @@
-@if (presentando()) {
-  <app-presentacion (termino)="presentando.set(false)" />
-}
-<div class="min-h-dvh bg-base-100 text-base-content flex flex-col" [inert]="presentando()">
+<div class="min-h-dvh bg-base-100 text-base-content flex flex-col">
   <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
     <div class="w-full max-w-7xl grid lg:grid-cols-2 gap-10 items-center">
       <!-- Presentación (escritorio) -->
@@ -132,9 +129,8 @@
         <span>© {{ anioActual }} RutaRola. Todos los derechos reservados.</span>
       </div>
       <div class="flex items-center gap-6 flex-wrap justify-center">
-        <span class="flex items-center gap-2"><i class="fa-solid fa-file-contract" aria-hidden="true"></i> Términos</span>
-        <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Privacidad</span>
-        <span class="flex items-center gap-2"><i class="fa-solid fa-headset" aria-hidden="true"></i> Soporte</span>
+        <a routerLink="/privacidad" class="link link-hover flex items-center gap-2"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Privacidad</a>
+        <a [href]="'mailto:' + correoSoporte" class="link link-hover flex items-center gap-2"><i class="fa-solid fa-headset" aria-hidden="true"></i> Soporte</a>
       </div>
     </div>
   </footer>

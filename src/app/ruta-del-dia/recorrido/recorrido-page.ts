@@ -29,6 +29,8 @@ import {
 import { RecorridosRepositorio } from '../recorridos-repositorio';
 import { motivoAlConfirmar } from '../avisos-ausencia';
 import { EmisorGps } from '../gps/emisor-gps';
+import { AjustesTelefono } from '../gps/ajustes-telefono';
+import { PrepararTelefono } from '../gps/preparar-telefono/preparar-telefono';
 import { haceCuanto } from '../gps/gps';
 import { Sonidos } from '../sonidos';
 import { Avatar } from 'src/app/shared/foto/avatar';
@@ -65,7 +67,7 @@ const TOLERANCIA_PRESION = 8;
 @Component({
   selector: 'app-recorrido-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, NgTemplateOutlet, Avatar],
+  imports: [RouterLink, FormsModule, NgTemplateOutlet, Avatar, PrepararTelefono],
   providers: [EmisorGps],
   templateUrl: './recorrido-page.html',
 })
@@ -76,6 +78,9 @@ export default class RecorridoPage implements OnInit {
   private readonly sesion = inject(AuthService).sesion;
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gps = inject(EmisorGps);
+  /** App instalada: estado del teléfono (batería, notificaciones) y guía "Prepara tu teléfono". */
+  protected readonly ajustesTelefono = inject(AjustesTelefono);
+  protected readonly guiaTelefono = signal(false);
   protected readonly sonidos = inject(Sonidos);
   protected readonly haceCuanto = haceCuanto;
 
@@ -145,6 +150,13 @@ export default class RecorridoPage implements OnInit {
       if (!r) return;
       const reporta = r.estado === 'EN_CURSO' && this.reportaUbicacion();
       untracked(() => (reporta ? this.gps.iniciar(r.id) : void this.gps.detenerYEnviar()));
+      // La primera vez que este teléfono comparte en un recorrido, la guía para que la ubicación no se pause.
+      if (reporta && this.ajustesTelefono.nativo) {
+        untracked(() => {
+          void this.ajustesTelefono.actualizar();
+          if (!this.ajustesTelefono.guiaVista()) this.guiaTelefono.set(true);
+        });
+      }
     });
     this.destroyRef.onDestroy(() => this.terminarGesto?.());
   }

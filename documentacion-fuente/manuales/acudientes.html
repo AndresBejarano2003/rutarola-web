@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Gestión de acudientes · RutaRola</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<section class="portada">
+  <div><img class="logo" src="../../public/logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola"></div>
+  <div>
+    <span class="etiqueta">Manual de usuario</span>
+    <h1>Gestión de acudientes</h1>
+    <p class="subtitulo">Cómo registrar a los padres o responsables, darles acceso a su portal y qué ven ellos desde el celular.</p>
+  </div>
+  <div class="pie"><span>Para administradores de la empresa de transporte</span><span>Versión noviembre 2026</span></div>
+</section>
+
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li>¿Qué es un acudiente? <span>Su papel en RutaRola</span></li>
+    <li>La lista de acudientes <span>Buscar y filtrar</span></li>
+    <li>Registrar un acudiente <span>Paso a paso, con su acceso</span></li>
+    <li>Consultar, editar e inactivar <span>Mantener los datos al día</span></li>
+    <li>El portal del acudiente <span>Lo que ve la familia</span></li>
+    <li>Preguntas frecuentes <span>Errores comunes</span></li>
+  </ol>
+  <div class="nota"><strong>¿Cómo leer este manual?</strong>
+    Menús: <span class="menu">Personas › Acudientes</span>. Botones: <span class="boton">Nuevo acudiente</span>. Campos: <span class="campo">negrita</span>. Los campos con <b style="color:#dc2626">*</b> son obligatorios.</div>
+</section>
+
+<section class="capitulo">
+  <h2>1. ¿Qué es un acudiente?</h2>
+  <p class="intro">El acudiente es la persona responsable de uno o varios estudiantes: el padre, la madre o quien contrata el servicio. Es a quien se le factura, quien recibe los recordatorios de pago y quien puede seguir la ruta desde su celular.</p>
+  <ul>
+    <li>Un acudiente puede tener <b>varios estudiantes</b> (por ejemplo, hermanos).</li>
+    <li>Las <b>facturas</b> se hacen a nombre del acudiente, una por cada estudiante.</li>
+    <li>Con un <b>usuario y contraseña</b>, el acudiente entra a su <b>portal</b>: ve a sus hijos, sus pagos, el estado de la ruta del día y puede avisar cuando un niño no va.</li>
+  </ul>
+</section>
+
+<section class="capitulo">
+  <h2>2. La lista de acudientes</h2>
+  <p>Entra a <span class="menu">Personas › Acudientes</span>.</p>
+  <figure><img src="../capturas/acudientes-lista.jpg" alt=""><figcaption>Lista de acudientes.</figcaption></figure>
+  <ol class="pasos">
+    <li>Busca por nombre, documento o teléfono en el campo de texto de los filtros.</li>
+    <li>Filtra por <span class="campo">Estado</span> para ver solo los activos o los inactivos.</li>
+    <li>Toca una fila para consultarlo; el lápiz edita y la caneca elimina.</li>
+  </ol>
+</section>
+
+<section class="capitulo">
+  <h2>3. Registrar un acudiente</h2>
+  <ol class="pasos">
+    <li>Toca <span class="boton">Nuevo acudiente</span>.</li>
+    <li><b>Identificación:</b> elige el <span class="campo">Tipo de documento</span> y escribe el <span class="campo">Número de documento</span> (no puede repetirse).</li>
+    <li><b>Datos personales:</b> foto opcional con <span class="boton sec">Subir foto</span>, <span class="campo">Primer nombre</span>, <span class="campo">Primer apellido</span> y, si los tiene, segundo nombre y segundo apellido.</li>
+    <li><b>Contacto:</b> el <span class="campo">Teléfono celular</span> es obligatorio: a ese número llegan los recordatorios de pago por WhatsApp y es el que el conductor y la monitora usan para llamar. Agrega <span class="campo">Teléfono alterno</span>, <span class="campo">Correo electrónico</span> y <span class="campo">Dirección</span> si los tienes.</li>
+  </ol>
+  <figure><img src="../capturas/acudientes-nuevo.jpg" alt=""><figcaption>Datos de identificación, personales y de contacto.</figcaption></figure>
+  <ol class="pasos" style="counter-reset: paso 4">
+    <li><b>Acceso a la app:</b> escribe el <span class="campo">Usuario</span> con el que el acudiente entrará a su portal. Puede ser su correo, su número de documento o cualquier texto de 4 a 40 caracteres sin espacios. Debe ser único en todo el sistema.</li>
+    <li>Escribe la <span class="campo">Contraseña</span> (mínimo 6 caracteres) y repítela en <span class="campo">Confirmar contraseña</span>.</li>
+    <li>Deja el <span class="campo">Estado</span> en <i>Activo</i> y toca <span class="boton">Registrar acudiente</span>.</li>
+  </ol>
+  <figure><img src="../capturas/acudientes-nuevo-acceso.jpg" alt=""><figcaption>Sección “Acceso a la app” y estado.</figcaption></figure>
+  <div class="consejo"><strong>Entrega del acceso</strong>Comparte el usuario y la contraseña con el acudiente por un medio privado y dile que entre a <b>app.rutarola.com</b>. La contraseña no se puede volver a ver; si la olvida, escribe una nueva al editarlo.</div>
+  <div class="nota"><strong>Agregar sus estudiantes</strong>Después de registrarlo, en el mismo formulario puedes agregarle sus estudiantes. También puedes crear el acudiente desde el formulario del estudiante, sin perder lo que ya escribiste.</div>
+</section>
+
+<section class="capitulo">
+  <h2>4. Consultar, editar e inactivar</h2>
+  <figure><img src="../capturas/acudientes-consulta.jpg" alt=""><figcaption>Consulta de un acudiente con sus estudiantes.</figcaption></figure>
+  <h3>Editar</h3>
+  <ol class="pasos">
+    <li>Abre el acudiente y toca <span class="boton sec">Editar</span>.</li>
+    <li>Corrige lo necesario. Si dejas la <span class="campo">Contraseña</span> vacía, se conserva la actual; si escribes una nueva, se cambia y se cierran sus sesiones abiertas.</li>
+    <li>Toca <span class="boton">Guardar cambios</span>.</li>
+  </ol>
+  <h3>Inactivar (cuando deja el servicio)</h3>
+  <p>Cambia su <span class="campo">Estado</span> a <i>Inactivo</i>. Ya no podrá entrar a su portal y RutaRola registra el <b>retiro</b> de sus facturas desde el mes siguiente (o después del último mes pagado), así que no se le siguen cobrando meses.</p>
+  <h3>Eliminar</h3>
+  <p>Solo se puede eliminar un acudiente sin estudiantes, facturas ni recibos. Si ya tiene movimientos, el sistema lo explica y sugiere dejarlo <i>Inactivo</i>.</p>
+</section>
+
+<section class="capitulo">
+  <h2>5. El portal del acudiente</h2>
+  <p class="intro">Así ve RutaRola la familia desde el celular. Es de solo consulta, excepto el aviso de ausencia.</p>
+  <figure class="pareja"><div class="imagenes"><img src="../capturas/portal-inicio.jpg" alt=""><img src="../capturas/portal-estudiantes.jpg" alt=""></div>
+    <figcaption>Izquierda: Inicio (saldo vencido, próximo pago, “Hoy en la ruta”). Derecha: sus estudiantes con colegio, ruta, conductor y monitora.</figcaption></figure>
+  <table>
+    <tr><th>Sección</th><th>Qué encuentra el acudiente</th></tr>
+    <tr><td>Inicio</td><td>Saldo vencido, próximo pago, lo pagado este año, el estado de la ruta de hoy y los últimos pagos.</td></tr>
+    <tr><td>Estudiantes</td><td>Colegio, horario, dirección de recogida, ruta, vehículo, y el conductor y la monitora con botón para llamar.</td></tr>
+    <tr><td>Pagos</td><td>Estado de cuenta mes a mes: <i>Pagada</i>, <i>Vencida</i>, <i>Pendiente</i> o <i>Programada</i>, y sus recibos.</td></tr>
+    <tr><td>Cotizaciones</td><td>Las cotizaciones que le hayas enviado.</td></tr>
+  </table>
+  <figure class="movil"><img src="../capturas/portal-pagos.jpg" alt=""><figcaption>Pagos: estado de cuenta del acudiente.</figcaption></figure>
+  <h3>Avisar que un estudiante no va</h3>
+  <ol class="pasos">
+    <li>En “Hoy en la ruta” o en Estudiantes, el acudiente toca <span class="boton sec">Avisar que no va</span>.</li>
+    <li>Elige la fecha (hoy o hasta 30 días después) y si <b>no asiste</b> al colegio o si <b>va por su cuenta</b> (en la recogida, la entrega o ambas). Puede dejar una nota.</li>
+    <li>El conductor y la monitora ven el aviso en su ruta del día y lo confirman. Tú lo ves en <span class="menu">Operación › Asignaciones</span> y en el Cronograma.</li>
+  </ol>
+  <h3>Ver la ruta en el mapa</h3>
+  <p>Mientras el recorrido de su hijo está <b>en curso</b>, el acudiente puede tocar “Ver en el mapa” y ver el vehículo en tiempo real, si tu plan incluye GPS en vivo y tienes activado ese permiso en <span class="menu">Configuración</span>.</p>
+</section>
+
+<section class="capitulo">
+  <h2>6. Preguntas frecuentes</h2>
+  <h4>Dice “El usuario ya está en uso”</h4>
+  <p>Otro acudiente, empleado o administrador ya tiene ese usuario. Elige otro (por ejemplo, el número de documento).</p>
+  <h4>El acudiente no puede entrar</h4>
+  <p>Revisa que esté <i>Activo</i> y escríbele una contraseña nueva al editarlo. El usuario no distingue mayúsculas.</p>
+  <h4>No le llegan los recordatorios de WhatsApp</h4>
+  <p>Revisa su <span class="campo">Teléfono celular</span> y que su factura tenga una programación activa en <span class="menu">Finanzas › Programación de facturación</span>.</p>
+  <h4>El acudiente no ve el mapa</h4>
+  <p>Solo aparece mientras el recorrido está en curso, con un plan que incluya GPS en vivo y con “Los acudientes ven la ubicación en vivo de la ruta” activado en <span class="menu">Configuración</span>.</p>
+</section>
+
+</body>
+</html>

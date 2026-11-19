@@ -6,6 +6,7 @@ import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { repositoriosDePrueba } from 'src/app/shared/pruebas/pruebas';
 import { RecorridosRepositorio } from '../recorridos-repositorio';
 import { CLAVE_COLA_GPS, EmisorGps } from './emisor-gps';
+import { FuenteUbicacion } from './fuente-ubicacion';
 import { LecturaGps, MAXIMO_EN_COLA, ResultadoLoteGps, distanciaMetros, encolar, haceCuanto, lecturaDe, lecturaUtil, saltoImposible } from './gps';
 import { GpsRepositorio } from './gps-repositorio';
 
@@ -196,5 +197,66 @@ describe('Emisor GPS', () => {
     expect(emisor.pendientes()).toBe(1);
     await emisor.enviarPendientes();
     expect(emisor.pendientes()).toBe(0);
+  });
+});
+
+describe('EmisorGps en la app instalada (ubicación en segundo plano)', () => {
+  it('no avisa pausa al volver de otra app y envía al llegar cada lectura', async () => {
+    let alLeer: ((p: GeolocationPosition) => void) | null = null;
+    const detener = vi.fn();
+    const enviados: LecturaGps[][] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        EmisorGps,
+        {
+          provide: FuenteUbicacion,
+          useValue: {
+            enSegundoPlano: true,
+            disponible: () => true,
+            vigilar: (leer: (p: GeolocationPosition) => void) => {
+              alLeer = leer;
+              return detener;
+            },
+            leerAhora: () => undefined,
+          },
+        },
+        {
+          provide: GpsRepositorio,
+          useValue: {
+            enviar: (_id: string, l: LecturaGps[]) => {
+              enviados.push(l);
+              return of({ recibidas: l.length, descartadas: 0, ultima: null });
+            },
+          },
+        },
+      ],
+    });
+    localStorage.clear();
+    let visibilidad: DocumentVisibilityState = 'visible';
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibilidad });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const emisor = TestBed.inject(EmisorGps);
+      emisor.iniciar('rec-1');
+      await Promise.resolve();
+      expect(emisor.enSegundoPlano).toBe(true);
+      expect(emisor.pantallaEncendida()).toBe(false);
+
+      visibilidad = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.setSystemTime(Date.now() + 10 * 60_000);
+      alLeer!(posicion(Date.now(), 10, 5));
+      await Promise.resolve();
+      expect(enviados.at(-1)?.length).toBe(1); // se envió sin esperar el temporizador
+
+      visibilidad = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(emisor.pausa()).toBeNull();
+      emisor.detener();
+      expect(detener).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      Reflect.deleteProperty(document, 'visibilityState');
+    }
   });
 });

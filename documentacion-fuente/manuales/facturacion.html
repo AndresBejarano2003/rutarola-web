@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Programación de facturación · RutaRola</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<section class="portada">
+  <div><img class="logo" src="../../public/logos/logo-oficial-sin-fondo-lb.png" alt="RutaRola"></div>
+  <div>
+    <span class="etiqueta">Manual de usuario</span>
+    <h1>Programación de facturación</h1>
+    <p class="subtitulo">Cómo programar los recordatorios de pago automáticos por WhatsApp y correo para cada factura, y cómo revisar lo que se envió.</p>
+  </div>
+  <div class="pie"><span>Para administradores de la empresa de transporte</span><span>Versión noviembre 2026</span></div>
+</section>
+
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li>Cómo funcionan los recordatorios <span>Cuándo y a quién se envían</span></li>
+    <li>Crear una programación <span>Paso a paso</span></li>
+    <li>Los mensajes y sus variables <span>Personalizar el texto</span></li>
+    <li>Consultar y revisar envíos <span>Historial y mensajes enviados</span></li>
+    <li>Preguntas frecuentes</li>
+  </ol>
+  <div class="nota"><strong>¿Cómo leer este manual?</strong>
+    Menús: <span class="menu">Finanzas › Programación de facturación</span>. Botones: <span class="boton">Nueva programación</span>. Campos: <span class="campo">negrita</span>. Los campos con <b style="color:#dc2626">*</b> son obligatorios.</div>
+</section>
+
+<section class="capitulo">
+  <h2>1. Cómo funcionan los recordatorios</h2>
+  <p class="intro">Una programación se hace para <b>una factura</b>. Cada mes, unos días antes del día límite de pago, RutaRola le envía al acudiente el recordatorio de la cuota, por WhatsApp, por correo o por ambos.</p>
+  <table>
+    <tr><th>Regla</th><th>Detalle</th></tr>
+    <tr><td>Cuándo se envía</td><td>Entre el <b>día límite − días previos</b> y el día límite. Ej.: día límite 10 y 5 días previos → se envía desde el día 5.</td></tr>
+    <tr><td>Cuántas veces</td><td>Una vez por canal y por mes.</td></tr>
+    <tr><td>Si ya pagó</td><td>No se envía: solo se recuerdan las cuotas con saldo.</td></tr>
+    <tr><td>A quién</td><td>Al celular (WhatsApp) y al correo del acudiente de la factura.</td></tr>
+    <tr><td>Si falla</td><td>No se reintenta; la campana de notificaciones te avisa del envío fallido.</td></tr>
+  </table>
+  <div class="nota"><strong>Plan</strong>Los recordatorios automáticos están incluidos desde el plan Esencial. En el plan Gratis puedes ver esta pantalla pero no crear programaciones.</div>
+  <div class="consejo"><strong>Día límite</strong>El día límite de la programación es la fecha de vencimiento de cada cuota de esa factura. Las facturas sin programación usan el día límite general de <span class="menu">Configuración</span> (por defecto, el 5).</div>
+</section>
+
+<section class="capitulo">
+  <h2>2. Crear una programación</h2>
+  <figure><img src="../capturas/programacion-lista.jpg" alt=""><figcaption>Lista de programaciones con sus canales e historial de envíos.</figcaption></figure>
+  <ol class="pasos">
+    <li>Entra a <span class="menu">Finanzas › Programación de facturación</span> y toca <span class="boton">Nueva programación</span>.</li>
+    <li>Escribe el <span class="campo">Nombre de la programación</span> (ej. “Mensualidad Isabella”).</li>
+    <li>Elige la <span class="campo">Factura a parametrizar</span>. Cada factura puede tener una sola programación.</li>
+    <li>Escribe el <span class="campo">Día límite de pago en cada mes</span> (1 a 31). Si el mes tiene menos días, se toma el último día del mes.</li>
+    <li>Escribe los <span class="campo">Días previos para el envío de la factura</span>.</li>
+    <li>En <b>Canales de envío</b> activa <span class="campo">Enviar por WhatsApp</span>, <span class="campo">Enviar por correo electrónico</span> o ambos, y configura su mensaje (siguiente capítulo).</li>
+    <li>Deja el <span class="campo">Estado</span> en <i>Activo</i> y toca <span class="boton">Registrar programación</span>.</li>
+  </ol>
+  <figure><img src="../capturas/programacion-nueva.jpg" alt=""><figcaption>Nueva programación de facturación.</figcaption></figure>
+  <div class="consejo"><strong>Encuéntralas rápido</strong>En <span class="menu">Inicio</span>, la alerta “Facturas vigentes sin programación” te lleva a las facturas a las que aún no les has programado recordatorio.</div>
+</section>
+
+<section class="capitulo">
+  <h2>3. Los mensajes y sus variables</h2>
+  <p>Al activar un canal, toca <span class="boton sec">Parametrizar mensaje de WhatsApp</span> (o el de correo). Cada canal puede tener varios mensajes guardados, pero <b>solo uno está “En uso”</b>: ese es el que se envía. Con el botón del avión de papel eliges cuál usar.</p>
+  <h3>Variables</h3>
+  <p>Escribe estas palabras entre llaves dentro del mensaje y RutaRola las reemplaza al enviar:</p>
+  <table>
+    <tr><th>Variable</th><th>Se reemplaza por</th><th>Ejemplo</th></tr>
+    <tr><td><kbd>{acudiente}</kbd></td><td>Nombre del acudiente</td><td>María Pérez López</td></tr>
+    <tr><td><kbd>{estudiante}</kbd></td><td>Nombre del estudiante</td><td>Juan Sebastián Pérez López</td></tr>
+    <tr><td><kbd>{factura}</kbd></td><td>Número de factura</td><td>FAC-0001</td></tr>
+    <tr><td><kbd>{mes}</kbd></td><td>Mes que se cobra</td><td>noviembre de 2026</td></tr>
+    <tr><td><kbd>{valor}</kbd></td><td>Valor a pagar</td><td>$ 420.000</td></tr>
+    <tr><td><kbd>{fecha_limite}</kbd></td><td>Fecha límite de pago</td><td>5 nov 2026</td></tr>
+  </table>
+  <h3>Ejemplo</h3>
+  <div class="nota" style="font-family: Georgia, serif">Hola {acudiente}, te recordamos que la mensualidad de transporte de {estudiante} de {mes} por {valor} vence el {fecha_limite}. Factura {factura}. ¡Gracias!</div>
+  <p>Llega así:</p>
+  <div class="consejo" style="font-family: Georgia, serif">Hola María Pérez López, te recordamos que la mensualidad de transporte de Juan Sebastián Pérez López de noviembre de 2026 por $ 420.000 vence el 5 nov 2026. Factura FAC-0001. ¡Gracias!</div>
+  <div class="importante"><strong>Recomendaciones</strong>Escribe mensajes cortos y amables, incluye los medios de pago (Nequi, transferencia…) y no pongas datos sensibles del estudiante.</div>
+</section>
+
+<section class="capitulo">
+  <h2>4. Consultar y revisar envíos</h2>
+  <ol class="pasos">
+    <li>Toca una programación para consultarla. Junto a cada canal verás cuántos mensajes tiene y cuál está en uso; <span class="boton sec">Ver mensajes</span> los muestra.</li>
+    <li>La columna <b>Historial de envíos</b> de la lista dice cuántos recordatorios se han enviado; tócala para ver cada envío con su fecha, canal y resultado.</li>
+    <li>En <span class="menu">Finanzas › Mensajes de WhatsApp</span> está el registro de todos los WhatsApp enviados por el sistema, filtrable por fechas.</li>
+  </ol>
+  <figure><img src="../capturas/programacion-consulta.jpg" alt=""><figcaption>Detalle de una programación.</figcaption></figure>
+  <figure><img src="../capturas/programacion-mensajes.jpg" alt=""><figcaption>Registro de mensajes de WhatsApp.</figcaption></figure>
+  <h3>Pausar o cambiar</h3>
+  <p>Para pausar los recordatorios de una factura, edita su programación y cámbiala a <i>Inactivo</i>. Si la factura se anula o el estudiante se retira, los meses que ya no se cobran tampoco se recuerdan.</p>
+</section>
+
+<section class="capitulo">
+  <h2>5. Preguntas frecuentes</h2>
+  <h4>No aparece la factura en la lista</h4>
+  <p>Ya tiene una programación (solo se permite una por factura) o no está vigente.</p>
+  <h4>Un acudiente dice que no le llegó el recordatorio</h4>
+  <p>Revisa el historial de envíos de su programación y la campana de notificaciones: si el envío falló, verifica su celular y correo en <span class="menu">Personas › Acudientes</span>. Recuerda que no se envía si la cuota ya está pagada.</p>
+  <h4>¿Puedo enviar un recordatorio manual?</h4>
+  <p>Sí: desde <span class="menu">Finanzas › Reportes financieros › Morosos</span> puedes escribirle por WhatsApp a cada acudiente en mora.</p>
+</section>
+
+</body>
+</html>

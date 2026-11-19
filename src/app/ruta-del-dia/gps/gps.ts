@@ -13,6 +13,13 @@ export interface LecturaGps {
   fecha: string;
 }
 
+/** Lectura del equipo (navegador o app instalada): lo mínimo de `GeolocationPosition` que se usa. */
+export interface LecturaDispositivo {
+  /** ms desde 1970 */
+  timestamp: number;
+  coords: { latitude: number; longitude: number; accuracy: number; speed: number | null; heading: number | null };
+}
+
 /** Posición guardada del vehículo de un recorrido. */
 export type PosicionGps = PosicionTiempoReal;
 
@@ -54,7 +61,7 @@ export const PRECISION_MAXIMA_M = 100;
 export const DIAS_RETENCION_GPS = 30;
 
 /** Convierte una lectura del navegador al formato del API (velocidad m/s → km/h, valores fuera de rango → null). */
-export function lecturaDe(p: Pick<GeolocationPosition, 'coords' | 'timestamp'>): LecturaGps {
+export function lecturaDe(p: LecturaDispositivo): LecturaGps {
   const { latitude, longitude, speed, heading } = p.coords;
   const kmh = speed != null && Number.isFinite(speed) ? Math.round(speed * 3.6 * 100) / 100 : null;
   return {
@@ -67,7 +74,7 @@ export function lecturaDe(p: Pick<GeolocationPosition, 'coords' | 'timestamp'>):
 }
 
 /** ¿Vale la pena guardar la lectura? (precisión suficiente y separada de la anterior). */
-export function lecturaUtil(p: Pick<GeolocationPosition, 'coords' | 'timestamp'>, anterior: LecturaGps | undefined): boolean {
+export function lecturaUtil(p: LecturaDispositivo, anterior: LecturaGps | undefined): boolean {
   if (p.coords.accuracy > PRECISION_MAXIMA_M) return false;
   return !anterior || p.timestamp - new Date(anterior.fecha).getTime() >= INTERVALO_MINIMO_LECTURA_MS;
 }

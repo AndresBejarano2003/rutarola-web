@@ -41,3 +41,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Texto de las capturas (solo para revisar los manuales)
+documentacion-fuente/capturas/*.txt

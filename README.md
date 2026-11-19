@@ -11,7 +11,32 @@ npm start              # servidor de desarrollo → http://localhost:4200 (con e
 npm run start:local    # igual, pero todo en modo local (localStorage), sin API
 npm test               # pruebas unitarias (Vitest)
 npm run build          # build de producción → dist/RutaRolaApp
+npm run android        # build + copiar la interfaz al proyecto Android (cap sync android)
+npm run android:abrir  # abrir android/ en Android Studio (probar en un teléfono, generar el .aab firmado)
+npm run app:recursos   # volver a generar ícono, pantalla de carga e imágenes de Play Store desde el logo
 ```
+
+### App instalable (Android)
+
+La misma interfaz se publica en Google Play como **RutaRola** (`capacitor.config.ts`: `co.rutarola.app`, interfaz
+empaquetada dentro de la app). Todos los roles la usan y el login decide a dónde entra cada uno. En la app, la
+**ubicación del recorrido sigue compartiéndose con otra app al frente o la pantalla bloqueada**
+(`FuenteUbicacion` → `FuenteNativa`, plugin `@capacitor-community/background-geolocation`, con la notificación fija
+"RutaRola está compartiendo la ubicación"); los lotes se envían con HTTP nativo (`CapacitorHttp`) porque Android frena
+las peticiones del WebView en segundo plano. En el navegador sigue funcionando como antes (solo con la pantalla
+encendida). La app se identifica como `https://app.rutarola.com` (`server.hostname`), el mismo origen de la web, así el API ya la acepta (CORS). El ícono sale del logo del menú
+(`scripts/recursos-app.mjs` → `recursos-app/`). La llave de firma de Google Play nunca va al repositorio.
+
+**Prepara tu teléfono** (`ruta-del-dia/gps/preparar-telefono/`): la primera vez que un conductor o una monitora tiene un
+recorrido en curso en la app aparece una guía corta (permitir notificaciones, quitar a RutaRola del ahorro de batería y el
+ajuste propio de la marca: ZTE, Xiaomi, Samsung, Huawei, Oppo, Vivo) con botones que abren cada ajuste, por el plugin propio
+`AjustesTelefono` (`android/.../AjustesTelefono.java`). Cada paso muestra ✓ al volver; también se abre desde la línea de ubicación.
+
+**Política de privacidad** (`/privacidad`, pública, exigida por Google Play y la Ley 1581): responsable el operador
+como persona natural (`RESPONSABLE_DATOS` en `sistema/privacidad/privacidad-page.ts`); cada empresa de transporte es
+responsable de los datos que registra y RutaRola su encargado. Describe lo que el sistema hace de verdad (ubicación
+solo con el recorrido en curso, borrado del GPS a los 30 días, servidor propio en Hostinger (EE. UU.), cómo eliminar la
+cuenta): si cambia algo de eso, se actualiza la página. Enlazada desde el login y el registro (`URL_PRIVACIDAD`).
 
 Antes de entregar cualquier cambio: `npm test` y `npm run build` deben pasar sin errores ni advertencias.
 
@@ -311,7 +336,8 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   estuviera conectado), pero sí el estado de su estudiante y la hora en que inició la ruta ("la ruta va en camino
   (inició a las …)"). El administrador y el personal siguen viendo el monitoreo, el historial y los mapas.
 - **Centro de Ayuda (`sistema/soporte`):** manuales, tutoriales y preguntas frecuentes se editan solo en
-  `contenido-ayuda.ts`; las respuestas deben coincidir con las rutas y reglas vigentes (actualizarlas
+  `contenido-ayuda.ts` (los PDF de `public/documentacion/` se generan desde `documentacion-fuente/`: HTML + capturas reales del
+  modo local; ver su README y actualizar el manual cuando cambie un módulo); las respuestas deben coincidir con las rutas y reglas vigentes (actualizarlas
   cuando cambie un módulo). La búsqueda filtra los tres a la vez. Una **solicitud de soporte** exige tipo
   (error, consulta, mejora, capacitación), módulo afectado (sale del menú con `modulosDelMenu()`, nunca
   de una lista fija), prioridad (Media por defecto), asunto de 5 a 120 caracteres y descripción de 20 a
@@ -470,12 +496,7 @@ Cada tipo de usuario entra a SU sistema; el rol lo decide el servidor al iniciar
   login lleva al inicio de su rol. En `app.routes.ts` la redirección `''` → `login` va ANTES de la ruta `''` con
   `loadChildren` (si no, la URL vacía la acepta sin hijos y la pantalla queda en blanco). En Netlify, toda dirección
   sin hash que no sea un archivo (`/cualquier-cosa`) redirige a `/` (`netlify.toml`).
-- **Animación del login:** cada vez que se abre el login, `<app-presentacion>` (`autenticacion/login/presentacion/`)
-  reproduce el logo a pantalla completa, silenciado (`public/videos/`: `rutarola-logo-9x16.mp4` en pantallas
-  verticales, `rutarola-logo-16x9-_1_.mp4` en horizontales) con botón "Saltar"; al terminar se desvanece y muestra
-  el login. Si el video no arranca en 5 s (red lenta, ahorro de energía), se queda cargando 2,5 s o pasa de 13 s,
-  sigue al login. `muted` va como PROPIEDAD y se llama a `play()`: el atributo que pone Angular no silencia el video
-  y Chrome de escritorio lo dejaba quieto en el primer cuadro.
+- **Login:** abre directamente, sin animación (el video del logo se quitó por pedido del usuario, 2026-11-18).
 - La barra superior y el saludo del inicio muestran el usuario de la sesión.
 
 ### Ruta del día (`ruta-del-dia/`)
@@ -902,8 +923,8 @@ Las pantallas que aún usan grises fijos se migran a estas clases cuando se modi
   asignación y día: uno que quedó abierto otro día no bloquea el de hoy. Falta un aviso push/WhatsApp al
   acudiente (recogido, entregado, no asistió); hoy lo ve en el portal al instante.
 - **GPS:** el navegador solo da la ubicación por HTTPS (o `localhost`) y con la pantalla encendida: si el
-  teléfono bloquea la pantalla o cambia de app, se pausan las lecturas: la pantalla se mantiene encendida y se avisa la pausa al volver, pero compartir con
-  otra app al frente solo lo resuelve una app nativa (p. ej. empaquetar la Ruta del día con Capacitor y un plugin de ubicación en segundo plano). Las teselas son de OpenStreetMap (uso moderado); para mucho tráfico, un
+  teléfono bloquea la pantalla o cambia de app, se pausan las lecturas (la pantalla se mantiene encendida y se avisa la pausa al volver). La **app Android**
+  ya comparte en segundo plano; falta publicarla en Google Play y la versión para iPhone. Las teselas son de OpenStreetMap (uso moderado); para mucho tráfico, un
   proveedor de mapas con clave.
 - **Varias instancias del API:** SignalR necesitará un backplane (Redis o Azure SignalR); hoy corre una sola.
 - **Envíos automáticos:** el proceso del servidor envía los recordatorios de la programación de cobro y guarda

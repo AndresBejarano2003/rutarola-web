@@ -1,23 +1,13 @@
-# Configuración de Netlify (tiene prioridad sobre la del panel).
-# Angular (builder "application") deja la app en dist/RutaRolaApp/browser; @netlify/angular-runtime
-# exige exactamente esa carpeta. Rutas con hash (#/...): la redirección de abajo solo limpia direcciones inexistentes.
+# LEGADO: RutaRola ya no se publica en Netlify (producción = servidor propio, https://app.rutarola.com, con Coolify).
+# Este sitio solo redirige todo al dominio nuevo para que nadie use la copia vieja. Las pantallas usan rutas con hash
+# (#/...): el navegador conserva el "#/..." al seguir la redirección, así que un enlace viejo abre la misma pantalla.
+# Cuando ya nadie entre por rutarola.netlify.app, se puede borrar el sitio en el panel de Netlify y este archivo.
 [build]
-  command = "npm run build"
-  publish = "dist/RutaRolaApp/browser"
+  command = "mkdir -p redireccion && echo 'Redirigiendo a https://app.rutarola.com' > redireccion/index.html"
+  publish = "redireccion"
 
-# Las pantallas usan rutas con hash (#/...): cualquier otra dirección que no sea un archivo (p. ej. /cualquier-cosa)
-# vuelve a la raíz, que lleva al login (o al inicio de cada rol si ya hay sesión). Los archivos existentes no se tocan.
 [[redirects]]
   from = "/*"
-  to = "/"
-  status = 302
-
-# Animaciones del login: el nombre no cambia con cada versión, así que caché de una semana.
-[[headers]]
-  for = "/videos/*"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-[build.environment]
-  # Angular 21 requiere Node ^20.19 || ^22.12 || >=24
-  NODE_VERSION = "22"
+  to = "https://app.rutarola.com/"
+  status = 301
+  force = true

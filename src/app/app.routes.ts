@@ -5,6 +5,8 @@ export const routes: Routes = [
   // Antes era un formulario sin datos reales: los datos de la cuenta están en Inicio › Perfil.
   { path: 'editar-usuario', redirectTo: 'inicio/perfil' },
   { path: 'offline-membership', loadComponent: () => import('./sistema/membresias/planes-publicos/planes-publicos-page') },
+  // Política de privacidad: pública (Google Play y la Ley 1581 exigen una URL abierta), con o sin sesión.
+  { path: 'privacidad', loadComponent: () => import('./sistema/privacidad/privacidad-page') },
 
   // La raíz va al login (o, con sesión, al inicio de su rol: `soloInvitados`). Debe ir ANTES de la ruta '' con
   // loadChildren: si no, esa ruta acepta la URL vacía sin ningún hijo y la pantalla queda en blanco.

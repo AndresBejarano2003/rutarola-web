@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RutaRola</string>
+    <string name="title_activity_main">RutaRola</string>
+    <string name="package_name">co.rutarola.app</string>
+    <string name="custom_url_scheme">co.rutarola.app</string>
+    <!-- Notificación fija mientras se comparte la ubicación de un recorrido (plugin background-geolocation). -->
+    <string name="capacitor_background_geolocation_notification_channel_name">Ubicación de la ruta</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_notificacion</string>
+    <string name="capacitor_background_geolocation_notification_color">#FACC15</string>
+</resources>

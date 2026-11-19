@@ -1,0 +1,81 @@
+/* Estilos comunes de los manuales de RutaRola (impresos a PDF con Chrome). Colores de la marca. */
+@page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+@page :first { margin: 0; }
+
+:root {
+  --amarillo: #facc15;
+  --amarillo-oscuro: #a16207;
+  --rojo: #dc2626;
+  --azul: #2563eb;
+  --oscuro: #111827;
+  --gris: #4b5563;
+  --linea: #e5e7eb;
+  --fondo-suave: #f9fafb;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--oscuro); font-size: 10.5pt; line-height: 1.55; }
+
+/* Portada */
+.portada { height: 297mm; width: 210mm; background: var(--oscuro); color: #f3f4f6; display: flex; flex-direction: column; justify-content: space-between; padding: 28mm 22mm; page-break-after: always; position: relative; overflow: hidden; }
+.portada::after { content: ''; position: absolute; right: -40mm; bottom: -40mm; width: 140mm; height: 140mm; border-radius: 50%; background: radial-gradient(circle, rgba(250,204,21,.25), transparent 65%); }
+.portada img.logo { width: 70mm; }
+.portada .etiqueta { display: inline-block; background: var(--amarillo); color: var(--oscuro); font-weight: 700; padding: 2mm 4mm; border-radius: 2mm; font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; }
+.portada h1 { font-size: 34pt; line-height: 1.1; margin: 6mm 0 4mm; color: #fff; }
+.portada .subtitulo { font-size: 13pt; color: #d1d5db; max-width: 140mm; }
+.portada .pie { font-size: 9pt; color: #9ca3af; border-top: 1px solid #374151; padding-top: 5mm; display: flex; justify-content: space-between; }
+
+/* Índice */
+.indice { page-break-after: always; }
+.indice h2 { border: 0; }
+.indice ol { list-style: none; padding: 0; counter-reset: cap; }
+.indice li { counter-increment: cap; padding: 2.2mm 0; border-bottom: 1px dotted var(--linea); display: flex; gap: 4mm; }
+.indice li::before { content: counter(cap, decimal-leading-zero); color: var(--amarillo-oscuro); font-weight: 700; width: 9mm; }
+.indice li span { color: var(--gris); font-size: 9pt; margin-left: auto; }
+
+/* Títulos */
+h2 { font-size: 18pt; margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 3px solid var(--amarillo); page-break-after: avoid; }
+h3 { font-size: 13pt; margin: 7mm 0 2.5mm; color: var(--oscuro); page-break-after: avoid; }
+h4 { font-size: 10.5pt; margin: 5mm 0 2mm; color: var(--azul); text-transform: uppercase; letter-spacing: .04em; page-break-after: avoid; }
+.capitulo { page-break-before: always; }
+.capitulo:first-of-type { page-break-before: auto; }
+p { margin: 0 0 3mm; }
+.intro { font-size: 11.5pt; color: var(--gris); }
+
+/* Pasos numerados */
+ol.pasos { list-style: none; padding: 0; margin: 3mm 0 4mm; counter-reset: paso; }
+ol.pasos > li { counter-increment: paso; position: relative; padding: 0 0 3mm 11mm; page-break-inside: avoid; }
+ol.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: 0; width: 7mm; height: 7mm; border-radius: 50%; background: var(--amarillo); color: var(--oscuro); font-weight: 700; font-size: 9.5pt; display: grid; place-items: center; }
+ul { padding-left: 6mm; margin: 0 0 3mm; }
+li { margin-bottom: 1mm; }
+
+/* Elementos de la interfaz */
+.boton { display: inline-block; padding: 0 2mm; border-radius: 1.2mm; background: var(--amarillo); color: var(--oscuro); font-weight: 600; font-size: 9pt; white-space: nowrap; }
+.boton.sec { background: #e5e7eb; }
+.menu { font-weight: 600; color: var(--azul); white-space: nowrap; }
+.campo { font-weight: 600; }
+kbd { font-family: inherit; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 1mm; padding: 0 1.5mm; font-size: 9pt; }
+
+/* Capturas */
+figure { display: block; margin: 4mm 0 5mm; break-inside: avoid; page-break-inside: avoid; text-align: center; }
+figure img { display: block; margin: 0 auto; max-width: 100%; max-height: 120mm; border: 1px solid var(--linea); border-radius: 2mm; }
+figure.movil img { max-height: 135mm; }
+figure.pareja .imagenes { display: flex; gap: 6mm; justify-content: center; }
+figure.pareja img { margin: 0; max-height: 125mm; max-width: 48%; }
+figcaption { font-size: 8.5pt; color: var(--gris); margin-top: 1.5mm; }
+
+/* Recuadros */
+.nota, .consejo, .importante { border-radius: 2mm; padding: 3mm 4mm; margin: 3mm 0 4mm; page-break-inside: avoid; border-left: 4px solid; }
+.nota { background: #eff6ff; border-color: var(--azul); }
+.consejo { background: #fefce8; border-color: var(--amarillo-oscuro); }
+.importante { background: #fef2f2; border-color: var(--rojo); }
+.nota strong:first-child, .consejo strong:first-child, .importante strong:first-child { display: block; margin-bottom: 1mm; }
+
+/* Tablas */
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 9.5pt; page-break-inside: avoid; }
+th { background: var(--oscuro); color: #fff; text-align: left; padding: 2mm 3mm; font-weight: 600; }
+td { border-bottom: 1px solid var(--linea); padding: 2mm 3mm; vertical-align: top; }
+tr:nth-child(even) td { background: var(--fondo-suave); }
+
+.dos-columnas { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }

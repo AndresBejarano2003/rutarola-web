@@ -1,7 +1,8 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
-import { INTERVALO_ENVIO_MS, LecturaGps, MAXIMO_POR_LOTE, SALTOS_PARA_ACEPTAR, encolar, lecturaDe, lecturaUtil, saltoImposible } from './gps';
+import { FalloUbicacion, FuenteNativa, FuenteUbicacion } from './fuente-ubicacion';
+import { INTERVALO_ENVIO_MS, LecturaDispositivo, LecturaGps, MAXIMO_POR_LOTE, SALTOS_PARA_ACEPTAR, encolar, lecturaDe, lecturaUtil, saltoImposible } from './gps';
 import { GpsRepositorio } from './gps-repositorio';
 
 /** Clave de `localStorage` de las lecturas aún no enviadas: `{ [recorridoId]: LecturaGps[] }`. */
@@ -22,13 +23,17 @@ export type EstadoEmisor = 'APAGADO' | 'BUSCANDO' | 'ACTIVO' | 'SIN_PERMISO' | '
  * Lo que no se pudo enviar de recorridos anteriores se reintenta al iniciar (el servidor acepta
  * lecturas hasta 5 min después del fin y descarta las repetidas).
  *
- * El navegador NO entrega la ubicación con la app en segundo plano (otra app al frente o la pantalla bloqueada): por eso
- * mantiene la pantalla encendida (Wake Lock) mientras se comparte, al volver reanuda la lectura de inmediato y avisa
- * cuánto tiempo estuvo en pausa (`pausa`). Las lecturas que implican un salto imposible se descartan (`saltoImposible`).
+ * Las lecturas vienen de `FuenteUbicacion`. En la APP INSTALADA siguen con otra app al frente o la pantalla bloqueada
+ * (servicio nativo con notificación) y se envían también al llegar cada lectura, porque en segundo plano los
+ * temporizadores del WebView se frenan. En el NAVEGADOR no hay ubicación en segundo plano: mantiene la pantalla
+ * encendida (Wake Lock), al volver reanuda la lectura de inmediato y avisa cuánto tiempo estuvo en pausa (`pausa`). Las lecturas que implican un salto imposible se descartan (`saltoImposible`).
  */
 @Injectable()
 export class EmisorGps {
   private readonly repositorio = inject(GpsRepositorio);
+  private readonly fuente = inject(FuenteUbicacion);
+  /** La app instalada sigue compartiendo en segundo plano (no hace falta mantener la pantalla encendida). */
+  readonly enSegundoPlano = this.fuente.enSegundoPlano;
 
   readonly estado = signal<EstadoEmisor>('APAGADO');
   /** Lecturas guardadas en el teléfono sin enviar (todas las rutas). */
@@ -47,7 +52,8 @@ export class EmisorGps {
   private recorridoId: string | null = null;
   /** Última lectura aceptada (la cola se vacía al enviar, pero el salto se mide contra ella). */
   private ultimaAceptada: LecturaGps | undefined;
-  private vigilancia: number | null = null;
+  private vigilancia: (() => void) | null = null;
+  private ultimoEnvio = 0;
   private temporizador: ReturnType<typeof setInterval> | null = null;
   private enviando = false;
   /** Lecturas seguidas descartadas por salto (si se repiten, la equivocada era la anterior). */
@@ -62,11 +68,21 @@ export class EmisorGps {
     }
     const pausa = this.ocultaDesde ? Date.now() - this.ocultaDesde : 0;
     this.ocultaDesde = null;
-    if (!this.recorridoId || this.estado() === 'SIN_PERMISO' || this.estado() === 'NO_DISPONIBLE') return;
-    if (pausa >= 30_000) this.pausa.set(Math.max(1, Math.round(pausa / 60_000)));
-    // Algunos navegadores dejan la vigilancia muerta al volver: se reinicia, se pide una lectura ya y se envía.
-    this.vigilar();
-    void this.mantenerPantalla();
+    if (!this.recorridoId || this.estado() === 'NO_DISPONIBLE') return;
+    if (this.estado() === 'SIN_PERMISO') {
+      // En la app instalada se pudo haber dado el permiso en los ajustes: se vuelve a intentar.
+      if (this.fuente.enSegundoPlano) {
+        this.estado.set('BUSCANDO');
+        this.vigilar();
+      }
+      return;
+    }
+    if (!this.fuente.enSegundoPlano) {
+      if (pausa >= 30_000) this.pausa.set(Math.max(1, Math.round(pausa / 60_000)));
+      // Algunos navegadores dejan la vigilancia muerta al volver: se reinicia, se pide una lectura ya y se envía.
+      this.vigilar();
+      void this.mantenerPantalla();
+    }
     void this.enviarPendientes();
   };
 
@@ -80,8 +96,7 @@ export class EmisorGps {
     this.detener();
     this.recorridoId = recorridoId;
     this.ultimaAceptada = undefined;
-    const geo = typeof navigator !== 'undefined' ? navigator.geolocation : undefined;
-    if (!geo) {
+    if (!this.fuente.disponible()) {
       this.estado.set('NO_DISPONIBLE');
       return;
     }
@@ -95,26 +110,25 @@ export class EmisorGps {
     void this.enviarPendientes();
   }
 
-  /** (Re)inicia `watchPosition` y pide una lectura inmediata. */
+  /** (Re)inicia la lectura continua y pide una lectura inmediata. */
   private vigilar(): void {
-    const geo = navigator.geolocation;
     this.detenerVigilancia();
-    const error = (e: GeolocationPositionError) => {
-      if (e.code === e.PERMISSION_DENIED) {
+    const fallo = (f: FalloUbicacion) => {
+      if (f === 'SIN_PERMISO') {
         this.estado.set('SIN_PERMISO');
         this.detenerVigilancia();
       }
-      // Sin señal o tiempo agotado: watchPosition sigue intentando.
+      // Sin señal o tiempo agotado: la vigilancia sigue intentando.
     };
-    const opciones: PositionOptions = { enableHighAccuracy: true, maximumAge: 5_000, timeout: 30_000 };
-    this.vigilancia = geo.watchPosition((p) => this.registrar(p), error, opciones);
-    geo.getCurrentPosition?.((p) => this.registrar(p), error, { ...opciones, maximumAge: 0 });
+    const leer = (p: LecturaDispositivo) => this.registrar(p);
+    this.vigilancia = this.fuente.vigilar(leer, fallo);
+    this.fuente.leerAhora(leer, fallo);
   }
 
   /** Pantalla encendida mientras se comparte (el sistema la suelta al ocultar la app; se vuelve a pedir al volver). */
   private async mantenerPantalla(): Promise<void> {
     const wakeLock = (navigator as Navigator & { wakeLock?: { request(tipo: 'screen'): Promise<{ release(): Promise<void>; addEventListener(e: 'release', f: () => void): void }> } }).wakeLock;
-    if (!wakeLock || document.visibilityState !== 'visible' || this.bloqueo) return;
+    if (this.fuente.enSegundoPlano || !wakeLock || document.visibilityState !== 'visible' || this.bloqueo) return;
     try {
       const bloqueo = await wakeLock.request('screen');
       this.bloqueo = bloqueo;
@@ -126,6 +140,11 @@ export class EmisorGps {
     } catch {
       this.pantallaEncendida.set(false); // Ahorro de batería u otra política del navegador.
     }
+  }
+
+  /** Abre los ajustes de la app para permitir la ubicación (solo en la app instalada). */
+  abrirAjustes(): void {
+    if (this.fuente instanceof FuenteNativa) void this.fuente.abrirAjustes().catch(() => undefined);
   }
 
   /** Deja de leer la ubicación y envía lo que quede (p. ej. al finalizar el recorrido). */
@@ -148,11 +167,11 @@ export class EmisorGps {
   }
 
   private detenerVigilancia(): void {
-    if (this.vigilancia !== null) navigator.geolocation?.clearWatch(this.vigilancia);
+    this.vigilancia?.();
     this.vigilancia = null;
   }
 
-  private registrar(p: GeolocationPosition): void {
+  private registrar(p: LecturaDispositivo): void {
     const id = this.recorridoId;
     if (!id) return;
     const cola = this.leer();
@@ -166,12 +185,15 @@ export class EmisorGps {
     this.escribir({ ...cola, [id]: encolar(propia, lectura) });
     this.ultimaLectura.set(lectura.fecha);
     this.estado.set('ACTIVO');
+    // En segundo plano el temporizador se frena: cada lectura también dispara el envío si ya toca.
+    if (Date.now() - this.ultimoEnvio >= INTERVALO_ENVIO_MS) void this.enviarPendientes();
   }
 
   /** Envía en lotes; lo enviado sale de la cola aunque se hayan agregado lecturas mientras tanto. */
   async enviarPendientes(): Promise<void> {
     if (this.enviando) return;
     this.enviando = true;
+    this.ultimoEnvio = Date.now();
     try {
       for (const id of Object.keys(this.leer())) {
         let lote = (this.leer()[id] ?? []).slice(0, MAXIMO_POR_LOTE);
