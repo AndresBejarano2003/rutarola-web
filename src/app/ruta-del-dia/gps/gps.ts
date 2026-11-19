@@ -39,8 +39,15 @@ export const MAXIMO_POR_LOTE = 500;
 export const MAXIMO_EN_COLA = 5_000;
 /** Menos de esto entre lecturas no aporta al mapa y gasta batería y datos. */
 export const INTERVALO_MINIMO_LECTURA_MS = 5_000;
-/** Cada cuánto se envía lo acumulado. */
-export const INTERVALO_ENVIO_MS = 15_000;
+/** Cada cuánto se envía lo acumulado (cada pocos segundos para que el mapa de quien sigue la ruta se mueva fluido). */
+export const INTERVALO_ENVIO_MS = 5_000;
+/**
+ * Un vehículo escolar no va a más de esto: una lectura que implica más velocidad desde la anterior es un salto del GPS
+ * (ubicación por antena o wifi, rebote al volver a la app) y se descarta. Igual que `ReglasGps.VelocidadMaximaKmh`.
+ */
+export const VELOCIDAD_MAXIMA_KMH = 150;
+/** Si tantas lecturas seguidas "saltan" respecto a la anterior, la equivocada era la anterior: se aceptan. */
+export const SALTOS_PARA_ACEPTAR = 3;
 /** Lecturas con más de esto de error (m) se ignoran (señal pobre, ubicación por antena). */
 export const PRECISION_MAXIMA_M = 100;
 /** Días que se conservan las ubicaciones (igual que `Gps:DiasRetencion` del API). */
@@ -63,6 +70,24 @@ export function lecturaDe(p: Pick<GeolocationPosition, 'coords' | 'timestamp'>):
 export function lecturaUtil(p: Pick<GeolocationPosition, 'coords' | 'timestamp'>, anterior: LecturaGps | undefined): boolean {
   if (p.coords.accuracy > PRECISION_MAXIMA_M) return false;
   return !anterior || p.timestamp - new Date(anterior.fecha).getTime() >= INTERVALO_MINIMO_LECTURA_MS;
+}
+
+/** Distancia en metros entre dos puntos (fórmula del haversine). */
+export function distanciaMetros(a: Pick<LecturaGps, 'latitud' | 'longitud'>, b: Pick<LecturaGps, 'latitud' | 'longitud'>): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.latitud - a.latitud) * rad;
+  const dLon = (b.longitud - a.longitud) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitud * rad) * Math.cos(b.latitud * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6_371_000 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** ¿Llegar de `anterior` a `nueva` exige ir a más de `VELOCIDAD_MAXIMA_KMH`? (= `ReglasGps.SaltoImposible`). */
+export function saltoImposible(anterior: Pick<LecturaGps, 'latitud' | 'longitud' | 'fecha'>, nueva: Pick<LecturaGps, 'latitud' | 'longitud' | 'fecha'>): boolean {
+  const segundos = Math.abs(new Date(nueva.fecha).getTime() - new Date(anterior.fecha).getTime()) / 1000;
+  const metros = distanciaMetros(anterior, nueva);
+  // Menos de 100 m nunca es un salto (el error normal del GPS en una parada).
+  if (metros < 100) return false;
+  return metros / Math.max(segundos, 1) * 3.6 > VELOCIDAD_MAXIMA_KMH;
 }
 
 /** Agrega a la cola sin pasar del máximo (se conservan las más recientes). */

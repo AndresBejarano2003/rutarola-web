@@ -1,5 +1,5 @@
 import type * as L from 'leaflet';
-import { leafletDe } from './mapa';
+import { duracionAnimacion, leafletDe } from './mapa';
 
 describe('Mapa: carga de Leaflet', () => {
   const leaflet = { map: () => null } as unknown as typeof L;
@@ -11,5 +11,17 @@ describe('Mapa: carga de Leaflet', () => {
 
   it('falla con un mensaje claro si el módulo no trae Leaflet', () => {
     expect(() => leafletDe({} as typeof L)).toThrow('Leaflet no se cargó correctamente');
+  });
+});
+
+describe('Mapa: movimiento fluido de los vehículos', () => {
+  it('desliza el vehículo durante lo que tardó en llegar la posición, dentro de 0,6–4,5 s', () => {
+    expect(duracionAnimacion(60, 5_000)).toBe(4_500);
+    expect(duracionAnimacion(60, 2_000)).toBe(2_000);
+    expect(duracionAnimacion(5, 100)).toBe(600);
+  });
+
+  it('un salto largo (tras un rato sin señal) se recorre rápido', () => {
+    expect(duracionAnimacion(5_000, 300_000)).toBe(1_200);
   });
 });

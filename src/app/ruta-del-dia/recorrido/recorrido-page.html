@@ -73,6 +73,9 @@
               <span class="flex items-center gap-2 text-warning"><i class="fa-solid fa-location-pin-lock" aria-hidden="true"></i> Este equipo no tiene ubicación.</span>
             }
           }
+          @if (gps.estado() === 'ACTIVO' && gps.pantallaEncendida()) {
+            <span class="text-base-content/70"><i class="fa-solid fa-sun text-warning" aria-hidden="true"></i> Pantalla encendida mientras compartes</span>
+          }
           @if (gps.pendientes() > 0 && gps.sinConexion()) {
             <span class="badge badge-soft badge-warning">{{ gps.pendientes() }} sin enviar · se enviarán al volver la señal</span>
           }
@@ -84,6 +87,19 @@
             La ubicación la comparten los teléfonos del conductor y la monitora.</span>
         }
       </div>
+      @if (reportaUbicacion() && gps.pausa(); as minutos) {
+        <div role="alert" class="alert alert-warning alert-soft text-sm items-start">
+          <i class="fa-solid fa-triangle-exclamation mt-0.5" aria-hidden="true"></i>
+          <div class="flex-1">
+            <p class="font-medium">La ubicación estuvo en pausa {{ minutos }} min mientras usabas otra app o la pantalla estuvo apagada.</p>
+            <p>El navegador no comparte la ubicación en segundo plano: mantén RutaRola abierta en pantalla durante el recorrido
+              (para llamar o escribir, vuelve aquí al terminar). Ya se reanudó.</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm btn-square" aria-label="Cerrar aviso" (click)="gps.pausa.set(null)">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
     }
 
     <!-- Cambio de orden hecho por el compañero -->

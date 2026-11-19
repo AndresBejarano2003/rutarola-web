@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { mensajeDeError } from 'src/app/shared/crud/crud';
-import { INTERVALO_ENVIO_MS, LecturaGps, MAXIMO_POR_LOTE, encolar, lecturaDe, lecturaUtil } from './gps';
+import { INTERVALO_ENVIO_MS, LecturaGps, MAXIMO_POR_LOTE, SALTOS_PARA_ACEPTAR, encolar, lecturaDe, lecturaUtil, saltoImposible } from './gps';
 import { GpsRepositorio } from './gps-repositorio';
 
 /** Clave de `localStorage` de las lecturas aún no enviadas: `{ [recorridoId]: LecturaGps[] }`. */
@@ -21,6 +21,10 @@ export type EstadoEmisor = 'APAGADO' | 'BUSCANDO' | 'ACTIVO' | 'SIN_PERMISO' | '
  * (sobrevive a recargas y a la falta de señal) → lotes de ≤ 500 cada 15 s y al recuperar la red.
  * Lo que no se pudo enviar de recorridos anteriores se reintenta al iniciar (el servidor acepta
  * lecturas hasta 5 min después del fin y descarta las repetidas).
+ *
+ * El navegador NO entrega la ubicación con la app en segundo plano (otra app al frente o la pantalla bloqueada): por eso
+ * mantiene la pantalla encendida (Wake Lock) mientras se comparte, al volver reanuda la lectura de inmediato y avisa
+ * cuánto tiempo estuvo en pausa (`pausa`). Las lecturas que implican un salto imposible se descartan (`saltoImposible`).
  */
 @Injectable()
 export class EmisorGps {
@@ -35,12 +39,36 @@ export class EmisorGps {
   readonly sinConexion = signal(false);
   /** Motivo con el que el servidor rechazó el último lote (p. ej. el plan de la empresa no incluye GPS en vivo). */
   readonly rechazo = signal<string | null>(null);
+  /** Minutos que la ubicación estuvo en pausa la última vez que la app pasó a segundo plano (`null` = sin aviso). */
+  readonly pausa = signal<number | null>(null);
+  /** La pantalla se mantiene encendida mientras se comparte (el navegador lo permite). */
+  readonly pantallaEncendida = signal(false);
 
   private recorridoId: string | null = null;
+  /** Última lectura aceptada (la cola se vacía al enviar, pero el salto se mide contra ella). */
+  private ultimaAceptada: LecturaGps | undefined;
   private vigilancia: number | null = null;
   private temporizador: ReturnType<typeof setInterval> | null = null;
   private enviando = false;
+  /** Lecturas seguidas descartadas por salto (si se repiten, la equivocada era la anterior). */
+  private saltos = 0;
+  private ocultaDesde: number | null = null;
+  private bloqueo: { release(): Promise<void> } | null = null;
   private readonly alRecuperarRed = () => void this.enviarPendientes();
+  private readonly alCambiarVisibilidad = () => {
+    if (document.visibilityState === 'hidden') {
+      this.ocultaDesde = Date.now();
+      return;
+    }
+    const pausa = this.ocultaDesde ? Date.now() - this.ocultaDesde : 0;
+    this.ocultaDesde = null;
+    if (!this.recorridoId || this.estado() === 'SIN_PERMISO' || this.estado() === 'NO_DISPONIBLE') return;
+    if (pausa >= 30_000) this.pausa.set(Math.max(1, Math.round(pausa / 60_000)));
+    // Algunos navegadores dejan la vigilancia muerta al volver: se reinicia, se pide una lectura ya y se envía.
+    this.vigilar();
+    void this.mantenerPantalla();
+    void this.enviarPendientes();
+  };
 
   constructor() {
     this.pendientes.set(this.contar(this.leer()));
@@ -51,26 +79,53 @@ export class EmisorGps {
     if (this.recorridoId === recorridoId && this.vigilancia !== null) return;
     this.detener();
     this.recorridoId = recorridoId;
+    this.ultimaAceptada = undefined;
     const geo = typeof navigator !== 'undefined' ? navigator.geolocation : undefined;
     if (!geo) {
       this.estado.set('NO_DISPONIBLE');
       return;
     }
     this.estado.set('BUSCANDO');
-    this.vigilancia = geo.watchPosition(
-      (p) => this.registrar(p),
-      (e) => {
-        if (e.code === e.PERMISSION_DENIED) {
-          this.estado.set('SIN_PERMISO');
-          this.detenerVigilancia();
-        }
-        // Sin señal o tiempo agotado: watchPosition sigue intentando.
-      },
-      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 30_000 },
-    );
+    this.saltos = 0;
+    this.vigilar();
     this.temporizador = setInterval(() => void this.enviarPendientes(), INTERVALO_ENVIO_MS);
     window.addEventListener('online', this.alRecuperarRed);
+    document.addEventListener('visibilitychange', this.alCambiarVisibilidad);
+    void this.mantenerPantalla();
     void this.enviarPendientes();
+  }
+
+  /** (Re)inicia `watchPosition` y pide una lectura inmediata. */
+  private vigilar(): void {
+    const geo = navigator.geolocation;
+    this.detenerVigilancia();
+    const error = (e: GeolocationPositionError) => {
+      if (e.code === e.PERMISSION_DENIED) {
+        this.estado.set('SIN_PERMISO');
+        this.detenerVigilancia();
+      }
+      // Sin señal o tiempo agotado: watchPosition sigue intentando.
+    };
+    const opciones: PositionOptions = { enableHighAccuracy: true, maximumAge: 5_000, timeout: 30_000 };
+    this.vigilancia = geo.watchPosition((p) => this.registrar(p), error, opciones);
+    geo.getCurrentPosition?.((p) => this.registrar(p), error, { ...opciones, maximumAge: 0 });
+  }
+
+  /** Pantalla encendida mientras se comparte (el sistema la suelta al ocultar la app; se vuelve a pedir al volver). */
+  private async mantenerPantalla(): Promise<void> {
+    const wakeLock = (navigator as Navigator & { wakeLock?: { request(tipo: 'screen'): Promise<{ release(): Promise<void>; addEventListener(e: 'release', f: () => void): void }> } }).wakeLock;
+    if (!wakeLock || document.visibilityState !== 'visible' || this.bloqueo) return;
+    try {
+      const bloqueo = await wakeLock.request('screen');
+      this.bloqueo = bloqueo;
+      this.pantallaEncendida.set(true);
+      bloqueo.addEventListener('release', () => {
+        this.bloqueo = null;
+        this.pantallaEncendida.set(false);
+      });
+    } catch {
+      this.pantallaEncendida.set(false); // Ahorro de batería u otra política del navegador.
+    }
   }
 
   /** Deja de leer la ubicación y envía lo que quede (p. ej. al finalizar el recorrido). */
@@ -84,6 +139,11 @@ export class EmisorGps {
     if (this.temporizador) clearInterval(this.temporizador);
     this.temporizador = null;
     window.removeEventListener('online', this.alRecuperarRed);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.alCambiarVisibilidad);
+    void this.bloqueo?.release().catch(() => undefined);
+    this.bloqueo = null;
+    this.pantallaEncendida.set(false);
+    this.pausa.set(null);
     if (this.estado() === 'BUSCANDO' || this.estado() === 'ACTIVO') this.estado.set('APAGADO');
   }
 
@@ -97,8 +157,12 @@ export class EmisorGps {
     if (!id) return;
     const cola = this.leer();
     const propia = cola[id] ?? [];
-    if (!lecturaUtil(p, propia.at(-1))) return;
+    const anterior = propia.at(-1) ?? this.ultimaAceptada;
+    if (!lecturaUtil(p, anterior)) return;
     const lectura = lecturaDe(p);
+    if (anterior && saltoImposible(anterior, lectura) && ++this.saltos < SALTOS_PARA_ACEPTAR) return;
+    this.saltos = 0;
+    this.ultimaAceptada = lectura;
     this.escribir({ ...cola, [id]: encolar(propia, lectura) });
     this.ultimaLectura.set(lectura.fecha);
     this.estado.set('ACTIVO');
