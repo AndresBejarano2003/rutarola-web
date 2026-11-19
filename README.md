@@ -531,13 +531,13 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   servidor guarda una lectura cada 4 s como mínimo por recorrido (descarta las casi simultáneas). Usa
   `EmisorGps`: `watchPosition` → lecturas con precisión ≤ 100 m y una cada ≥ 5 s → cola en `localStorage`
   (`rutarola.gps.pendientes`, sobrevive a recargas y a la falta de señal, máx. 5000 por recorrido) → lotes de
-  ≤ 500 cada 15 s y al volver la red; lo pendiente de recorridos anteriores se reenvía al abrir (el servidor
-  acepta hasta 5 min después del fin y descarta repetidas; un 4xx descarta el lote). La pantalla muestra
+  ≤ 500 cada 5 s (para que el mapa de quien sigue la ruta se mueva fluido) y al volver la red; lo pendiente de recorridos anteriores se reenvía al abrir (el servidor
+  acepta hasta 5 min después del fin y descarta repetidas; un 4xx descarta el lote). **Saltos del GPS**: una lectura que implica más de 150 km/h desde la anterior (y ≥ 100 m) se descarta en el teléfono y en el servidor (`saltoImposible` = `ReglasGps.SaltoImposible`), así el vehículo no se "teletransporta" en el mapa; si 3 seguidas saltan, se aceptan (la equivocada era la anterior). **Segundo plano**: el navegador no entrega la ubicación con otra app al frente o la pantalla bloqueada; por eso se mantiene la pantalla encendida (Wake Lock) mientras se comparte, al volver se reanuda la lectura de inmediato y, si estuvo ≥ 30 s fuera, se avisa "La ubicación estuvo en pausa N min…". La pantalla muestra
   "Compartiendo ubicación", "Buscando señal", sin permiso o cuántas lecturas faltan por enviar, y que el
   compañero también comparte. `GpsRepositorio` (`GpsLocal`, `rutarola.gps` → `GpsHttp`): enviar, última, trayecto, en curso
   y observar (hub). Las ubicaciones se conservan **30 días** (`DIAS_RETENCION_GPS`, `Gps:DiasRetencion` en el API).
 - **Mapas** (`shared/mapa/mapa.ts`, `<app-mapa>`: Leaflet + OpenStreetMap con atribución, cargado solo al
-  mostrarse; marcadores Font Awesome con `divIcon`): Operación › **Monitoreo en vivo** (`operacion/monitoreo`,
+  mostrarse; marcadores Font Awesome con `divIcon` que se conservan entre actualizaciones y se **deslizan** a la nueva posición durante lo que tardó en llegar — 0,6–4,5 s, saltos de más de 2 km en 1,2 s, sin animación con "reducir movimiento" — y el mapa los acompaña con un paneo suave): Operación › **Monitoreo en vivo** (`operacion/monitoreo`,
   recorridos en curso con su posición en vivo, "sin señal" a los 3 min, lista seleccionable), el **trayecto** en
   el detalle del historial (en vivo si sigue en curso) y "**Ver en el mapa**" del portal. El mapa va aislado (`isolate`
   en el host y en `.leaflet-container`) para que las capas de Leaflet (z-index 400–1000) nunca tapen el menú
@@ -902,8 +902,8 @@ Las pantallas que aún usan grises fijos se migran a estas clases cuando se modi
   asignación y día: uno que quedó abierto otro día no bloquea el de hoy. Falta un aviso push/WhatsApp al
   acudiente (recogido, entregado, no asistió); hoy lo ve en el portal al instante.
 - **GPS:** el navegador solo da la ubicación por HTTPS (o `localhost`) y con la pantalla encendida: si el
-  teléfono bloquea la pantalla o cambia de app, se pausan las lecturas (una app nativa o PWA con permiso en
-  segundo plano lo resolvería). Las teselas son de OpenStreetMap (uso moderado); para mucho tráfico, un
+  teléfono bloquea la pantalla o cambia de app, se pausan las lecturas: la pantalla se mantiene encendida y se avisa la pausa al volver, pero compartir con
+  otra app al frente solo lo resuelve una app nativa (p. ej. empaquetar la Ruta del día con Capacitor y un plugin de ubicación en segundo plano). Las teselas son de OpenStreetMap (uso moderado); para mucho tráfico, un
   proveedor de mapas con clave.
 - **Varias instancias del API:** SignalR necesitará un backplane (Redis o Azure SignalR); hoy corre una sola.
 - **Envíos automáticos:** el proceso del servidor envía los recordatorios de la programación de cobro y guarda
