@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "RutaRola",
+  "short_name": "RutaRola",
+  "description": "Gestión de transporte escolar: estudiantes, rutas, vehículos, cobros y la ruta del día en tiempo real.",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "categories": ["business", "education", "productivity"],
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ruta del día", "url": "/#/ruta-del-dia", "icons": [{ "src": "iconos/icono-192.png", "sizes": "192x192" }] },
+    { "name": "Registrar pago", "url": "/#/finanzas/recibos?accion=nuevo", "icons": [{ "src": "iconos/icono-192.png", "sizes": "192x192" }] }
+  ]
+}

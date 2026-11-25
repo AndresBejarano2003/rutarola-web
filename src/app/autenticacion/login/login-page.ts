@@ -1,3 +1,4 @@
+import { InstalarApp } from 'src/app/shared/instalar-app/instalar-app';
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -42,7 +43,7 @@ import { RESPONSABLE_DATOS } from 'src/app/sistema/privacidad/privacidad-page';
 @Component({
   selector: 'app-login-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, InstalarApp],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })

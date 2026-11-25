@@ -3,6 +3,7 @@
 // Uso: `npm run app:recursos` (después `@capacitor/assets` crea los tamaños de Android).
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
+mkdirSync('sitio-web/img', { recursive: true });
 
 const FONDO = '#111827';
 const LOGO = 'public/logos/logo-oficial-sin-fondo-lb.png';
@@ -33,4 +34,15 @@ await lienzo(2732, 2732, 1100, `${SALIDA}/splash-dark.png`);
 // Ficha de Google Play: ícono 512×512 y gráfico de funciones 1024×500.
 await lienzo(512, 512, 430, `${TIENDA}/icono-512.png`);
 await lienzo(1024, 500, 620, `${TIENDA}/grafico-funciones-1024x500.png`);
-console.log('Recursos de la app generados en', SALIDA);
+// Aplicación web instalable (PWA, `public/manifest.webmanifest`) y favicon: el ícono "maskable" deja el logo dentro del
+// 80 % central (zona segura), y el de iPhone/iPad (apple-touch-icon) va sin transparencia.
+const WEB = 'public/iconos';
+mkdirSync(WEB, { recursive: true });
+await lienzo(192, 192, 165, `${WEB}/icono-192.png`);
+await lienzo(512, 512, 440, `${WEB}/icono-512.png`);
+await lienzo(512, 512, 330, `${WEB}/icono-maskable-512.png`);
+await lienzo(180, 180, 150, `${WEB}/apple-touch-icon.png`);
+await lienzo(48, 48, 44, `${WEB}/favicon-48.png`);
+// Imagen para compartir el enlace (WhatsApp, Facebook…): 1200×630.
+await lienzo(1200, 630, 640, 'sitio-web/img/compartir.png');
+console.log('Recursos de la app generados en', SALIDA, 'y', WEB);

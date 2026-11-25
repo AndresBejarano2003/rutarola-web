@@ -1,3 +1,4 @@
+import { InstalacionApp } from 'src/app/core/instalacion-app';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -22,6 +23,7 @@ interface OpcionUsuario {
 export class BarraSuperior {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  protected readonly instalacion = inject(InstalacionApp);
 
   /** Breadcrumb de la ruta activa más profunda (`data.breadcrumb`). */
   protected readonly breadcrumbs = toSignal(
@@ -55,6 +57,11 @@ export class BarraSuperior {
       cerrarSesion: true,
     },
   ];
+
+  /** Abre la instalación del navegador (RutaRola como aplicación web, PWA). */
+  protected instalar(): void {
+    void this.instalacion.instalar();
+  }
 
   protected alSeleccionar(opcion: OpcionUsuario): void {
     if (opcion.cerrarSesion) {

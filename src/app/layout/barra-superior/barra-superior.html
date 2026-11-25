@@ -18,6 +18,14 @@
               <span [class]="ultimo ? 'truncate font-medium' : 'truncate text-base-content/80'">{{ item }}</span>
             </li>
           }
+          @if (instalacion.puedeOfrecer() && instalacion.forma() === 'NATIVO') {
+            <li>
+              <button type="button" class="flex items-center gap-3 rounded-xl" (click)="instalar()">
+                <i class="fa-solid fa-download w-5 text-center text-info"></i>
+                <span class="font-medium">Instalar aplicación</span>
+              </button>
+            </li>
+          }
         </ul>
       </div>
     }
@@ -71,6 +79,14 @@
                 <i [class]="opcion.icono" class="w-5 text-center"></i>
                 <span class="font-medium">{{ opcion.etiqueta }}</span>
               </a>
+            </li>
+          }
+          @if (instalacion.puedeOfrecer() && instalacion.forma() === 'NATIVO') {
+            <li>
+              <button type="button" class="flex items-center gap-3 rounded-xl" (click)="instalar()">
+                <i class="fa-solid fa-download w-5 text-center text-info"></i>
+                <span class="font-medium">Instalar aplicación</span>
+              </button>
             </li>
           }
         </ul>

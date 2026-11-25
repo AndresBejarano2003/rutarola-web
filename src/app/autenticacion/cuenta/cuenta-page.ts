@@ -1,3 +1,4 @@
+import { InstalarApp } from 'src/app/shared/instalar-app/instalar-app';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -21,7 +22,7 @@ import { inicialesDe } from 'src/app/shared/foto/foto';
 @Component({
   selector: 'app-cuenta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Campo, CampoFoto],
+  imports: [ReactiveFormsModule, Campo, CampoFoto, InstalarApp],
   templateUrl: './cuenta-page.html',
 })
 export default class CuentaPage implements OnInit {

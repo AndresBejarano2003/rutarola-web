@@ -27,6 +27,17 @@ las peticiones del WebView en segundo plano. En el navegador sigue funcionando c
 encendida). La app se identifica como `https://app.rutarola.com` (`server.hostname`), el mismo origen de la web, así el API ya la acepta (CORS). El ícono sale del logo del menú
 (`scripts/recursos-app.mjs` → `recursos-app/`). La llave de firma de Google Play nunca va al repositorio.
 
+**Aplicación web instalable (PWA):** en Chrome o Edge (computador o Android) RutaRola se instala desde el navegador con
+`public/manifest.webmanifest` y `public/sw.js` (registrado en `main.ts` solo en producción y fuera de la app de Android; no
+guarda la app en caché, solo muestra `sin-conexion.html` sin internet). La tarjeta `<app-instalar-app>` ofrece "Instalar
+RutaRola" en el inicio de sesión y Mi cuenta (o los pasos en iPhone/iPad y Safari de Mac), y el menú del administrador
+tiene "Instalar aplicación" (`core/instalacion-app.ts`).
+
+**Sitio de presentación `rutarola.com`** (`sitio-web/`): HTML/CSS/JS sin compilación, con los colores de la app; precios en
+vivo del API (`/suscripcion/planes`, con copia de respaldo), botón de Google Play (`GOOGLE_PLAY.publicada` en `sitio.js`),
+instalación en PC y preguntas frecuentes. Se publica con nginx (`sitio-web/Dockerfile`) como recurso propio de Coolify
+(directorio base `/sitio-web`). El API debe incluir `https://rutarola.com` en `Cors__Origenes` para mostrar los precios en vivo.
+
 **Prepara tu teléfono** (`ruta-del-dia/gps/preparar-telefono/`): la primera vez que un conductor o una monitora tiene un
 recorrido en curso en la app aparece una guía corta (permitir notificaciones, quitar a RutaRola del ahorro de batería y el
 ajuste propio de la marca: ZTE, Xiaomi, Samsung, Huawei, Oppo, Vivo) con botones que abren cada ajuste, por el plugin propio

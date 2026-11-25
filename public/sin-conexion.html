@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>RutaRola · Sin conexión</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: #111827; color: #f3f4f6; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      display: grid; place-items: center; padding: 16px; box-sizing: border-box; text-align: center; }
+    main { max-width: 26rem; }
+    img { width: 96px; height: 96px; border-radius: 22px; }
+    h1 { font-size: 1.5rem; margin: 1.25rem 0 .5rem; }
+    p { color: #d1d5db; line-height: 1.5; margin: 0 0 1.5rem; }
+    button { background: #facc15; color: #111827; border: 0; border-radius: .5rem; padding: .75rem 1.5rem;
+      font-weight: 600; font-size: 1rem; cursor: pointer; }
+    button:focus-visible { outline: 2px solid #f3f4f6; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/iconos/icono-192.png" alt="RutaRola">
+    <h1>Sin conexión a internet</h1>
+    <p>RutaRola necesita internet para mostrar tus datos actualizados. Revisa tu conexión e inténtalo de nuevo.</p>
+    <button type="button" onclick="location.reload()">Reintentar</button>
+  </main>
+</body>
+</html>

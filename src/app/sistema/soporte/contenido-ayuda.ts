@@ -183,6 +183,12 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
   },
   {
     modulo: 'General',
+    pregunta: '¿Puedo instalar RutaRola en mi computador?',
+    respuesta:
+      'Sí. En Chrome o Edge abre app.rutarola.com y usa "Instalar RutaRola" (en la pantalla de inicio de sesión, en Mi perfil o en el menú de tu foto), o el ícono de instalar de la barra de direcciones. Queda un ícono en el escritorio y se abre en su propia ventana, siempre actualizada. En iPhone o iPad: Safari › Compartir › "Agregar a inicio"; en Safari de Mac: Archivo › "Agregar al Dock". Conductores y monitoras deben usar la app RutaRola del celular, que sigue compartiendo la ubicación con la pantalla bloqueada.',
+  },
+  {
+    modulo: 'General',
     pregunta: '¿Cómo cambio mi contraseña?',
     respuesta:
       'Entra a Mi cuenta (en el menú de tu usuario o el ícono de la persona con engranaje), escribe tu contraseña actual y la nueva dos veces (mínimo 6 caracteres). Se cierra la sesión en tus otros dispositivos. Si la olvidaste, el administrador te asigna una nueva en Personas.',
