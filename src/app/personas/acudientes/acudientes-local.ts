@@ -112,7 +112,7 @@ export class AcudientesLocal
       telefono,
       telefonoAlterno: '',
       correo,
-      direccion: 'Calle 10 # 5-23, Neiva',
+      direccion: 'Calle 140 # 11-23, Bogotá',
       // Usuario de ejemplo: inicial del nombre + primer apellido (`mperez`), contraseña `CONTRASENA_DEMO`.
       usuario: usuarioDemo(primerNombre, primerApellido),
       contrasena: '',

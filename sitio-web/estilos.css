@@ -308,3 +308,24 @@ p { margin: 0; }
   .burbuja { animation: none; }
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Páginas legales (privacidad.html, terminos.html, eliminar-cuenta.html) */
+.legal-cabecera { position: sticky; top: 0; z-index: 50; background: rgb(17 24 39 / .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--borde); }
+.legal-cabecera .contenedor { height: var(--alto-encabezado); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.legal-cabecera__acciones { display: flex; gap: 8px; }
+.legal { padding: 48px 0 72px; }
+.legal h1 { font-size: clamp(1.8rem, 4.5vw, 2.6rem); margin-bottom: 10px; }
+.legal__vigencia { color: var(--texto-2); margin-bottom: 28px; }
+.legal__indice { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio); padding: 18px 22px; margin-bottom: 40px; }
+.legal__indice h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .1em; color: var(--texto-2); margin-bottom: 8px; }
+.legal__indice ol { margin: 0; padding-left: 1.3rem; columns: 2 16rem; column-gap: 2rem; }
+.legal__indice li { margin: 3px 0; break-inside: avoid; }
+.legal section { margin-bottom: 36px; scroll-margin-top: calc(var(--alto-encabezado) + 16px); }
+.legal section h2 { font-size: 1.3rem; color: var(--amarillo); margin-bottom: 12px; }
+.legal section p, .legal section li { color: var(--texto-2); }
+.legal section p + p, .legal section ul + p, .legal section p + ul { margin-top: 12px; }
+.legal section ul, .legal section ol.legal__pasos { padding-left: 1.3rem; margin: 0; display: grid; gap: 8px; }
+.legal strong { color: var(--texto); }
+.legal__nota { background: rgb(37 99 235 / .12); border: 1px solid rgb(96 165 250 / .35); border-radius: 12px; padding: 14px 18px; color: var(--texto-2); margin-top: 14px; }
+.legal__otros { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--borde); }
+@media (max-width: 560px) { .legal-cabecera .boton--borde { display: none; } }

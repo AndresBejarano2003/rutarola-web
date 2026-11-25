@@ -85,10 +85,10 @@ export class RutasLocal extends RepositorioLocal<Ruta, FiltrosRuta> implements R
     });
     // Ids coherentes con colegios y estudiantes de ejemplo.
     return [
-      ruta('rut-1', 'R-01', 'Norte', 'col-5', 'Mañana', 'Cándido, Las Granjas, Santa Inés', ['est-1', 'est-2']),
-      ruta('rut-2', 'R-02', 'Centro', 'col-1', 'Mañana', 'Centro, Altico, Quebrada Seca', ['est-3', 'est-12']),
-      ruta('rut-3', 'R-03', 'Sur', 'col-2', 'Tarde', 'Timanco, Los Mártires, Limonar', ['est-4', 'est-5']),
-      ruta('rut-4', 'R-04', 'Oriente', 'col-3', 'Única', 'Ipanema, Calixto, Alberto Galindo', ['est-6', 'est-7']),
+      ruta('rut-1', 'R-01', 'Norte', 'col-5', 'Mañana', 'Cedritos, Usaquén, Santa Bárbara', ['est-1', 'est-2']),
+      ruta('rut-2', 'R-02', 'Centro', 'col-1', 'Mañana', 'La Candelaria, Teusaquillo, Chapinero', ['est-3', 'est-12']),
+      ruta('rut-3', 'R-03', 'Sur', 'col-2', 'Tarde', 'Kennedy, Tunjuelito, Bosa', ['est-4', 'est-5']),
+      ruta('rut-4', 'R-04', 'Oriente', 'col-3', 'Única', 'San Cristóbal, Santa Ana, La Perseverancia', ['est-6', 'est-7']),
     ];
   }
 }

@@ -37,6 +37,14 @@ tiene "Instalar aplicación" (`core/instalacion-app.ts`).
 vivo del API (`/suscripcion/planes`, con copia de respaldo), botón de Google Play (`GOOGLE_PLAY.publicada` en `sitio.js`),
 instalación en PC y preguntas frecuentes. Se publica con nginx (`sitio-web/Dockerfile`) como recurso propio de Coolify
 (directorio base `/sitio-web`). El API debe incluir `https://rutarola.com` en `Cors__Origenes` para mostrar los precios en vivo.
+Páginas legales del sitio: `/privacidad` (la URL para Google Play; debe decir lo mismo que la política dentro de la app,
+`sistema/privacidad/`), `/terminos` y `/eliminar-cuenta` (la URL de eliminación de cuentas que pide Google Play). El
+registro enlaza a las dos primeras (`URL_PRIVACIDAD`, `URL_TERMINOS`).
+
+**Publicación en Google Play:** la llave de subida vive fuera del repo en `~/RutaRola-firma/` (`rutarola-upload.jks` y
+`keystore.properties`; nunca se sube a git). Con ella, `npm run android` y luego `./gradlew bundleRelease` en `android/`
+generan el `.aab` firmado. Textos de la ficha, respuestas de los formularios e imágenes: `recursos-app/play-store/`
+(`ficha.md`; las capturas se regeneran con `documentacion-fuente/herramientas/play-capturas.mjs` y `play-componer.mjs`).
 
 **Prepara tu teléfono** (`ruta-del-dia/gps/preparar-telefono/`): la primera vez que un conductor o una monitora tiene un
 recorrido en curso en la app aparece una guía corta (permitir notificaciones, quitar a RutaRola del ahorro de batería y el

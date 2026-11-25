@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// Firma de publicación (Google Play). La llave y sus contraseñas viven FUERA del repo, en ~/RutaRola-firma/keystore.properties
+// (o la ruta de la variable RUTAROLA_FIRMA). Sin ese archivo el build de release sale sin firmar y los de debug no cambian.
+def firmaPropiedades = new Properties()
+def firmaArchivo = file(System.getenv('RUTAROLA_FIRMA') ?: "${System.getProperty('user.home')}/RutaRola-firma/keystore.properties")
+if (firmaArchivo.exists()) {
+    firmaArchivo.withInputStream { firmaPropiedades.load(it) }
+}
+
 android {
     namespace = "co.rutarola.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +24,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (firmaPropiedades['storeFile']) {
+            publicacion {
+                storeFile file(firmaPropiedades['storeFile'])
+                storePassword firmaPropiedades['storePassword']
+                keyAlias firmaPropiedades['keyAlias']
+                keyPassword firmaPropiedades['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (firmaPropiedades['storeFile']) {
+                signingConfig signingConfigs.publicacion
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

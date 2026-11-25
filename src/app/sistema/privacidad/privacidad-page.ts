@@ -6,11 +6,16 @@ export const RESPONSABLE_DATOS = {
   nombre: 'Andrés Felipe Bejarano Acero',
   correo: 'andresf.bejarano@gmail.com',
   ciudad: 'Bogotá D.C., Colombia',
-  vigencia: '18 de noviembre de 2026',
+  vigencia: '25 de noviembre de 2026',
 } as const;
 
-/** URL pública de la política (la que va en Google Play); el registro la abre en otra pestaña sin perder el formulario. */
-export const URL_PRIVACIDAD = 'https://app.rutarola.com/#/privacidad';
+/**
+ * Páginas legales públicas en el sitio rutarola.com (`sitio-web/privacidad.html`, `terminos.html`, `eliminar-cuenta.html`):
+ * son las que van en Google Play. El registro las abre en otra pestaña sin perder el formulario. La política de esta página
+ * y la del sitio deben decir lo mismo.
+ */
+export const URL_PRIVACIDAD = 'https://rutarola.com/privacidad';
+export const URL_TERMINOS = 'https://rutarola.com/terminos';
 
 /**
  * Política de tratamiento de datos personales (`/privacidad`, pública, sin sesión), enlazada desde el login, el registro

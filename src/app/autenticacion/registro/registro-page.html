@@ -105,7 +105,10 @@
             <input type="checkbox" formControlName="aceptaTerminos" class="checkbox checkbox-sm" [class.checkbox-error]="!!campo('aceptaTerminos')" />
             <span class="text-sm">Acepto los términos del servicio y el tratamiento de datos personales (Ley 1581 de 2012), incluidos los de los estudiantes que registre.</span>
           </label>
-          <a [href]="urlPrivacidad" target="_blank" rel="noopener" class="link link-secondary text-sm self-start ml-7">Leer la política de privacidad</a>
+          <span class="text-sm ml-7 flex flex-wrap gap-x-3 gap-y-1">
+            <a [href]="urlTerminos" target="_blank" rel="noopener" class="link link-secondary">Leer los términos del servicio</a>
+            <a [href]="urlPrivacidad" target="_blank" rel="noopener" class="link link-secondary">Leer la política de privacidad</a>
+          </span>
           @if (campo('aceptaTerminos'); as e) {
             <span class="text-xs text-error">{{ e }}</span>
           }

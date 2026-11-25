@@ -31,9 +31,9 @@ await sharp({ create: { width: 1024, height: 1024, channels: 4, background: FOND
 // Pantalla de carga (clara y oscura iguales: la app es oscura por defecto).
 await lienzo(2732, 2732, 1100, `${SALIDA}/splash.png`);
 await lienzo(2732, 2732, 1100, `${SALIDA}/splash-dark.png`);
-// Ficha de Google Play: ícono 512×512 y gráfico de funciones 1024×500.
+// Ficha de Google Play: ícono 512×512. La imagen destacada (1024×500) y las capturas las arma
+// `documentacion-fuente/herramientas/play-componer.mjs` con capturas reales.
 await lienzo(512, 512, 430, `${TIENDA}/icono-512.png`);
-await lienzo(1024, 500, 620, `${TIENDA}/grafico-funciones-1024x500.png`);
 // Aplicación web instalable (PWA, `public/manifest.webmanifest`) y favicon: el ícono "maskable" deja el logo dentro del
 // 80 % central (zona segura), y el de iPhone/iPad (apple-touch-icon) va sin transparencia.
 const WEB = 'public/iconos';

@@ -104,7 +104,7 @@ export class EmpleadosLocal
       tipoEmpleado,
       telefono,
       correo: '',
-      direccion: 'Carrera 5 # 12-40, Neiva',
+      direccion: 'Carrera 9 # 140-12, Bogotá',
       fechaIngreso: '2025-02-01',
       sueldo,
       tipoContrato,

@@ -96,7 +96,7 @@ export class EstudiantesLocal
       segundoApellido,
       foto: '',
       fechaNacimiento,
-      direccion: 'Calle 10 # 5-23, Neiva',
+      direccion: 'Calle 140 # 11-23, Bogotá',
       acudienteId,
       colegioId,
       grado,

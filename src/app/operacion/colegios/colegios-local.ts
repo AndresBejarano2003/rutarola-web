@@ -82,18 +82,18 @@ export class ColegiosLocal extends RepositorioLocal<Colegio, FiltrosColegio> imp
     });
     // Los ids coinciden con los `colegioId` de los estudiantes de ejemplo.
     return [
-      colegio('col-1', '891180123-4', 'Colegio San Cayetano', 'Carrera 5 # 12-40, Neiva', '6088712345', [
+      colegio('col-1', '891180123-4', 'Colegio San Cayetano', 'Carrera 7 # 72-40, Bogotá', '6017712345', [
         ...cursos('Mañana', '06:30', '13:00'),
         ...cursos('Tarde', '12:30', '18:00', '1°'),
       ]),
-      colegio('col-2', '891180234-5', 'Colegio Matre Paula', 'Calle 21 # 8-15, Neiva', '6088723456', [
+      colegio('col-2', '891180234-5', 'Colegio Matre Paula', 'Calle 45 # 13-15, Bogotá', '6017723456', [
         ...cursos('Mañana', '06:45', '12:45', GRADOS[0].id, '5°'),
         ...cursos('Tarde', '12:30', '18:00', '6°'),
       ]),
-      colegio('col-3', '891180345-6', 'Colegio La Gaitana', 'Avenida La Toma # 3-20, Neiva', '6088734567', cursos('Única', '07:00', '14:00')),
-      colegio('col-4', '891180456-7', 'Colegio Enrique Olaya Herrera', 'Calle 7 # 30-11, Neiva', '6088745678',
+      colegio('col-3', '891180345-6', 'Colegio Santa Fe', 'Avenida Boyacá # 63-20, Bogotá', '6017734567', cursos('Única', '07:00', '14:00')),
+      colegio('col-4', '891180456-7', 'Colegio Enrique Olaya Herrera', 'Calle 26 Sur # 30-11, Bogotá', '6017745678',
         cursos('Mañana', '06:30', '12:30', GRADOS[0].id, '5°')),
-      colegio('col-5', '891180567-8', 'Colegio San José', 'Carrera 16 # 18-02, Neiva', '6088756789', cursos('Mañana', '06:20', '13:20')),
+      colegio('col-5', '891180567-8', 'Colegio San José', 'Carrera 19 # 134-02, Bogotá', '6017756789', cursos('Mañana', '06:20', '13:20')),
     ];
   }
 }

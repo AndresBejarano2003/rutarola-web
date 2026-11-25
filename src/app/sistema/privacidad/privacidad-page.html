@@ -30,7 +30,8 @@
         <h2>1. Quién trata los datos</h2>
         <p>
           RutaRola es un sistema para empresas de transporte escolar: rutas, recorridos, estudiantes, acudientes, personal, cobros y
-          la ubicación del vehículo durante el recorrido. Lo ofrece y lo opera <strong>{{ r.nombre }}</strong>, persona natural,
+          la ubicación del vehículo durante el recorrido. Funciona en la app de Android, en el navegador (app.rutarola.com) y se
+          presenta en rutarola.com. Lo ofrece y lo opera <strong>{{ r.nombre }}</strong>, persona natural,
           con domicilio en {{ r.ciudad }}. Contacto para todo lo relacionado con datos personales:
           <a class="link link-secondary" [href]="'mailto:' + r.correo">{{ r.correo }}</a>.
         </p>
@@ -61,7 +62,8 @@
         <p>
           Las contraseñas se guardan cifradas de forma irreversible (nadie, ni siquiera RutaRola, puede leerlas). RutaRola
           <strong>no</strong> usa publicidad, <strong>no</strong> vende ni alquila datos personales y <strong>no</strong> los usa para
-          perfilar a nadie.
+          perfilar a nadie. El sitio rutarola.com no usa cookies ni herramientas de analítica; la aplicación guarda en el propio
+          equipo solo lo necesario para funcionar (la sesión iniciada y algunas preferencias).
         </p>
       </section>
 
@@ -75,7 +77,7 @@
           </li>
           <li>
             En la app de Android, durante el recorrido la ubicación se sigue compartiendo aunque el teléfono use otra aplicación o
-            tenga la pantalla bloqueada, para que el colegio y las familias sepan dónde va la ruta. Mientras eso ocurre se ve siempre
+            tenga la pantalla bloqueada, para que la empresa y las familias sepan dónde va la ruta. Mientras eso ocurre se ve siempre
             la notificación <em>"RutaRola está compartiendo la ubicación"</em>. En el navegador, solo mientras la página está abierta.
           </li>
           <li>
@@ -115,12 +117,13 @@
         <ul>
           <li>
             <strong>Hostinger</strong>: servidor privado contratado para RutaRola, ubicado en Estados Unidos, donde funcionan el sitio
-            (app.rutarola.com), el API (api.rutarola.com) y la base de datos. Esto implica una transferencia internacional de datos;
+            (rutarola.com y app.rutarola.com), el API (api.rutarola.com) y la base de datos. Esto implica una transferencia internacional de datos;
             el proveedor solo presta la infraestructura y no tiene acceso al contenido para fines propios.
           </li>
           <li><strong>OpenStreetMap</strong>: al mostrar un mapa, el teléfono descarga las imágenes del mapa desde sus servidores (reciben la dirección IP, no los datos de la ruta).</li>
           <li><strong>Cloudflare (cdnjs)</strong> sirve los íconos de la interfaz y <strong>YouTube</strong> los videos del Centro de Ayuda (solo si se reproducen); reciben la dirección IP del equipo.</li>
           <li>Proveedores de envío de correos y mensajes, solo cuando se usan para avisos del servicio o los recordatorios que configure la empresa.</li>
+          <li><strong>Google Play</strong> distribuye la app de Android según sus propias políticas.</li>
           <li>Autoridades, solo cuando la ley lo exija.</li>
         </ul>
         <p>Cuando un usuario toca "Llamar", "WhatsApp" o "Cómo llegar", se abre la aplicación correspondiente de su teléfono, que tiene sus propias políticas.</p>
@@ -156,7 +159,7 @@
           <strong>consultas en máximo 10 días hábiles</strong> y los <strong>reclamos en máximo 15 días hábiles</strong> (artículos 14 y
           15 de la Ley 1581 de 2012). Si tus datos los registró una empresa de transporte, también puedes pedírselo a ella; si nos
           escribes a nosotros, le trasladaremos tu solicitud. Cada usuario puede además actualizar su foto, teléfono y correo en
-          <em>Mi cuenta</em> dentro de la aplicación.
+          <em>Mi perfil</em> dentro de la aplicación.
         </p>
       </section>
 
@@ -175,7 +178,8 @@
         </ul>
         <p>
           Eliminamos los datos en máximo 15 días hábiles y te confirmamos por correo. Solo se conserva lo que la ley obligue a
-          guardar, durante el tiempo que indique. Las ubicaciones se borran en todo caso a los 30 días.
+          guardar, durante el tiempo que indique. Las ubicaciones se borran en todo caso a los 30 días. Paso a paso en
+          <a class="link link-secondary" href="https://rutarola.com/eliminar-cuenta" target="_blank" rel="noopener">rutarola.com/eliminar-cuenta</a>.
         </p>
       </section>
 
@@ -189,6 +193,7 @@
     </article>
 
     <footer class="border-t border-base-300 pt-4 text-sm text-base-content/70">
+      <a class="link link-secondary" href="https://rutarola.com/terminos" target="_blank" rel="noopener">Términos y condiciones</a> ·
       RutaRola · {{ r.nombre }} · {{ r.ciudad }} · <a class="link link-secondary" [href]="'mailto:' + r.correo">{{ r.correo }}</a>
     </footer>
   </div>

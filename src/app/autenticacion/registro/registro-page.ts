@@ -10,7 +10,7 @@ import { esFuenteLocal } from 'src/app/shared/crud/repositorio-local';
 import { mensajeError, nit } from 'src/app/shared/formularios/formularios';
 import { ComienzoRegistro, DIAS_PRUEBA_POR_DEFECTO, PLANES, PeriodoPago } from 'src/app/sistema/membresias/suscripcion';
 import { SuscripcionRepositorio } from 'src/app/sistema/membresias/suscripcion-repositorio';
-import { URL_PRIVACIDAD } from 'src/app/sistema/privacidad/privacidad-page';
+import { URL_PRIVACIDAD, URL_TERMINOS } from 'src/app/sistema/privacidad/privacidad-page';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AutenticacionRepositorio } from '../autenticacion-repositorio';
@@ -37,6 +37,7 @@ export default class RegistroPage {
   private readonly suscripciones = inject(SuscripcionRepositorio);
   protected readonly diasPrueba = signal(DIAS_PRUEBA_POR_DEFECTO);
   protected readonly urlPrivacidad = URL_PRIVACIDAD;
+  protected readonly urlTerminos = URL_TERMINOS;
   protected readonly planesPago = PLANES.filter((p) => p.precioMensual > 0);
   protected readonly gratis = PLANES.find((p) => p.id === 'GRATIS')!;
   protected readonly comienzo = signal<ComienzoRegistro>('PRUEBA');
