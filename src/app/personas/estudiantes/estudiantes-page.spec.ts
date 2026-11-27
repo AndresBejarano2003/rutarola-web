@@ -88,6 +88,27 @@ describe('EstudiantesPage', () => {
     expect(el.textContent).toContain('11 registros');
   });
 
+  it('al cambiar la jornada el grado queda vacío y hay que elegirlo de nuevo', async () => {
+    (el.querySelector('button[aria-label="Editar"]') as HTMLButtonElement).click();
+    await estabilizar(fixture, 3);
+    const valor = (campo: string) => (el.querySelector(`app-modal app-selector-busqueda[formcontrolname="${campo}"] input`) as HTMLInputElement).value;
+    expect(valor('grado')).not.toBe('');
+    // El San Cayetano tiene cursos en la mañana y en la tarde.
+    ui.elegir('colegioId', 'cayetano');
+    ui.elegir('jornada', 'Mañana');
+    await estabilizar(fixture, 3);
+    ui.elegir('grado', '6°');
+    await estabilizar(fixture);
+    expect(valor('grado')).toContain('6°');
+    ui.elegir('jornada', 'Tarde');
+    await estabilizar(fixture);
+    expect(valor('jornada')).toContain('Tarde');
+    expect(valor('grado')).toBe('');
+    ui.boton('Guardar cambios').click();
+    await estabilizar(fixture);
+    expect(el.querySelector('app-modal')?.textContent).toContain('obligatorio');
+  });
+
   it('abre la consulta en solo lectura y permite pasar a edición', async () => {
     (el.querySelector('button[aria-label="Consultar"]') as HTMLButtonElement).click();
     await estabilizar(fixture);

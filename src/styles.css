@@ -224,3 +224,17 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Toasts en la capa superior (popover): sin el marco, el fondo ni el centrado que el navegador da a los popovers. */
+.capa-notificaciones[popover] {
+  inset: calc(env(safe-area-inset-top) + 3.5rem) calc(env(safe-area-inset-right) + 0.5rem) auto auto;
+  margin: 0;
+  border: 0;
+  padding: 0.5rem;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  width: auto;
+  height: auto;
+  max-width: calc(100vw - 1rem);
+}

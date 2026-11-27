@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { distinctUntilChanged } from 'rxjs';
+import { distinctUntilChanged, pairwise, startWith } from 'rxjs';
 import { Curso } from 'src/app/operacion/colegios/colegio';
 import { horaLegible } from 'src/app/shared/fechas/fechas';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -112,20 +112,36 @@ export class EstudianteFormulario {
     return actual && !opciones.some((o) => o.id === actual) ? [{ id: actual, nombre: actual }, ...opciones] : opciones;
   });
 
+  /** `true` mientras se carga un registro (sus valores no cuentan como cambios del usuario). */
+  private cargando = false;
+
   constructor() {
     this.form.controls.colegioId.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed())
       .subscribe((colegioId) => this.colegioCambiado.emit(colegioId));
 
+    // Los grados dependen de la jornada: si el usuario la cambia, el grado queda vacío y debe elegir uno de la nueva.
+    this.form.controls.jornada.valueChanges.pipe(startWith(this.form.controls.jornada.value), pairwise(), takeUntilDestroyed()).subscribe(([antes, ahora]) => {
+      // Al cargar un registro, o al elegir la primera jornada de uno nuevo, el grado se respeta.
+      if (this.cargando || !antes || antes === ahora) return;
+      const grado = this.form.controls.grado;
+      if (!grado.value) return;
+      grado.setValue('');
+      grado.markAsTouched();
+      grado.markAsDirty();
+    });
+
     // Carga el registro recibido y bloquea el formulario en modo consulta.
     effect(() => {
       const estudiante = this.estudiante();
+      this.cargando = true;
       if (estudiante) {
         const { id: _id, fechaCreacion: _c, fechaActualizacion: _a, ...datos } = estudiante;
         this.form.reset(datos);
       } else {
         this.form.reset({ acudienteId: untracked(this.acudienteInicial) });
       }
+      this.cargando = false;
       if (this.soloLectura()) {
         this.form.disable();
       } else {

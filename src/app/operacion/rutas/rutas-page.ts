@@ -67,6 +67,11 @@ export default class RutasPage extends PaginaCrud<Ruta, FiltrosRuta> {
     return mapa;
   });
 
+  /** Al agregar un colegio se vuelven a consultar sus estudiantes (pudieron cambiar de jornada o estado mientras tanto). */
+  protected olvidarEstudiantes(colegioId: string): void {
+    this.cacheEstudiantes.update((cache) => new Map([...cache].filter(([clave]) => !clave.startsWith(`${colegioId}|`))));
+  }
+
   /** Estudiantes en OTRA ruta activa de la jornada (no se precargan). */
   private readonly rutasJornada = toSignal(
     // Se vuelve a pedir al cambiar la jornada y cada vez que la lista se recarga (p. ej. tras guardar).
@@ -103,7 +108,7 @@ export default class RutasPage extends PaginaCrud<Ruta, FiltrosRuta> {
           return forkJoin(
             faltan.map((colegioId) =>
               forkJoin({
-                jornada: this.estudiantesRepo.opciones({ colegioId, jornada }),
+                jornada: this.estudiantesRepo.opciones({ colegioId, jornada, estado: 'ACTIVO' }),
                 todos: this.estudiantesRepo.opciones({ colegioId }),
               }).pipe(
                 catchError(() => of({ jornada: [], todos: [] })),

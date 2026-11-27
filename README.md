@@ -244,7 +244,8 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   puede tener el mismo grado en varias jornadas. "Agregar cursos" agrega **un solo curso** (desde = hasta) o un rango
   **desde un grado hasta el más alto elegido** en la jornada indicada con la hora de entrada y salida (los que ya
   existen en ese rango y jornada toman el nuevo horario; los de otras jornadas no cambian). El grado de un estudiante
-  se elige entre los cursos activos de su colegio **en su jornada**.
+  se elige entre los cursos activos de su colegio **en su jornada**: si el usuario cambia una jornada ya elegida, el
+  grado queda vacío (obligatorio) y la lista muestra los cursos de la nueva jornada, para que lo vuelva a elegir.
 - **Personas (estudiantes ↔ acudientes):** desde el formulario del estudiante se crea el acudiente que falta
   (`personas/acudientes/alta-acudiente/`) y desde el del acudiente sus estudiantes (`personas/estudiantes/alta-estudiante/`)
   en un modal encima, **sin perder lo ya escrito**: al guardar, el nuevo queda elegido. Inactivar a un estudiante o
@@ -273,10 +274,14 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   primero, por compatibilidad). En el formulario se elige **primero la jornada**; "Agregar colegio" muestra solo los
   colegios con cursos activos en esa jornada que aún no están en la ruta, y al agregarlo **precarga** sus estudiantes
   activos de la jornada que no están en otra ruta activa de la misma jornada; se pueden quitar uno a uno o varios a la
-  vez ("Quitar seleccionados") o quitar el colegio completo. Solo se agregan estudiantes **de los colegios y la jornada
+  vez ("Quitar seleccionados") o quitar el colegio completo. Cada vez que se agrega un colegio sus estudiantes se
+  consultan de nuevo (solo los ACTIVOS de la jornada), y si no se precarga ninguno el bloque dice por qué: el colegio no
+  tiene estudiantes activos en la jornada, o todos van ya en otras rutas (cuáles). Solo se agregan estudiantes **de los colegios y la jornada
   de la ruta**; un estudiante no puede estar en dos rutas activas de la misma jornada. Cambiar la jornada vacía los
   colegios y los estudiantes.
-  - **Orden de recogida:** el orden de los estudiantes de la ruta (número, ↑/↓, "Agrupar por colegio") es el orden con
+  - **Orden de recogida:** el orden de los estudiantes de la ruta (número, ↑/↓, "Agrupar por colegio" —con una nota
+    que explica que junta a los de cada colegio en el orden en que se agregaron los colegios, sin cambiar el orden
+    dentro de cada uno—) es el orden con
     el que arranca cada recorrido. Si el administrador lo cambia mientras hay recorridos EN CURSO de la ruta, los que
     faltan por visitar se reordenan al instante y el conductor y la monitora ven "… (administrador) cambió el orden"
     (`AplicarOrdenDeRutaAsync` / `RecorridosLocal.aplicarOrdenDeRuta`).
@@ -864,7 +869,10 @@ tarjeta = 13.3:1; texto secundario `/70` = 7.3:1. No se permite `gray-500` sobre
   `<app-titulo-seccion>` para las secciones del formulario; `<app-lista-seleccion>` para elegir varios
   registros (p. ej. estudiantes de una ruta).
 - **Botón principal:** `btn btn-primary` (amarillo con texto oscuro).
-- **Mensajes:** siempre con toasts (`NotificacionesService`), nunca `alert()`.
+- **Mensajes:** siempre con toasts (`NotificacionesService`), nunca `alert()`. Los toasts van en un popover
+  (`popover="manual"`, `.capa-notificaciones` en `styles.css`) para estar en la capa superior del navegador, encima de
+  cualquier modal abierto (`<dialog>.showModal()` también vive ahí y ningún z-index lo supera); cada aviso nuevo vuelve
+  a mostrar el popover para quedar sobre el último modal.
 - **Accesos rápidos:** la tarjeta completa es el botón (`<button class="card …">` con ícono de color);
   no se ponen botones de colores dentro de cada tarjeta (así se mantiene un solo `btn-primary` por vista).
 - **Navegación dentro de la página:** nunca `href="#…"` (con la URL `/#/…` cambiaría de ruta); la sección

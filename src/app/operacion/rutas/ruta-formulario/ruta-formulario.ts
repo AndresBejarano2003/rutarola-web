@@ -30,6 +30,8 @@ interface BloqueColegio {
   /** Estudiantes del colegio en la jornada que no están en la ruta (para volver a agregarlos). */
   disponibles: OpcionCatalogo[];
   cargando: boolean;
+  /** Por qué no hay estudiantes precargados: el colegio no tiene en la jornada, o todos van en otras rutas. */
+  motivoVacio: string;
 }
 
 /**
@@ -60,6 +62,8 @@ export class RutaFormulario {
 
   readonly guardar = output<DatosRegistro<Ruta>>();
   readonly colegiosCambiados = output<ColegiosRuta>();
+  /** Se va a agregar este colegio: la página vuelve a consultar sus estudiantes (pudieron cambiar desde la última vez). */
+  readonly colegioAgregado = output<string>();
 
   protected readonly catalogos = inject(CatalogosService);
   protected readonly estados = ESTADOS_REGISTRO;
@@ -132,6 +136,7 @@ export class RutaFormulario {
           .filter((o) => !elegidos.includes(o.id))
           .map((o) => (ocupados.has(o.id) ? { ...o, nombre: `${o.nombre} (va en ${ocupados.get(o.id)})` } : o)),
         cargando: !datos,
+        motivoVacio: this.motivoVacio(datos?.jornada ?? [], ocupados),
       };
     });
   });
@@ -213,6 +218,18 @@ export class RutaFormulario {
     });
   }
 
+  private motivoVacio(jornada: OpcionCatalogo[], ocupados: ReadonlyMap<string, string>): string {
+    const nombreJornada = this.form.controls.jornada.value;
+    if (!jornada.length) {
+      return `Este colegio no tiene estudiantes activos en la jornada ${nombreJornada}. Revisa la jornada y el estado de sus estudiantes en Personas › Estudiantes.`;
+    }
+    const rutas = [...new Set(jornada.map((o) => ocupados.get(o.id)).filter((r): r is string => !!r))];
+    if (rutas.length && jornada.every((o) => ocupados.has(o.id))) {
+      return `Sus ${jornada.length} estudiantes de la jornada ${nombreJornada} ya van en ${rutas.length > 1 ? 'las rutas' : 'la ruta'} ${rutas.join(', ')}.`;
+    }
+    return 'Quitaste a todos sus estudiantes; puedes volver a agregarlos abajo.';
+  }
+
   private opcion(id: string): OpcionCatalogo {
     const nombre = this.nombreEstudiante().get(id) ?? 'Estudiante';
     const cargado = this.colegioDe().has(id);
@@ -232,6 +249,7 @@ export class RutaFormulario {
     const id = this.colegioPorAgregar();
     if (!id || this.form.controls.colegioIds.value.includes(id)) return;
     this.porPrecargar.update((lista) => [...lista, id]);
+    this.colegioAgregado.emit(id);
     this.form.controls.colegioIds.setValue([...this.form.controls.colegioIds.value, id]);
     this.form.controls.colegioIds.markAsDirty();
     this.colegioPorAgregar.set('');

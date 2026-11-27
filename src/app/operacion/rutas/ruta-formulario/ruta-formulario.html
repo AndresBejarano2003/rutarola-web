@@ -108,7 +108,12 @@
                   </table>
                 </div>
               } @else {
-                <p class="px-3 py-2 text-sm text-base-content/70">Sin estudiantes de este colegio en la ruta.</p>
+                <p class="px-3 py-2 text-sm text-base-content/70">
+                  <span class="block">Sin estudiantes de este colegio en la ruta.</span>
+                  @if (!soloLectura() && !b.cargando) {
+                    <span class="block text-warning">{{ b.motivoVacio }}</span>
+                  }
+                </p>
               }
               @if (!soloLectura() && b.disponibles.length) {
                 <div class="flex flex-col px-3 py-2 border-t border-base-300">
@@ -137,11 +142,20 @@
             ven el nuevo orden al instante en lo que les falta por recoger o entregar.
           </p>
           @if (!soloLectura() && colegioIds().length > 1) {
-            <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="agruparPorColegio()">
+            <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" aria-describedby="ayuda-agrupar"
+              (click)="agruparPorColegio()">
               <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Agrupar por colegio
             </button>
           }
         </div>
+        @if (!soloLectura() && colegioIds().length > 1) {
+          <div id="ayuda-agrupar" role="note" class="alert alert-info alert-soft py-2 text-sm">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span><b>Agrupar por colegio</b> deja juntos a los estudiantes de cada colegio, en el orden en que agregaste los
+              colegios (primero todos los del primero, luego los del segundo…), sin cambiar el orden entre los de un mismo colegio.
+              Úsalo si la ruta recoge colegio por colegio; luego puedes ajustar a mano.</span>
+          </div>
+        }
         @if (sinColegio().length) {
           <p role="alert" class="text-sm text-warning">
             <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>

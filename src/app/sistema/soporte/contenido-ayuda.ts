@@ -107,7 +107,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Personas',
     pregunta: '¿Cómo registro un estudiante?',
     respuesta:
-      'En Personas › Estudiantes presiona "Nuevo estudiante". El curso se elige entre los cursos activos del colegio en la jornada del estudiante, así que primero el colegio debe tener sus cursos creados en Operación › Colegios ("Agregar cursos" crea un solo curso o todos hasta el grado más alto, en la jornada que elijas). Si el acudiente aún no existe, créalo ahí mismo con "Nuevo acudiente": se abre encima y lo que ya escribiste del estudiante no se pierde. Desde Personas › Acudientes, en el acudiente, "Agregar estudiante" crea sus estudiantes.',
+      'En Personas › Estudiantes presiona "Nuevo estudiante". El curso se elige entre los cursos activos del colegio en la jornada del estudiante, así que primero el colegio debe tener sus cursos creados en Operación › Colegios ("Agregar cursos" crea un solo curso o todos hasta el grado más alto, en la jornada que elijas); si cambias la jornada de un estudiante, el grado queda vacío y debes elegirlo entre los cursos de la nueva jornada. Si el acudiente aún no existe, créalo ahí mismo con "Nuevo acudiente": se abre encima y lo que ya escribiste del estudiante no se pierde. Desde Personas › Acudientes, en el acudiente, "Agregar estudiante" crea sus estudiantes.',
   },
   {
     modulo: 'Personas',
@@ -143,7 +143,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo asigno un vehículo y un conductor a una ruta?',
     respuesta:
-      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora, el rango de fechas y, si quieres, un horario (hora de inicio y fin). Una ruta puede tener varias asignaciones (por ejemplo, un equipo en la mañana y otro en la tarde del mismo rango de fechas) mientras no se crucen en fechas y horas; tampoco un vehículo o una persona puede estar en dos rutas a la misma hora. Sin horario, la asignación ocupa toda la jornada de la ruta. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día. Al crear una ruta, el código se asigna solo; primero eliges la jornada y luego agregas uno o varios colegios de esa jornada: sus estudiantes se cargan solos (los que ya están en otra ruta de la jornada no) y puedes quitar uno o varios. El orden de la lista es el orden de recogida con el que arranca cada recorrido.',
+      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora, el rango de fechas y, si quieres, un horario (hora de inicio y fin). Una ruta puede tener varias asignaciones (por ejemplo, un equipo en la mañana y otro en la tarde del mismo rango de fechas) mientras no se crucen en fechas y horas; tampoco un vehículo o una persona puede estar en dos rutas a la misma hora. Sin horario, la asignación ocupa toda la jornada de la ruta. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día. Al crear una ruta, el código se asigna solo; primero eliges la jornada y luego agregas uno o varios colegios de esa jornada: sus estudiantes activos se cargan solos (los que ya están en otra ruta de la jornada no; si no se carga ninguno, el colegio te dice por qué) y puedes quitar uno o varios. El orden de la lista es el orden de recogida con el que arranca cada recorrido.',
   },
   {
     modulo: 'Operación',

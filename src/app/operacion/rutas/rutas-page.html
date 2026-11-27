@@ -25,7 +25,7 @@
       }
       <app-ruta-formulario idFormulario="form-ruta" [modo]="modo()" [ruta]="seleccionado()" [colegios]="colegios()"
         [colegiosJornada]="colegiosJornada()" [estudiantesColegios]="estudiantesColegios()" [ocupados]="ocupados()"
-        (colegiosCambiados)="filtroColegios.set($event)" (guardar)="guardar($event)" />
+        (colegiosCambiados)="filtroColegios.set($event)" (colegioAgregado)="olvidarEstudiantes($event)" (guardar)="guardar($event)" />
     </div>
   }
   @if (modalAbierto()) {
