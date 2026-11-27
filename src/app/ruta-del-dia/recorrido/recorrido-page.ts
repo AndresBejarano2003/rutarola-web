@@ -10,13 +10,17 @@ import { NotificacionesService } from 'src/app/shared/notificaciones/notificacio
 import {
   CambioOrden,
   ESTADOS_PARADA,
+  GrupoColegio,
   EstadoParada,
   MotivoAusencia,
   Parada,
   Recorrido,
   TRAYECTOS,
   avance,
+  colegiosPorRecoger,
   contarParadas,
+  gruposPorColegio,
+  llegadasListas,
   enlaceMapa,
   enlaceWhatsapp,
   moverEnLista,
@@ -109,6 +113,21 @@ export default class RecorridoPage implements OnInit {
     return r && r.estado === 'EN_CURSO' ? siguientePaso(r) : null;
   });
   protected readonly enCurso = computed(() => this.recorrido()?.estado === 'EN_CURSO');
+  /** La ruta atiende varios colegios: llegadas y salidas por colegio. */
+  protected readonly variosColegios = computed(() => {
+    const r = this.recorrido();
+    return !!r && gruposPorColegio(r).length > 1;
+  });
+  /** RECOGIDA: colegios con todos sus estudiantes recogidos, listos para "Llegada al colegio X". */
+  protected readonly llegadas = computed(() => {
+    const r = this.recorrido();
+    return r && r.estado === 'EN_CURSO' && this.variosColegios() ? llegadasListas(r) : [];
+  });
+  /** ENTREGA: colegios que aún no inician su salida. */
+  protected readonly porRecoger = computed(() => {
+    const r = this.recorrido();
+    return r && r.estado === 'EN_CURSO' && this.variosColegios() ? colegiosPorRecoger(r) : [];
+  });
   protected readonly esRecogida = computed(() => this.recorrido()?.trayecto === 'RECOGIDA');
   /** ¿El usuario de la sesión puede cambiar el orden de visita? */
   protected readonly ordenable = computed(() => {
@@ -220,6 +239,30 @@ export default class RecorridoPage implements OnInit {
   /** "Subieron todos": no incluye a quien el acudiente avisó que no viaja (se confirma uno a uno). */
   protected idsSinAviso(estado: EstadoParada): string[] {
     return (this.recorrido()?.paradas ?? []).filter((p) => p.estado === estado && !(p.aviso && !p.aviso.confirmado)).map((p) => p.estudianteId);
+  }
+
+  /** Llegada al colegio: entrega en él a sus estudiantes a bordo. */
+  protected entregarEnColegio(g: GrupoColegio): Promise<void> {
+    return this.marcar(g.aBordo.map((p) => p.estudianteId), 'ENTREGADO');
+  }
+
+  /** Inicia la salida de uno o varios colegios: suben todos sus pendientes, menos los que avisaron que no viajan. */
+  protected iniciarSalida(grupos: GrupoColegio[]): Promise<void> {
+    const ids = this.subenDe(grupos);
+    return ids.length ? this.marcar(ids, 'A_BORDO') : Promise.resolve();
+  }
+
+  protected subenDe(grupos: GrupoColegio[]): string[] {
+    return grupos.flatMap((g) => g.pendientes).filter((p) => !(p.aviso && !p.aviso.confirmado)).map((p) => p.estudianteId);
+  }
+
+  /** "Subieron todos" del abordaje: los pendientes del paso, menos los que avisaron que no viajan. */
+  protected idsSinAvisoDe(paradas: Parada[]): string[] {
+    return paradas.filter((p) => !(p.aviso && !p.aviso.confirmado)).map((p) => p.estudianteId);
+  }
+
+  protected nombreColegios(grupos: GrupoColegio[]): string {
+    return grupos.map((g) => g.colegio.nombre).join(', ');
   }
 
   /** Confirma el aviso del acudiente: lo marca AUSENTE con el motivo que avisó. */

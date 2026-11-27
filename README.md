@@ -35,7 +35,9 @@ tiene "Instalar aplicación" (`core/instalacion-app.ts`).
 
 **Sitio de presentación `rutarola.com`** (`sitio-web/`): HTML/CSS/JS sin compilación, con los colores de la app; precios en
 vivo del API (`/suscripcion/planes`, con copia de respaldo), botón de Google Play (`GOOGLE_PLAY.publicada` en `sitio.js`),
-instalación en PC y preguntas frecuentes. Se publica con nginx (`sitio-web/Dockerfile`) como recurso propio de Coolify
+instalación en PC y preguntas frecuentes, y `/descargar` (destino del QR de la publicidad: en Android lleva a Google Play
+cuando `GOOGLE_PLAY.publicada` —repetido en `descargar.html`— y si no a app.rutarola.com; pasos para iPhone y PC; `/app`
+redirige allí). Se publica con nginx (`sitio-web/Dockerfile`) como recurso propio de Coolify
 (directorio base `/sitio-web`). El API debe incluir `https://rutarola.com` en `Cors__Origenes` para mostrar los precios en vivo.
 Páginas legales del sitio: `/privacidad` (la URL para Google Play; debe decir lo mismo que la política dentro de la app,
 `sistema/privacidad/`), `/terminos` y `/eliminar-cuenta` (la URL de eliminación de cuentas que pide Google Play). El
@@ -266,9 +268,18 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
     kilometraje opcional, proveedor, factura/comprobante y soporte (PDF/imagen ≤ 2 MB). El botón "Gastos" de
     Vehículos (o "Ver gastos" en el detalle de uno) abre un modal con totales por tipo y por vehículo, promedio mensual, costo por km y km por galón
     (`ReglasGastos.Resumir` = `resumirGastos`), rangos rápidos y exportación. Un vehículo con gastos no se elimina.
-- **Rutas:** el **código es un consecutivo automático** (`R-01`, `R-02`…, lo asigna el servidor y no se edita);
-  solo se pueden agregar estudiantes **del colegio y la jornada de la ruta** (los de otra jornada no aparecen); un
-  estudiante no puede estar en dos rutas activas de la misma jornada.
+- **Rutas:** el **código es un consecutivo automático** (`R-01`, `R-02`…, lo asigna el servidor y no se edita).
+  Una ruta tiene una jornada y **uno o varios colegios** (`colegioIds`, tabla `rutas_colegios`; `colegioId` = el
+  primero, por compatibilidad). En el formulario se elige **primero la jornada**; "Agregar colegio" muestra solo los
+  colegios con cursos activos en esa jornada que aún no están en la ruta, y al agregarlo **precarga** sus estudiantes
+  activos de la jornada que no están en otra ruta activa de la misma jornada; se pueden quitar uno a uno o varios a la
+  vez ("Quitar seleccionados") o quitar el colegio completo. Solo se agregan estudiantes **de los colegios y la jornada
+  de la ruta**; un estudiante no puede estar en dos rutas activas de la misma jornada. Cambiar la jornada vacía los
+  colegios y los estudiantes.
+  - **Orden de recogida:** el orden de los estudiantes de la ruta (número, ↑/↓, "Agrupar por colegio") es el orden con
+    el que arranca cada recorrido. Si el administrador lo cambia mientras hay recorridos EN CURSO de la ruta, los que
+    faltan por visitar se reordenan al instante y el conductor y la monitora ven "… (administrador) cambió el orden"
+    (`AplicarOrdenDeRutaAsync` / `RecorridosLocal.aplicarOrdenDeRuta`).
 - **Asignaciones (ruta + vehículo + conductor + monitora):** cubren un **rango de fechas** (fin opcional) y,
   opcionalmente, un **horario** (hora inicio–fin). Una ruta puede tener varias asignaciones mientras **no se crucen**:
   se cruzan si se tocan en fechas Y en horario (con horas en las dos se comparan las horas; si una no tiene, ocupa
@@ -376,6 +387,14 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
   etapa con **justificación obligatoria** que la empresa ve en el historial; si el ticket lleva **15 días o más**
   esperando a la empresa (`DIAS_SIN_RESPUESTA`), el detalle lo avisa con "Terminar por falta de respuesta". El servidor envía correo al equipo y al solicitante y una notificación
   de campana por cada respuesta pública.
+- **Publicidad (`sistema/publicidad/`, Sistema › Publicidad):** material para imprimir con la marca de la empresa,
+  generado en el navegador (SVG puro en `piezas.ts`, sin servidor). **Adhesivo para vehículos** (horizontal 60×30 cm o
+  cuadrado 30×30 cm): título, mensaje, colores, logo/nombre/teléfono opcionales, código QR a
+  `https://rutarola.com/descargar` (`URL_DESCARGA`) e insignia de Google Play. **Tarjetas de presentación** 9×5 cm:
+  plantilla Clásica o Centrada, colores, imagen, datos de contacto; el reverso invita a los acudientes a ver sus datos
+  en la app de Google Play, con QR opcional. Los datos iniciales salen de Configuración › Documentos PDF y los cambios
+  se recuerdan en ese equipo (`rutarola.publicidad.*`). Descargas: PNG (150 ppp el adhesivo, 300 ppp la tarjeta), SVG,
+  PDF del tamaño real (diálogo de impresión) y hoja carta con 10 tarjetas.
 - **Planes y membresías (`sistema/membresias/`):** Gratis $0 (1 vehículo, 20 estudiantes) · Esencial $89.900
   (5/120, recordatorios automáticos y reportes) · Profesional $189.900 (15/400, GPS en vivo, mapa del acudiente,
   cronograma, soporte prioritario) · Empresarial desde $389.900 (sin límite + acompañamiento); COP con IVA; anual = 10
@@ -536,7 +555,12 @@ App para el celular del conductor y la monitora, dentro del vehículo.
   **se une a ese recorrido** donde va (no es un error; aviso informativo) y "Mis rutas" se actualiza sola
   cuando el compañero inicia (`observarRutasDelDia`), mostrando "Continuar".
 - **Snapshot:** al iniciar se guardan ruta, colegio, vehículo, personal y, por estudiante activo de la
-  ruta, nombre, grado, dirección y acudiente con teléfono.
+  ruta, nombre, grado, dirección, acudiente con teléfono y **su colegio** (`Parada.colegioId/colegio/direccionColegio`).
+- **Rutas con varios colegios:** en la RECOGIDA, cuando todos los estudiantes de un colegio están a bordo (o
+  ausentes) aparece "**Llegada al colegio X**", un botón por colegio, aunque falten estudiantes de otros. En la
+  ENTREGA se elige "**Iniciar la entrega**" de cada colegio o de todos: los colegios no iniciados quedan pendientes, y
+  los iniciados se suben y se entregan juntos en el orden inverso al programado. Para finalizar todos deben estar
+  ENTREGADOS o AUSENTES.
 - **Estados por estudiante:** `PENDIENTE → A_BORDO → ENTREGADO` o `PENDIENTE → AUSENTE`, con hora;
   "Deshacer" vuelve al estado anterior. Otras transiciones → 422.
 - **Asistencia** (`motivoAusencia`, solo con AUSENTE): en la recogida hay dos botones, "**No asiste hoy**"
@@ -549,7 +573,7 @@ App para el celular del conductor y la monitora, dentro del vehículo.
 - **Fotos de los estudiantes:** si el estudiante tiene foto, la monitora y el conductor la ven en la lista del
   recorrido y en grande en la tarjeta de la próxima parada, para reconocer al niño. Se cargan una sola vez al abrir
   el recorrido (`GET /recorridos/{id}/fotos`), no en cada marca, para ahorrar datos móviles.
-- **Orden de visita (monitora):** durante el recorrido, la monitora arrastra a un estudiante que falta
+- **Orden de visita (monitora):** el recorrido arranca con el orden de la ruta. Durante el recorrido, la monitora arrastra a un estudiante que falta
   (manija ⠿ de inmediato, o manteniendo presionada la fila 350 ms; también ↑/↓ con botones o teclado; la página se
   desplaza sola cerca del borde, vibra al levantar y Esc cancela) a otra posición: si el 2 pasa al 6, los del 3 al 6 suben una.
   Solo se reordenan los que faltan por visitar (recogida: PENDIENTES; entrega: PENDIENTES y A BORDO); los

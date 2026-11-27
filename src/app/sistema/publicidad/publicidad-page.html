@@ -1,0 +1,275 @@
+<section class="card bg-base-200 border border-base-300 shadow-xl">
+  <div class="card-body gap-4">
+    <div>
+      <h1 class="text-xl font-bold">Publicidad de tu empresa</h1>
+      <p class="text-base-content/70">
+        Material listo para imprimir con tu marca. Invita a las familias a descargar RutaRola: quien ya es cliente ve la
+        ruta, los avisos y los pagos de su hijo; quien no te conoce, descubre tu servicio.
+      </p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2">
+      <button type="button" class="card bg-base-100 border border-base-300 hover:border-primary text-left transition-colors cursor-pointer"
+        (click)="adhesivoAbierto.set(true)" [disabled]="cargando()">
+        <div class="card-body flex-row items-start gap-4">
+          <span class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
+            <i class="fa-solid fa-van-shuttle text-xl" aria-hidden="true"></i>
+          </span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-lg">Adhesivo para vehículos</span>
+            <span class="block text-sm text-base-content/70">Código QR para descargar la app y la insignia de Google Play, con tus colores
+              y tu logo. Horizontal (60 × 30 cm) o cuadrado (30 × 30 cm).</span>
+          </span>
+        </div>
+      </button>
+      <button type="button" class="card bg-base-100 border border-base-300 hover:border-primary text-left transition-colors cursor-pointer"
+        (click)="tarjetaAbierta.set(true)" [disabled]="cargando()">
+        <div class="card-body flex-row items-start gap-4">
+          <span class="w-12 h-12 rounded-full bg-info/15 text-info grid place-items-center shrink-0">
+            <i class="fa-solid fa-address-card text-xl" aria-hidden="true"></i>
+          </span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-lg">Tarjetas de presentación</span>
+            <span class="block text-sm text-base-content/70">9 × 5 cm, frente con tus datos de contacto y reverso que invita a los
+              acudientes a consultar sus datos en la app. Colores, imagen y QR opcionales.</span>
+          </span>
+        </div>
+      </button>
+    </div>
+    <p class="text-sm text-base-content/70">
+      <i class="fa-solid fa-qrcode text-info" aria-hidden="true"></i>
+      El código QR abre <span class="font-mono">{{ urlDescarga.replace('https://', '') }}</span>: en Android lleva a Google Play y en
+      otros equipos a la versión web y a la información de RutaRola. El logo, el nombre y el contacto salen de
+      Configuración › Documentos PDF; lo que cambies aquí se recuerda en este equipo.
+    </p>
+  </div>
+</section>
+
+<!-- Adhesivo para vehículos -->
+<app-modal [(abierto)]="adhesivoAbierto" titulo="Adhesivo para vehículos" subtitulo="Personaliza y descarga para imprimir" ancho="max-w-6xl">
+  @if (adhesivoAbierto()) {
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <div class="space-y-4">
+        <fieldset class="space-y-2">
+          <legend class="text-sm text-info font-semibold uppercase tracking-wide mb-1">Tamaño</legend>
+          @for (f of formatos; track f.id) {
+            <label class="flex items-start gap-3 rounded-box border border-base-300 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+              <input type="radio" class="sr-only" name="formato-adhesivo" [value]="f.id" [checked]="adhesivo().formato === f.id"
+                (change)="cambiarAdhesivo('formato', f.id)" />
+              <span><span class="block font-medium">{{ f.nombre }}</span><span class="block text-sm text-base-content/70">{{ f.descripcion }}</span></span>
+            </label>
+          }
+        </fieldset>
+        <label class="flex flex-col gap-1">
+          <span class="label-text text-base-content/90">Título</span>
+          <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="adhesivo().titulo"
+            (ngModelChange)="cambiarAdhesivo('titulo', $event)" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="label-text text-base-content/90">Mensaje</span>
+          <textarea class="textarea textarea-bordered bg-base-100 border-neutral w-full" rows="3" maxlength="140" [ngModel]="adhesivo().subtitulo"
+            (ngModelChange)="cambiarAdhesivo('subtitulo', $event)"></textarea>
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-2">
+            <input type="color" class="h-10 w-14 rounded border border-neutral bg-base-100 cursor-pointer" [ngModel]="adhesivo().colorFondo"
+              (ngModelChange)="cambiarAdhesivo('colorFondo', $event)" />
+            <span class="label-text text-base-content/90">Fondo</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="color" class="h-10 w-14 rounded border border-neutral bg-base-100 cursor-pointer" [ngModel]="adhesivo().colorAcento"
+              (ngModelChange)="cambiarAdhesivo('colorAcento', $event)" />
+            <span class="label-text text-base-content/90">Título y borde</span>
+          </label>
+        </div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="toggle toggle-primary" [ngModel]="adhesivo().mostrarEmpresa" (ngModelChange)="cambiarAdhesivo('mostrarEmpresa', $event)" />
+          <span class="label-text text-base-content/90">Mostrar mi empresa (logo, nombre y teléfono)</span>
+        </label>
+        @if (adhesivo().mostrarEmpresa) {
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Nombre de la empresa</span>
+            <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="adhesivo().nombreEmpresa"
+              (ngModelChange)="cambiarAdhesivo('nombreEmpresa', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Teléfono</span>
+            <input type="tel" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="30" [ngModel]="adhesivo().telefono"
+              (ngModelChange)="cambiarAdhesivo('telefono', $event)" />
+          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral">
+              <i class="fa-solid fa-image" aria-hidden="true"></i> {{ adhesivo().logo ? 'Cambiar logo' : 'Subir logo' }}
+              <input type="file" class="sr-only" accept="image/png,image/jpeg,image/webp,image/svg+xml" (change)="elegirLogo($event, 'ADHESIVO')" />
+            </label>
+            @if (adhesivo().logo) {
+              <button type="button" class="btn btn-sm btn-ghost text-error" (click)="cambiarAdhesivo('logo', '')">Quitar logo</button>
+            } @else if (tieneLogoEmpresa()) {
+              <button type="button" class="btn btn-sm btn-ghost text-secondary" (click)="usarLogoEmpresa('ADHESIVO')">Usar el logo de la empresa</button>
+            }
+          </div>
+        }
+        <button type="button" class="btn btn-sm btn-ghost" (click)="restablecerAdhesivo()">
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Restablecer diseño
+        </button>
+      </div>
+      <div class="lg:sticky lg:top-0 self-start space-y-2">
+        <p class="text-sm text-info font-semibold uppercase tracking-wide">Vista previa</p>
+        <img [src]="vistaAdhesivo()" alt="Vista previa del adhesivo para vehículos" class="w-full rounded-box border border-base-300 bg-base-100"
+          [style.aspect-ratio]="proporcionAdhesivo()" />
+        <p class="text-xs text-base-content/70">Imprímelo en vinilo adhesivo (para exterior) o microperforado si va en un vidrio.
+          El PNG sale a 150 ppp del tamaño real; para imprentas que piden vector, descarga el SVG.</p>
+      </div>
+    </div>
+  }
+  @if (adhesivoAbierto()) {
+    <div pie class="flex flex-wrap justify-end gap-2">
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="adhesivoAbierto.set(false)">Cerrar</button>
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="exportando()" (click)="descargarAdhesivoSvg()">
+        <i class="fa-solid fa-bezier-curve" aria-hidden="true"></i> SVG
+      </button>
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="exportando()" (click)="descargarAdhesivoPng()">
+        <i class="fa-solid fa-image" aria-hidden="true"></i> PNG
+      </button>
+      <button type="button" class="btn btn-primary" [disabled]="exportando()" (click)="imprimirAdhesivo()">
+        @if (exportando()) { <span class="loading loading-spinner loading-sm"></span> }
+        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Descargar PDF
+      </button>
+    </div>
+  }
+</app-modal>
+
+<!-- Tarjetas de presentación -->
+<app-modal [(abierto)]="tarjetaAbierta" titulo="Tarjetas de presentación" subtitulo="9 × 5 cm · frente y reverso" ancho="max-w-6xl">
+  @if (tarjetaAbierta()) {
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <div class="space-y-4">
+        <fieldset class="space-y-2">
+          <legend class="text-sm text-info font-semibold uppercase tracking-wide mb-1">Plantilla</legend>
+          @for (p of plantillas; track p.id) {
+            <label class="flex items-start gap-3 rounded-box border border-base-300 p-3 cursor-pointer has-checked:border-primary has-checked:bg-primary/10 has-focus-visible:outline-2">
+              <input type="radio" class="sr-only" name="plantilla-tarjeta" [value]="p.id" [checked]="tarjeta().plantilla === p.id"
+                (change)="cambiarTarjeta('plantilla', p.id)" />
+              <span><span class="block font-medium">{{ p.nombre }}</span><span class="block text-sm text-base-content/70">{{ p.descripcion }}</span></span>
+            </label>
+          }
+        </fieldset>
+
+        <p class="text-sm text-info font-semibold uppercase tracking-wide">Colores e imagen</p>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-2">
+            <input type="color" class="h-10 w-14 rounded border border-neutral bg-base-100 cursor-pointer" [ngModel]="tarjeta().colorPrincipal"
+              (ngModelChange)="cambiarTarjeta('colorPrincipal', $event)" />
+            <span class="label-text text-base-content/90">Principal</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="color" class="h-10 w-14 rounded border border-neutral bg-base-100 cursor-pointer" [ngModel]="tarjeta().colorAcento"
+              (ngModelChange)="cambiarTarjeta('colorAcento', $event)" />
+            <span class="label-text text-base-content/90">Acento</span>
+          </label>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral">
+            <i class="fa-solid fa-image" aria-hidden="true"></i> {{ tarjeta().logo ? 'Cambiar imagen' : 'Subir imagen o logo' }}
+            <input type="file" class="sr-only" accept="image/png,image/jpeg,image/webp,image/svg+xml" (change)="elegirLogo($event, 'TARJETA')" />
+          </label>
+          @if (tarjeta().logo) {
+            <button type="button" class="btn btn-sm btn-ghost text-error" (click)="cambiarTarjeta('logo', '')">Quitar imagen</button>
+          } @else if (tieneLogoEmpresa()) {
+            <button type="button" class="btn btn-sm btn-ghost text-secondary" (click)="usarLogoEmpresa('TARJETA')">Usar el logo de la empresa</button>
+          }
+        </div>
+
+        <p class="text-sm text-info font-semibold uppercase tracking-wide">Datos de contacto</p>
+        <label class="flex flex-col gap-1">
+          <span class="label-text text-base-content/90">Nombre de la empresa</span>
+          <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="tarjeta().nombreEmpresa"
+            (ngModelChange)="cambiarTarjeta('nombreEmpresa', $event)" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="label-text text-base-content/90">Eslogan</span>
+          <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="tarjeta().eslogan"
+            (ngModelChange)="cambiarTarjeta('eslogan', $event)" />
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Nombre de la persona</span>
+            <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="40" placeholder="Opcional"
+              [ngModel]="tarjeta().nombreContacto" (ngModelChange)="cambiarTarjeta('nombreContacto', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Cargo</span>
+            <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="40" placeholder="Ej. Gerente"
+              [ngModel]="tarjeta().cargo" (ngModelChange)="cambiarTarjeta('cargo', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Teléfono / WhatsApp</span>
+            <input type="tel" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="30" [ngModel]="tarjeta().telefono"
+              (ngModelChange)="cambiarTarjeta('telefono', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Correo</span>
+            <input type="email" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="tarjeta().correo"
+              (ngModelChange)="cambiarTarjeta('correo', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Dirección</span>
+            <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="tarjeta().direccion"
+              (ngModelChange)="cambiarTarjeta('direccion', $event)" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="label-text text-base-content/90">Sitio web</span>
+            <input type="text" class="input input-bordered bg-base-100 border-neutral w-full" maxlength="60" [ngModel]="tarjeta().sitioWeb"
+              (ngModelChange)="cambiarTarjeta('sitioWeb', $event)" />
+          </label>
+        </div>
+
+        <p class="text-sm text-info font-semibold uppercase tracking-wide">Reverso</p>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="toggle toggle-primary" [ngModel]="tarjeta().mostrarApp" (ngModelChange)="cambiarTarjeta('mostrarApp', $event)" />
+          <span class="label-text text-base-content/90">“Consulta tus datos en la app” para los acudientes (Google Play)</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="toggle toggle-primary" [ngModel]="tarjeta().mostrarQr" (ngModelChange)="cambiarTarjeta('mostrarQr', $event)" />
+          <span class="label-text text-base-content/90">Código QR para descargar la app</span>
+        </label>
+        <button type="button" class="btn btn-sm btn-ghost" (click)="restablecerTarjeta()">
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Restablecer diseño
+        </button>
+      </div>
+      <div class="lg:sticky lg:top-0 self-start space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm text-info font-semibold uppercase tracking-wide">Vista previa</p>
+          <div class="join" role="group" aria-label="Cara de la tarjeta">
+            <button type="button" class="btn btn-sm join-item" [class]="cara() === 'FRENTE' ? 'btn-secondary' : 'bg-base-300 border-neutral'"
+              [attr.aria-pressed]="cara() === 'FRENTE'" (click)="cara.set('FRENTE')">Frente</button>
+            <button type="button" class="btn btn-sm join-item" [class]="cara() === 'REVERSO' ? 'btn-secondary' : 'bg-base-300 border-neutral'"
+              [attr.aria-pressed]="cara() === 'REVERSO'" (click)="cara.set('REVERSO')">Reverso</button>
+          </div>
+        </div>
+        <img [src]="cara() === 'FRENTE' ? vistaFrente() : vistaReverso()" [alt]="'Vista previa: ' + (cara() === 'FRENTE' ? 'frente' : 'reverso') + ' de la tarjeta'"
+          class="w-full rounded-box border border-base-300 shadow-xl aspect-[9/5] bg-white" />
+        <div class="grid grid-cols-2 gap-2">
+          <img [src]="vistaFrente()" alt="" class="w-full rounded border border-base-300 aspect-[9/5] bg-white cursor-pointer" (click)="cara.set('FRENTE')" />
+          <img [src]="vistaReverso()" alt="" class="w-full rounded border border-base-300 aspect-[9/5] bg-white cursor-pointer" (click)="cara.set('REVERSO')" />
+        </div>
+        <p class="text-xs text-base-content/70">El PDF trae el frente y el reverso a 9 × 5 cm para la imprenta; la hoja carta trae 10 tarjetas
+          de la cara que ves (para imprimir en casa en cartulina). El PNG sale a 300 ppp.</p>
+      </div>
+    </div>
+  }
+  @if (tarjetaAbierta()) {
+    <div pie class="flex flex-wrap justify-end gap-2">
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" (click)="tarjetaAbierta.set(false)">Cerrar</button>
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="exportando()" (click)="imprimirHoja()">
+        <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Hoja carta (10)
+      </button>
+      <button type="button" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="exportando()" (click)="descargarTarjetaPng()">
+        <i class="fa-solid fa-image" aria-hidden="true"></i> PNG
+      </button>
+      <button type="button" class="btn btn-primary" [disabled]="exportando()" (click)="imprimirTarjeta()">
+        @if (exportando()) { <span class="loading loading-spinner loading-sm"></span> }
+        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Descargar PDF
+      </button>
+    </div>
+  }
+</app-modal>

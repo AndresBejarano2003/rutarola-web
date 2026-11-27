@@ -20,7 +20,11 @@ export class ColegiosLocal extends RepositorioLocal<Colegio, FiltrosColegio> imp
 
   protected coincide(c: Colegio, f: FiltrosColegio): boolean {
     const texto = normalizar(f.texto);
-    return (!texto || normalizar(`${c.razonSocial} ${c.nit}`).includes(texto)) && (!f.estado || c.estado === f.estado);
+    return (
+      (!texto || normalizar(`${c.razonSocial} ${c.nit}`).includes(texto)) &&
+      (!f.estado || c.estado === f.estado) &&
+      (!f.jornada || c.cursos.some((x) => x.estado === 'ACTIVO' && x.jornada === f.jornada))
+    );
   }
 
   protected etiquetaOpcion(c: Colegio): string {

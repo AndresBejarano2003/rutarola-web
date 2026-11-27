@@ -143,7 +143,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo asigno un vehículo y un conductor a una ruta?',
     respuesta:
-      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora, el rango de fechas y, si quieres, un horario (hora de inicio y fin). Una ruta puede tener varias asignaciones (por ejemplo, un equipo en la mañana y otro en la tarde del mismo rango de fechas) mientras no se crucen en fechas y horas; tampoco un vehículo o una persona puede estar en dos rutas a la misma hora. Sin horario, la asignación ocupa toda la jornada de la ruta. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día. Al crear una ruta, el código se asigna solo y solo aparecen los estudiantes del colegio y la jornada de la ruta.',
+      'En Operación › Asignaciones elige la ruta, el vehículo, el conductor y la monitora, el rango de fechas y, si quieres, un horario (hora de inicio y fin). Una ruta puede tener varias asignaciones (por ejemplo, un equipo en la mañana y otro en la tarde del mismo rango de fechas) mientras no se crucen en fechas y horas; tampoco un vehículo o una persona puede estar en dos rutas a la misma hora. Sin horario, la asignación ocupa toda la jornada de la ruta. El conductor debe tener la licencia vigente y el vehículo debe estar activo, con cupo suficiente y documentos al día. Al crear una ruta, el código se asigna solo; primero eliges la jornada y luego agregas uno o varios colegios de esa jornada: sus estudiantes se cargan solos (los que ya están en otra ruta de la jornada no) y puedes quitar uno o varios. El orden de la lista es el orden de recogida con el que arranca cada recorrido.',
   },
   {
     modulo: 'Operación',
@@ -155,7 +155,7 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     modulo: 'Operación',
     pregunta: '¿Cómo ven los conductores y monitoras su ruta del día?',
     respuesta:
-      'Ingresan con el usuario y la contraseña que se les asigna al crearlos en Personas › Empleados (sección "Acceso a la app") y el sistema los lleva a "Ruta del día" (no ven los módulos administrativos). Allí aparecen las rutas de sus asignaciones activas y vigentes; inician la recogida (casa → colegio) o la entrega (colegio → casa) y marcan a cada estudiante como recogido o entregado. En la recogida, "No asiste hoy" (no va al colegio: la entrega de ese día ya lo trae como ausente) o "Va por su cuenta" (sí asiste y regresa en la ruta); en la entrega, "No viaja". Si hay que cambiar el orden (por ejemplo, un acudiente avisa que recojan a su hijo de último), la monitora arrastra al estudiante a su nueva posición y el conductor ve el nuevo orden al instante con un aviso. Un recorrido solo se finaliza cuando ningún estudiante queda a bordo. El administrador los consulta en Operación › Recorridos.',
+      'Ingresan con el usuario y la contraseña que se les asigna al crearlos en Personas › Empleados (sección "Acceso a la app") y el sistema los lleva a "Ruta del día" (no ven los módulos administrativos). Allí aparecen las rutas de sus asignaciones activas y vigentes; inician la recogida (casa → colegio) o la entrega (colegio → casa) y marcan a cada estudiante como recogido o entregado. En la recogida, "No asiste hoy" (no va al colegio: la entrega de ese día ya lo trae como ausente) o "Va por su cuenta" (sí asiste y regresa en la ruta); en la entrega, "No viaja". Si hay que cambiar el orden (por ejemplo, un acudiente avisa que recojan a su hijo de último), la monitora (o el conductor si la ruta no tiene monitora) arrastra al estudiante a su nueva posición y el compañero ve el nuevo orden al instante con un aviso; si el administrador cambia el orden en Operación › Rutas, los recorridos en curso también se actualizan. En una ruta con varios colegios, la recogida muestra "Llegada al colegio" de cada colegio cuando todos sus estudiantes están a bordo, y la entrega se inicia por colegio (o todos a la vez): los colegios aún no iniciados quedan pendientes. Un recorrido solo se finaliza cuando todos están entregados o ausentes. El administrador los consulta en Operación › Recorridos.',
   },
   {
     modulo: 'Operación',
@@ -198,6 +198,12 @@ export const PREGUNTAS_FRECUENTES: PreguntaFrecuente[] = [
     pregunta: '¿Cómo pongo mi foto de perfil o cambio mi teléfono?',
     respuesta:
       'Entra a Mi cuenta y, en "Mis datos", toca "Subir foto" (desde el celular también puedes tomarla con la cámara), escribe tu teléfono de contacto y tu correo y guarda. La foto se recorta en un cuadrado y se ve en la barra superior y, para conductores, monitoras y acudientes, en las tablas de Personas, en el portal y en la Ruta del día del compañero. El administrador también puede cambiar su nombre; el nombre, el documento y el usuario de empleados y acudientes los corrige el administrador en Personas, donde además puede poner la foto de estudiantes, acudientes y empleados.',
+  },
+  {
+    modulo: 'Sistema',
+    pregunta: '¿Cómo hago publicidad para mis vehículos y tarjetas de presentación?',
+    respuesta:
+      'En Sistema › Publicidad: "Adhesivo para vehículos" crea un adhesivo (horizontal de 60 × 30 cm o cuadrado de 30 × 30 cm) con un código QR que lleva a descargar la app RutaRola y la insignia de Google Play, con tu título, colores, logo y teléfono; "Tarjetas de presentación" diseña tarjetas de 9 × 5 cm con tus colores, imagen y datos de contacto, y un reverso que invita a los acudientes a consultar la ruta, los avisos y los pagos en la app (con QR opcional). Los datos iniciales salen de Configuración › Documentos PDF y lo que cambies se recuerda en ese equipo. Descárgalos en PNG, SVG (para imprentas) o PDF del tamaño real; las tarjetas también vienen en una hoja carta de 10 para imprimir en casa.',
   },
   {
     modulo: 'Sistema',

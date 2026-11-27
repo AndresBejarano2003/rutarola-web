@@ -66,6 +66,17 @@ export interface Parada {
   motivoAusencia: MotivoAusencia | '';
   /** El acudiente avisó desde su portal que no viaja (lo confirma quien lo marca AUSENTE). */
   aviso?: AvisoParada | null;
+  /** Colegio del estudiante al iniciar (la ruta puede atender varios). `''`/ausente en recorridos anteriores. */
+  colegioId?: string;
+  colegio?: string;
+  direccionColegio?: string;
+}
+
+/** Un colegio del recorrido. `colegioId` `''` en recorridos anteriores (un solo colegio). */
+export interface ColegioRecorrido {
+  colegioId: string;
+  nombre: string;
+  direccion: string;
 }
 
 export type EstadoRecorrido = 'EN_CURSO' | 'FINALIZADO';
@@ -97,9 +108,12 @@ export interface Recorrido extends Entidad {
   /** Último cambio del orden de visita (lo hace la monitora durante el recorrido). */
   ordenActualizado?: CambioOrden | null;
   observaciones: string;
+  /** Colegios en el orden en que aparecen sus estudiantes (`colegio` = sus nombres unidos). */
+  colegios?: ColegioRecorrido[];
 }
 
 export interface CambioOrden {
+  /** `''` si lo cambió el administrador desde la ruta. */
   empleadoId: string;
   nombre: string;
   /** ISO */
@@ -144,6 +158,8 @@ export interface RutaAsignada {
   recorridos: ResumenRecorrido[];
   /** Horario del turno (`06:00–09:30`); `''` = toda la jornada. */
   horario?: string;
+  /** Colegios de la ruta (si son varios, `colegio` los une y `direccionColegio` va vacío). */
+  colegios?: ColegioRecorrido[];
 }
 
 export function contarParadas(paradas: Parada[]): ConteoParadas {
@@ -171,30 +187,112 @@ export function ordenarParadas<T>(estudiantesEnOrdenDeRuta: T[], trayecto: Traye
   return trayecto === 'RECOGIDA' ? [...estudiantesEnOrdenDeRuta] : [...estudiantesEnOrdenDeRuta].reverse();
 }
 
+/** Estudiantes de un colegio del recorrido, en el orden de visita. */
+export interface GrupoColegio {
+  colegio: ColegioRecorrido;
+  paradas: Parada[];
+  pendientes: Parada[];
+  aBordo: Parada[];
+}
+
+type DatosColegios = Pick<Recorrido, 'trayecto' | 'paradas'> & Partial<Pick<Recorrido, 'colegio' | 'direccionColegio' | 'colegios'>>;
+
+/** Colegios del recorrido (los anteriores a varios colegios tienen uno solo, sin id). */
+export function colegiosDelRecorrido(r: DatosColegios): ColegioRecorrido[] {
+  if (r.colegios?.length) return r.colegios;
+  return [{ colegioId: '', nombre: r.colegio ?? '', direccion: r.direccionColegio ?? '' }];
+}
+
+/** Estudiantes agrupados por colegio, en el orden de los colegios. */
+export function gruposPorColegio(r: DatosColegios): GrupoColegio[] {
+  const colegios = colegiosDelRecorrido(r);
+  const ids = new Set(colegios.map((c) => c.colegioId));
+  return colegios.map((colegio, i) => {
+    // Un estudiante sin colegio conocido va con el primero.
+    const paradas = r.paradas.filter((p) => (p.colegioId ?? '') === colegio.colegioId || (i === 0 && !ids.has(p.colegioId ?? '')));
+    return {
+      colegio,
+      paradas,
+      pendientes: paradas.filter((p) => p.estado === 'PENDIENTE'),
+      aBordo: paradas.filter((p) => p.estado === 'A_BORDO'),
+    };
+  });
+}
+
+/**
+ * RECOGIDA con varios colegios: colegios cuyos estudiantes ya se recogieron todos (ninguno pendiente) y que tienen
+ * alguno a bordo: "Llegada al colegio X" se puede hacer mientras sigue la recogida de los otros.
+ */
+export function llegadasListas(r: DatosColegios): GrupoColegio[] {
+  if (r.trayecto !== 'RECOGIDA') return [];
+  return gruposPorColegio(r).filter((g) => g.aBordo.length > 0 && g.pendientes.length === 0);
+}
+
+/** ENTREGA: el colegio ya inició su salida (alguien subió o ya se entregó). */
+function salidaIniciada(g: GrupoColegio): boolean {
+  return g.paradas.some((p) => p.estado === 'A_BORDO' || p.estado === 'ENTREGADO');
+}
+
+/**
+ * ENTREGA con varios colegios: los que aún no inician la salida (siguen pendientes hasta que se marquen). Al iniciar
+ * uno, sus estudiantes se unen a los que faltan por entregar, en el orden inverso al programado.
+ */
+export function colegiosPorRecoger(r: DatosColegios): GrupoColegio[] {
+  if (r.trayecto !== 'ENTREGA') return [];
+  return gruposPorColegio(r).filter((g) => g.pendientes.length > 0 && !salidaIniciada(g));
+}
+
 /**
  * Qué toca hacer ahora:
- * - RECOGIDA: recoger al siguiente PENDIENTE; sin pendientes y con alguien a bordo → llegar al colegio.
- * - ENTREGA: primero el abordaje en el colegio (PENDIENTE); luego entregar al siguiente A_BORDO.
+ * - RECOGIDA: recoger al siguiente PENDIENTE; sin pendientes y con alguien a bordo → llegar al colegio (uno por
+ *   colegio si son varios; con varios, un colegio ya completo se entrega antes desde `llegadasListas`).
+ * - ENTREGA con un colegio: primero el abordaje en el colegio (PENDIENTE); luego entregar al siguiente A_BORDO.
+ * - ENTREGA con varios: abordaje de los colegios ya iniciados; luego entregar a bordo; luego iniciar la salida de
+ *   otro colegio (`SALIDA_COLEGIOS`, un botón por colegio o todos).
  * - Todos resueltos → finalizar.
  */
 export type PasoRecorrido =
   | { tipo: 'RECOGER'; parada: Parada }
-  | { tipo: 'LLEGADA_COLEGIO'; aBordo: number }
-  | { tipo: 'ABORDAJE'; pendientes: Parada[] }
+  | { tipo: 'LLEGADA_COLEGIO'; aBordo: number; grupos: GrupoColegio[] }
+  | { tipo: 'ABORDAJE'; pendientes: Parada[]; grupos: GrupoColegio[] }
+  | { tipo: 'SALIDA_COLEGIOS'; grupos: GrupoColegio[] }
   | { tipo: 'ENTREGAR'; parada: Parada }
   | { tipo: 'FINALIZAR' };
 
-export function siguientePaso(r: Pick<Recorrido, 'trayecto' | 'paradas'>): PasoRecorrido {
+export function siguientePaso(r: DatosColegios): PasoRecorrido {
   const pendientes = r.paradas.filter((p) => p.estado === 'PENDIENTE');
   const aBordo = r.paradas.filter((p) => p.estado === 'A_BORDO');
+  const grupos = gruposPorColegio(r);
   if (r.trayecto === 'RECOGIDA') {
     if (pendientes.length) return { tipo: 'RECOGER', parada: pendientes[0] };
-    if (aBordo.length) return { tipo: 'LLEGADA_COLEGIO', aBordo: aBordo.length };
-  } else {
-    if (pendientes.length) return { tipo: 'ABORDAJE', pendientes };
+    if (aBordo.length) return { tipo: 'LLEGADA_COLEGIO', aBordo: aBordo.length, grupos: grupos.filter((g) => g.aBordo.length) };
+  } else if (grupos.length <= 1) {
+    if (pendientes.length) return { tipo: 'ABORDAJE', pendientes, grupos };
     if (aBordo.length) return { tipo: 'ENTREGAR', parada: aBordo[0] };
+  } else {
+    const iniciados = grupos.filter((g) => salidaIniciada(g) && g.pendientes.length);
+    if (iniciados.length) return { tipo: 'ABORDAJE', pendientes: iniciados.flatMap((g) => g.pendientes), grupos: iniciados };
+    if (aBordo.length) return { tipo: 'ENTREGAR', parada: aBordo[0] };
+    const porRecoger = colegiosPorRecoger(r);
+    if (porRecoger.length) return { tipo: 'SALIDA_COLEGIOS', grupos: porRecoger };
   }
   return { tipo: 'FINALIZAR' };
+}
+
+/**
+ * El administrador cambió el orden de recogida de la ruta (`orden` = sus estudiantes en el nuevo orden): lo que falta
+ * por visitar se reordena (al revés en la entrega); lo visitado queda igual. `null` si no cambia nada. Igual que
+ * `ServicioRecorridos.AplicarOrdenDeRutaAsync`.
+ */
+export function reordenarSegunRuta(r: Pick<Recorrido, 'trayecto' | 'paradas'>, orden: string[]): Parada[] | null {
+  const posicion = new Map(orden.map((id, i) => [id, i]));
+  const { visitadas, pendientes } = paradasEnOrden(r);
+  const clave = (p: Parada) => {
+    const i = posicion.get(p.estudianteId);
+    return i === undefined ? Number.MAX_SAFE_INTEGER : r.trayecto === 'ENTREGA' ? orden.length - i : i;
+  };
+  const nuevos = pendientes.map((p, i) => ({ p, i })).sort((a, b) => clave(a.p) - clave(b.p) || a.i - b.i).map((x) => x.p);
+  return nuevos.every((p, i) => p === pendientes[i]) ? null : [...visitadas, ...nuevos];
 }
 
 /**

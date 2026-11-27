@@ -28,6 +28,8 @@ export interface FiltrosColegio {
   /** Busca en razón social y NIT. */
   texto: string;
   estado: EstadoRegistro | '';
+  /** Colegios con algún curso activo en esta jornada (al armar una ruta). */
+  jornada?: string;
 }
 
 export const FILTROS_COLEGIO_VACIOS: FiltrosColegio = { texto: '', estado: '' };

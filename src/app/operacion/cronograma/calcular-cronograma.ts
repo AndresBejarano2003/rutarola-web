@@ -159,7 +159,7 @@ export function calcularDiaCronograma(datos: DatosCronograma, fecha: string): De
         codigo: r.codigo,
         nombre: r.nombre,
         jornada: r.jornada,
-        colegio: datos.colegios.find((c) => c.id === r.colegioId)?.razonSocial ?? '',
+        colegio: r.colegioIds.map((id) => datos.colegios.find((c) => c.id === id)?.razonSocial ?? '').filter(Boolean).join(' · '),
         vehiculo: asignacion ? (datos.vehiculos.find((v) => v.id === asignacion.vehiculoId)?.placa ?? '') : '',
         conductor: asignacion ? nombre(asignacion.conductorId) : '',
         monitora: asignacion?.monitoraId ? nombre(asignacion.monitoraId) : '',

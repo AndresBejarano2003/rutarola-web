@@ -11,5 +11,10 @@ export default [
     loadComponent: () => import('./membresias/membresias-page'),
     data: { breadcrumb: ['Sistema', 'Planes y Membresías'] },
   },
+  {
+    path: 'publicidad',
+    loadComponent: () => import('./publicidad/publicidad-page'),
+    data: { breadcrumb: ['Sistema', 'Publicidad'] },
+  },
   { path: '**', redirectTo: 'membership' },
 ] satisfies Routes;

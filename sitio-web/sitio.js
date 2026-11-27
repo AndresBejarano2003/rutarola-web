@@ -5,6 +5,7 @@
  * Google Play: cuando la app esté publicada para todos, cambia `publicada` a true y el botón lleva a la ficha.
  * Mientras tanto muestra "Próximamente en Google Play".
  */
+// Igual en descargar.html (página del QR de la publicidad): cambiar los dos al publicar.
 const GOOGLE_PLAY = { publicada: false, url: 'https://play.google.com/store/apps/details?id=co.rutarola.app' };
 
 const APP = 'https://app.rutarola.com';

@@ -102,8 +102,9 @@
   <figure><img src="../capturas/operacion-rutas.jpg" alt=""><figcaption>Lista de rutas.</figcaption></figure>
   <ol class="pasos">
     <li>En <span class="menu">Operación › Rutas</span> toca <span class="boton">Nueva ruta</span>. El <b>código</b> (R-01, R-02…) lo pone el sistema al guardar.</li>
-    <li>Escribe el <span class="campo">Nombre</span> (ej. “Norte”), elige el <span class="campo">Colegio</span> y la <span class="campo">Jornada</span>, y describe el <span class="campo">Sector / barrios que recorre</span>.</li>
-    <li>En <b>Estudiantes de la ruta</b> agrega los estudiantes: solo aparecen los de ese colegio y esa jornada. El orden de la lista es el orden de recogida; la entrega se hace en orden inverso.</li>
+    <li>Escribe el <span class="campo">Nombre</span> (ej. “Norte”), elige primero la <span class="campo">Jornada</span> y describe el <span class="campo">Sector / barrios que recorre</span>.</li>
+    <li>Toca <span class="boton sec">Agregar colegio</span>: solo aparecen los colegios con cursos en esa jornada que aún no están en la ruta. Una ruta puede llevar <b>varios colegios</b>. Al agregar uno se cargan solos sus estudiantes de la jornada (menos los que ya están en otra ruta activa); quita uno, marca varios y toca <span class="boton sec">Quitar seleccionados</span>, o quita el colegio completo.</li>
+    <li>En <b>Orden de recogida</b> ajusta el orden con el número o las flechas (o <span class="boton sec">Agrupar por colegio</span>). Ese es el orden con el que arranca cada recorrido; la entrega se hace en orden inverso. Si lo cambias con un recorrido en curso, el conductor y la monitora ven el nuevo orden al instante.</li>
     <li>Deja el <span class="campo">Estado</span> en <i>Activo</i> y toca <span class="boton">Registrar ruta</span>.</li>
   </ol>
   <figure><img src="../capturas/operacion-ruta-consulta.jpg" alt=""><figcaption>Ruta con sus estudiantes en orden.</figcaption></figure>
@@ -143,7 +144,8 @@
         <li>La pantalla muestra la <b>próxima parada</b>, con la foto del estudiante, su dirección, y botones de Google Maps, llamar y WhatsApp.</li>
         <li>Marca a cada estudiante cuando sube (queda <i>A bordo</i>) y cuando lo dejan (<i>Entregado</i>), o como ausente si no está. <span class="boton sec">Deshacer</span> corrige el último paso.</li>
         <li>La monitora (o el conductor, si va sin monitora) puede cambiar el orden de las paradas arrastrando a un estudiante. La pareja ve el cambio al instante.</li>
-        <li>Al final toca <span class="boton">Finalizar recorrido</span>. Solo se puede finalizar cuando nadie queda a bordo.</li>
+        <li><b>Ruta con varios colegios:</b> en la recogida aparece <span class="boton">Llegada al colegio …</span> de cada colegio apenas todos sus estudiantes están a bordo. En la entrega toca <span class="boton">Iniciar la entrega</span> del colegio que sale (o de todos); los que no se han iniciado quedan pendientes y los iniciados se entregan juntos en orden inverso.</li>
+        <li>Al final toca <span class="boton">Finalizar recorrido</span>. Solo se puede finalizar cuando todos están entregados o ausentes.</li>
       </ol>
     </div>
   </div>
@@ -174,7 +176,7 @@
   <h4>“El vehículo no tiene capacidad”</h4>
   <p>La ruta tiene más estudiantes que puestos. Usa un vehículo más grande o divide la ruta.</p>
   <h4>No me deja agregar un estudiante a la ruta</h4>
-  <p>Debe ser del mismo colegio y la misma jornada de la ruta, y no estar ya en otra ruta activa de esa jornada.</p>
+  <p>Debe ser de uno de los colegios de la ruta y de su jornada, y no estar ya en otra ruta activa de esa jornada. Si su colegio no está, agrégalo con “Agregar colegio”.</p>
   <h4>La ubicación se pausa en el celular</h4>
   <p>Usa la app RutaRola instalada y completa la guía “Prepara tu teléfono” (ver la sección 7).</p>
 </section>

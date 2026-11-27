@@ -171,24 +171,38 @@
               </div>
             }
             @case ('LLEGADA_COLEGIO') {
-              <div class="flex items-start gap-3">
-                <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
-                  <i class="fa-solid fa-school text-xl" aria-hidden="true"></i>
+              @if (p.grupos.length <= 1) {
+                <div class="flex items-start gap-3">
+                  <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
+                    <i class="fa-solid fa-school text-xl" aria-hidden="true"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm text-base-content/70 uppercase tracking-wide">Llegada al colegio</p>
+                    <h2 class="text-xl font-bold">{{ p.grupos[0]?.colegio?.nombre || r.colegio }}</h2>
+                    <p class="text-base-content/70">{{ p.grupos[0]?.colegio?.direccion || r.direccionColegio }}</p>
+                    <a class="link link-secondary text-sm" [href]="enlaceMapa(p.grupos[0]?.colegio?.direccion || r.direccionColegio)" target="_blank" rel="noopener">
+                      <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i> Cómo llegar
+                    </a>
+                  </div>
                 </div>
-                <div class="min-w-0">
-                  <p class="text-sm text-base-content/70 uppercase tracking-wide">Llegada al colegio</p>
-                  <h2 class="text-xl font-bold">{{ r.colegio }}</h2>
-                  <p class="text-base-content/70">{{ r.direccionColegio }}</p>
-                  <a class="link link-secondary text-sm" [href]="enlaceMapa(r.direccionColegio)" target="_blank" rel="noopener">
-                    <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i> Cómo llegar
-                  </a>
+                <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full" [disabled]="procesando()"
+                  (click)="marcar(idsCon('A_BORDO'), 'ENTREGADO')">
+                  <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
+                  Entregar {{ p.aBordo === 1 ? '1 estudiante' : p.aBordo + ' estudiantes' }} en el colegio
+                </button>
+              } @else {
+                <div class="flex items-start gap-3">
+                  <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
+                    <i class="fa-solid fa-school text-xl" aria-hidden="true"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm text-base-content/70 uppercase tracking-wide">Llegada a los colegios</p>
+                    <h2 class="text-xl font-bold">Faltan {{ p.grupos.length }} colegios por entregar</h2>
+                    <p class="text-base-content/70">Toca cada colegio al llegar para entregar a sus estudiantes.</p>
+                  </div>
                 </div>
-              </div>
-              <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full" [disabled]="procesando()"
-                (click)="marcar(idsCon('A_BORDO'), 'ENTREGADO')">
-                <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
-                Entregar {{ p.aBordo === 1 ? '1 estudiante' : p.aBordo + ' estudiantes' }} en el colegio
-              </button>
+                <ng-container *ngTemplateOutlet="llegadasColegio; context: { $implicit: p.grupos, principal: true }" />
+              }
             }
             @case ('ABORDAJE') {
               <div class="flex items-start gap-3">
@@ -196,16 +210,31 @@
                   <i class="fa-solid fa-clipboard-check text-xl" aria-hidden="true"></i>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm text-base-content/70 uppercase tracking-wide">Abordaje en el colegio</p>
+                  <p class="text-sm text-base-content/70 uppercase tracking-wide">
+                    Abordaje en {{ variosColegios() ? nombreColegios(p.grupos) : 'el colegio' }}
+                  </p>
                   <h2 class="text-xl font-bold">{{ p.pendientes.length === 1 ? 'Falta 1 estudiante' : 'Faltan ' + p.pendientes.length + ' estudiantes' }}</h2>
                   <p class="text-base-content/70">Marca quién subió al vehículo y quién no viaja hoy en la ruta.</p>
                 </div>
               </div>
-              <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full" [disabled]="procesando()"
-                (click)="marcar(idsSinAviso('PENDIENTE'), 'A_BORDO')" [disabled]="procesando() || idsSinAviso('PENDIENTE').length === 0">
+              <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full"
+                (click)="marcar(idsSinAvisoDe(p.pendientes), 'A_BORDO')" [disabled]="procesando() || idsSinAvisoDe(p.pendientes).length === 0">
                 <i class="fa-solid fa-check-double" aria-hidden="true"></i> Subieron todos
-                @if (idsSinAviso('PENDIENTE').length < idsCon('PENDIENTE').length) { <span class="text-xs font-normal">(menos los que avisaron que no viajan)</span> }
+                @if (idsSinAvisoDe(p.pendientes).length < p.pendientes.length) { <span class="text-xs font-normal">(menos los que avisaron que no viajan)</span> }
               </button>
+            }
+            @case ('SALIDA_COLEGIOS') {
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 rounded-full bg-primary/15 text-primary grid place-items-center shrink-0">
+                  <i class="fa-solid fa-school-flag text-xl" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm text-base-content/70 uppercase tracking-wide">Salida de los colegios</p>
+                  <h2 class="text-xl font-bold">{{ p.grupos.length === 1 ? 'Falta 1 colegio' : 'Faltan ' + p.grupos.length + ' colegios' }}</h2>
+                  <p class="text-base-content/70">Inicia la entrega de cada colegio al recoger a sus estudiantes; los demás esperan.</p>
+                </div>
+              </div>
+              <ng-container *ngTemplateOutlet="salidasColegio; context: { $implicit: p.grupos, principal: true }" />
             }
             @case ('ENTREGAR') {
               <ng-container *ngTemplateOutlet="parada; context: { $implicit: p.parada, titulo: 'Próxima entrega' }" />
@@ -241,6 +270,29 @@
       </section>
     } @else if (r.observaciones) {
       <p class="rounded-box bg-base-200 border border-base-300 p-4 text-sm"><span class="text-base-content/70">Observaciones:</span> {{ r.observaciones }}</p>
+    }
+
+    <!-- Varios colegios: llegadas listas mientras sigue la recogida, o colegios que esperan la salida -->
+    @if (paso()?.tipo === 'RECOGER' && llegadas().length) {
+      <section class="card bg-base-200 border border-info/50" aria-live="polite">
+        <div class="card-body p-4 gap-3">
+          <h2 class="text-sm text-info font-semibold uppercase tracking-wide">
+            <i class="fa-solid fa-school" aria-hidden="true"></i> Listos para entregar en su colegio
+          </h2>
+          <ng-container *ngTemplateOutlet="llegadasColegio; context: { $implicit: llegadas(), principal: false }" />
+        </div>
+      </section>
+    }
+    @if ((paso()?.tipo === 'ABORDAJE' || paso()?.tipo === 'ENTREGAR') && porRecoger().length) {
+      <section class="card bg-base-200 border border-info/50" aria-live="polite">
+        <div class="card-body p-4 gap-3">
+          <h2 class="text-sm text-info font-semibold uppercase tracking-wide">
+            <i class="fa-solid fa-school-flag" aria-hidden="true"></i> Colegios por recoger
+          </h2>
+          <p class="text-sm text-base-content/70">Al iniciar uno, sus estudiantes se suman a la entrega en el orden de la ruta.</p>
+          <ng-container *ngTemplateOutlet="salidasColegio; context: { $implicit: porRecoger(), principal: false }" />
+        </div>
+      </section>
     }
 
     <!-- Lista completa -->
@@ -324,6 +376,9 @@
   <div class="min-w-0 flex-1 basis-40">
     <p class="font-medium truncate">{{ e.estudiante }}</p>
     <p class="text-xs text-base-content/70 truncate">{{ e.grado }} · {{ e.direccion }}</p>
+    @if (variosColegios() && e.colegio) {
+      <p class="text-xs text-info truncate"><i class="fa-solid fa-school" aria-hidden="true"></i> {{ e.colegio }}</p>
+    }
     @if (e.aviso; as a) {
       <p class="text-xs mt-0.5" [class]="a.confirmado ? 'text-success' : 'text-warning'">
         <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
@@ -442,3 +497,52 @@
 </ng-template>
 
 <app-preparar-telefono [(abierto)]="guiaTelefono" />
+
+<!-- Un botón de "Llegada al colegio X" por cada colegio con estudiantes a bordo -->
+<ng-template #llegadasColegio let-grupos let-principal="principal">
+  <div class="grid gap-2">
+    @for (g of grupos; track g.colegio.colegioId; let primero = $first) {
+      <div class="rounded-box border border-base-300 bg-base-100/50 p-3 flex flex-wrap items-center gap-3">
+        <div class="min-w-0 flex-1 basis-48">
+          <p class="font-semibold">{{ g.colegio.nombre }}</p>
+          @if (g.colegio.direccion) {
+            <a class="link link-secondary text-sm" [href]="enlaceMapa(g.colegio.direccion)" target="_blank" rel="noopener">
+              <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i> {{ g.colegio.direccion }}
+            </a>
+          }
+        </div>
+        <button type="button" class="btn h-auto min-h-12 py-2 leading-tight w-full sm:w-auto"
+          [class]="principal && primero ? 'btn-primary' : 'bg-base-300 border-neutral hover:bg-neutral'"
+          [disabled]="procesando()" (click)="entregarEnColegio(g)">
+          <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
+          Llegada al colegio · entregar {{ g.aBordo.length === 1 ? '1' : g.aBordo.length }}
+        </button>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- Un botón por colegio para iniciar su entrega (y "todos" si son varios) -->
+<ng-template #salidasColegio let-grupos let-principal="principal">
+  <div class="grid gap-2">
+    @if (principal && grupos.length > 1) {
+      <button type="button" class="btn btn-primary btn-lg h-auto min-h-14 py-3 leading-tight w-full"
+        [disabled]="procesando() || subenDe(grupos).length === 0" (click)="iniciarSalida(grupos)">
+        <i class="fa-solid fa-check-double" aria-hidden="true"></i> Iniciar la entrega de todos los colegios
+      </button>
+    }
+    @for (g of grupos; track g.colegio.colegioId) {
+      <div class="rounded-box border border-base-300 bg-base-100/50 p-3 flex flex-wrap items-center gap-3">
+        <div class="min-w-0 flex-1 basis-48">
+          <p class="font-semibold">{{ g.colegio.nombre }}</p>
+          <p class="text-sm text-base-content/70">{{ g.pendientes.length === 1 ? '1 estudiante' : g.pendientes.length + ' estudiantes' }}</p>
+        </div>
+        <button type="button" class="btn h-auto min-h-12 py-2 leading-tight w-full sm:w-auto"
+          [class]="principal && grupos.length === 1 ? 'btn-primary' : 'bg-base-300 border-neutral hover:bg-neutral'"
+          [disabled]="procesando() || subenDe([g]).length === 0" (click)="iniciarSalida([g])">
+          <i class="fa-solid fa-bus" aria-hidden="true"></i> Iniciar entrega · subieron todos
+        </button>
+      </div>
+    }
+  </div>
+</ng-template>

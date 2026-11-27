@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Descarga RutaRola · Transporte escolar</title>
+  <meta name="description" content="Descarga la app RutaRola: sigue la ruta escolar en vivo, avisa ausencias y revisa tus pagos. Para familias, conductores, monitoras y empresas de transporte escolar.">
+  <meta name="theme-color" content="#111827">
+  <link rel="canonical" href="https://rutarola.com/descargar">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .descargar { padding: 2rem 0 3rem; }
+    .descargar h1 { margin-bottom: .5rem; }
+    .descargar__opciones { display: grid; gap: 1rem; margin: 1.5rem 0; }
+    .descargar__opcion { border: 1px solid #374151; border-radius: 1rem; padding: 1.25rem; background: #1f2937; }
+    .descargar__opcion h2 { margin: 0 0 .35rem; font-size: 1.15rem; }
+    .descargar__opcion p { margin: 0 0 1rem; color: #d1d5db; }
+    .descargar__acciones { display: flex; flex-wrap: wrap; gap: .75rem; }
+    .descargar__destacada { border-color: #facc15; }
+    @media (min-width: 48rem) { .descargar__opciones { grid-template-columns: 1fr 1fr; } .descargar__destacada { grid-column: 1 / -1; } }
+  </style>
+</head>
+<body>
+  <header class="legal-cabecera">
+    <div class="contenedor contenedor--angosto">
+      <a href="/" class="marca" aria-label="RutaRola, inicio"><img src="/img/logo.png" alt="RutaRola" width="119" height="80"></a>
+      <div class="legal-cabecera__acciones">
+        <a class="boton boton--borde" href="/">Conoce RutaRola</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="descargar">
+    <div class="contenedor contenedor--angosto">
+      <h1>Descarga RutaRola</h1>
+      <p>La app del transporte escolar: mira dónde va la ruta, sabe cuándo subió y llegó tu hijo, avisa si no va y revisa tus pagos.</p>
+
+      <div class="descargar__opciones">
+        <article class="descargar__opcion descargar__destacada" id="opcion-android">
+          <h2><i class="fa-brands fa-android" aria-hidden="true"></i> En tu celular Android</h2>
+          <p data-play-texto>Muy pronto en Google Play. Mientras tanto, úsala desde el navegador: funciona igual.</p>
+          <div class="descargar__acciones">
+            <a class="boton boton--play" data-google-play href="https://app.rutarola.com/">
+              <i class="fa-brands fa-google-play" aria-hidden="true"></i>
+              <span><small data-play-linea>Próximamente en</small><b>Google Play</b></span>
+            </a>
+            <a class="boton boton--borde" href="https://app.rutarola.com/">Abrir en el navegador</a>
+          </div>
+        </article>
+
+        <article class="descargar__opcion" id="opcion-iphone">
+          <h2><i class="fa-brands fa-apple" aria-hidden="true"></i> En iPhone</h2>
+          <p>Abre app.rutarola.com en Safari, toca <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Compartir y luego
+            “Agregar a inicio”: queda como una app.</p>
+          <div class="descargar__acciones">
+            <a class="boton boton--primario" href="https://app.rutarola.com/">Abrir RutaRola</a>
+          </div>
+        </article>
+
+        <article class="descargar__opcion" id="opcion-computador">
+          <h2><i class="fa-solid fa-desktop" aria-hidden="true"></i> En el computador</h2>
+          <p>Entra a app.rutarola.com con tu usuario. En Chrome o Edge puedes instalarla con el ícono de instalar de la barra de direcciones.</p>
+          <div class="descargar__acciones">
+            <a class="boton boton--primario" href="https://app.rutarola.com/">Ingresar</a>
+          </div>
+        </article>
+      </div>
+
+      <p><strong>¿Ya eres cliente de una empresa de transporte escolar?</strong> Tu usuario y tu contraseña te los entrega tu empresa:
+        con ellos ves la ruta en vivo, los avisos y tus pagos.</p>
+      <p><strong>¿Tienes una empresa de transporte escolar?</strong> <a href="/#planes">Conoce los planes</a> y empieza gratis.</p>
+    </div>
+  </main>
+
+  <script>
+    // Igual que GOOGLE_PLAY en sitio.js: cambiar los dos al publicar la app.
+    const GOOGLE_PLAY = { publicada: false, url: 'https://play.google.com/store/apps/details?id=co.rutarola.app' };
+    const android = /android/i.test(navigator.userAgent);
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (GOOGLE_PLAY.publicada) {
+      for (const boton of document.querySelectorAll('[data-google-play]')) {
+        boton.href = GOOGLE_PLAY.url;
+        boton.querySelector('[data-play-linea]').textContent = 'Disponible en';
+      }
+      document.querySelector('[data-play-texto]').textContent = 'Descárgala gratis en Google Play.';
+      // Desde el QR en un Android: directo a la tienda.
+      if (android && !new URLSearchParams(location.search).has('quedarse')) location.replace(GOOGLE_PLAY.url);
+    }
+    // Primero la opción del equipo de quien abre la página.
+    const primera = document.getElementById(ios ? 'opcion-iphone' : android ? 'opcion-android' : 'opcion-computador');
+    primera.parentElement.prepend(primera);
+    primera.classList.add('descargar__destacada');
+    if (primera.id !== 'opcion-android') document.getElementById('opcion-android').classList.remove('descargar__destacada');
+  </script>
+</body>
+</html>

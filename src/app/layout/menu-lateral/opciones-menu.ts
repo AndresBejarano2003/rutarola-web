@@ -80,5 +80,6 @@ export const MENU_OPERATIVO: OpcionMenu[] = [
 
 export const MENU_SISTEMA: OpcionMenu[] = [
   { icono: 'fa-solid fa-headset', etiqueta: 'Centro de Ayuda', ruta: '/sistema/soporte' },
+  { icono: 'fa-solid fa-bullhorn', etiqueta: 'Publicidad', ruta: '/sistema/publicidad' },
   { icono: 'fa-solid fa-crown', etiqueta: 'Planes y Membresías', ruta: '/sistema/membership' },
 ];

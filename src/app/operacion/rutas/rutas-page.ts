@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { EstudiantesRepositorio } from 'src/app/personas/estudiantes/estudiantes-repositorio';
 import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repositorio';
@@ -16,8 +16,9 @@ import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { AsignacionesRepositorio } from '../asignaciones/asignaciones-repositorio';
 import { ColegiosRepositorio } from '../colegios/colegios-repositorio';
 import { VehiculosRepositorio } from '../vehiculos/vehiculos-repositorio';
-import { FiltrosRuta, Ruta, etiquetaRuta } from './ruta';
-import { RutaFormulario } from './ruta-formulario/ruta-formulario';
+import { FILTROS_RUTA_VACIOS, FiltrosRuta, Ruta, etiquetaRuta } from './ruta';
+import { ColegiosRuta, EstudiantesColegio, RutaFormulario } from './ruta-formulario/ruta-formulario';
+import { RutasRepositorio } from './rutas-repositorio';
 import { RutasFiltros } from './rutas-filtros/rutas-filtros';
 import { RutasStore } from './rutas-store';
 import { RutasTabla } from './rutas-tabla/rutas-tabla';
@@ -38,26 +39,90 @@ export default class RutasPage extends PaginaCrud<Ruta, FiltrosRuta> {
   protected readonly colegios = toSignal(inject(ColegiosRepositorio).opciones().pipe(catchError(() => of([]))), { initialValue: [] });
   protected readonly nombresColegio = computed(() => aMapa(this.colegios()));
 
-  /** Colegio y jornada elegidos en el formulario. */
-  protected readonly filtroEstudiantes = signal({ colegioId: '', jornada: '' });
-  /** Todos los estudiantes del colegio (nombres de los que ya iban en la ruta). */
-  protected readonly estudiantesColegio = toSignal(
-    toObservable(computed(() => this.filtroEstudiantes().colegioId)).pipe(
-      switchMap((colegioId) =>
-        colegioId ? this.estudiantesRepo.opciones({ colegioId }).pipe(catchError(() => of([]))) : of([]),
-      ),
+  private readonly colegiosRepo = inject(ColegiosRepositorio);
+  private readonly rutasRepo = inject(RutasRepositorio);
+
+  /** Jornada y colegios elegidos en el formulario. */
+  protected readonly filtroColegios = signal<ColegiosRuta>({ jornada: '', colegioIds: [] });
+  private readonly jornada = computed(() => this.filtroColegios().jornada);
+
+  /** Colegios con cursos en la jornada elegida. */
+  protected readonly colegiosJornada = toSignal(
+    toObservable(this.jornada).pipe(
+      switchMap((jornada) => (jornada ? this.colegiosRepo.opciones({ jornada }).pipe(catchError(() => of([]))) : of([]))),
     ),
     { initialValue: [] },
   );
-  /** Los que se pueden agregar: del colegio y la jornada de la ruta. */
-  protected readonly estudiantesJornada = toSignal(
-    toObservable(this.filtroEstudiantes).pipe(
-      switchMap(({ colegioId, jornada }) =>
-        colegioId && jornada ? this.estudiantesRepo.opciones({ colegioId, jornada }).pipe(catchError(() => of([]))) : of([]),
+
+  /** Estudiantes ya cargados por `colegio|jornada`. */
+  private readonly cacheEstudiantes = signal<ReadonlyMap<string, EstudiantesColegio>>(new Map());
+  protected readonly estudiantesColegios = computed(() => {
+    const { jornada, colegioIds } = this.filtroColegios();
+    const cache = this.cacheEstudiantes();
+    const mapa = new Map<string, EstudiantesColegio>();
+    for (const id of colegioIds) {
+      const datos = cache.get(`${id}|${jornada}`);
+      if (datos) mapa.set(id, datos);
+    }
+    return mapa;
+  });
+
+  /** Estudiantes en OTRA ruta activa de la jornada (no se precargan). */
+  private readonly rutasJornada = toSignal(
+    // Se vuelve a pedir al cambiar la jornada y cada vez que la lista se recarga (p. ej. tras guardar).
+    toObservable(computed(() => ({ jornada: this.jornada(), lista: this.store.items() }))).pipe(
+      switchMap(({ jornada }) =>
+        jornada
+          ? this.rutasRepo.listar({ ...FILTROS_RUTA_VACIOS, jornada, estado: 'ACTIVO' }, SIN_PAGINAR).pipe(
+              map(({ items }) => items),
+              catchError(() => of([] as Ruta[])),
+            )
+          : of([] as Ruta[]),
       ),
     ),
-    { initialValue: [] },
+    { initialValue: [] as Ruta[] },
   );
+  protected readonly ocupados = computed(() => {
+    const actual = this.seleccionado()?.id;
+    const mapa = new Map<string, string>();
+    for (const r of this.rutasJornada()) {
+      if (r.id === actual) continue;
+      for (const id of r.estudianteIds) mapa.set(id, r.codigo);
+    }
+    return mapa;
+  });
+
+  constructor() {
+    super();
+    toObservable(this.filtroColegios)
+      .pipe(
+        switchMap(({ jornada, colegioIds }) => {
+          const cache = this.cacheEstudiantes();
+          const faltan = jornada ? colegioIds.filter((id) => !cache.has(`${id}|${jornada}`)) : [];
+          if (!faltan.length) return of([]);
+          return forkJoin(
+            faltan.map((colegioId) =>
+              forkJoin({
+                jornada: this.estudiantesRepo.opciones({ colegioId, jornada }),
+                todos: this.estudiantesRepo.opciones({ colegioId }),
+              }).pipe(
+                catchError(() => of({ jornada: [], todos: [] })),
+                map((datos) => ({ clave: `${colegioId}|${jornada}`, datos })),
+              ),
+            ),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((cargados) => {
+        if (!cargados.length) return;
+        this.cacheEstudiantes.update((cache) => {
+          const copia = new Map(cache);
+          for (const { clave, datos } of cargados) copia.set(clave, datos);
+          return copia;
+        });
+      });
+  }
 
   /** rutaId → "placa · conductor" de la asignación activa (columna Asignación). */
   protected readonly asignaciones = toSignal(

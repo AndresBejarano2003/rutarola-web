@@ -51,7 +51,7 @@ describe('Reglas de negocio de Operación', () => {
     const nueva: DatosRegistro<Ruta> = {
       codigo: 'R-99',
       nombre: 'Prueba',
-      colegioId: 'col-5',
+      colegioIds: ['col-5'],
       jornada: 'Mañana',
       sector: 'Centro',
       estudianteIds: ['est-1'],
@@ -66,7 +66,7 @@ describe('Reglas de negocio de Operación', () => {
     const datos: DatosRegistro<Ruta> = {
       codigo: 'R-01',
       nombre: 'Nueva',
-      colegioId: 'col-5',
+      colegioIds: ['col-5'],
       jornada: 'Mañana',
       sector: 'Centro',
       estudianteIds: [],

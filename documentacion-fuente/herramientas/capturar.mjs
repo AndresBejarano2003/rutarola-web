@@ -37,6 +37,7 @@ const CAPTURAS = [
   ['general-configuracion', 'admin', '/inicio/configuracion', ESCRITORIO],
   ['general-ayuda', 'admin', '/sistema/soporte', ESCRITORIO],
   ['general-planes', 'admin', '/sistema/membership', ESCRITORIO],
+  ['general-publicidad', 'admin', '/sistema/publicidad', ESCRITORIO, [clic('button.card', 'Adhesivo')]],
   // Estudiantes
   ['estudiantes-lista', 'admin', '/personas/estudiantes', ESCRITORIO],
   ['estudiantes-nuevo', 'admin', '/personas/estudiantes', ESCRITORIO, [abrirNuevo]],

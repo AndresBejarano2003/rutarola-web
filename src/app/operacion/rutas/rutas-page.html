@@ -2,7 +2,7 @@
 
 <section class="mt-6 card bg-base-200 border border-base-300 shadow-xl">
   <div class="card-body">
-    <app-encabezado-listado titulo="Lista de rutas" descripcion="Recorridos por colegio y jornada, con los estudiantes que transporta cada uno."
+    <app-encabezado-listado titulo="Lista de rutas" descripcion="Recorridos por jornada, con los colegios que atiende cada uno y sus estudiantes en orden de recogida."
       [cargando]="store.cargando()" [total]="store.total()" [modoLocal]="store.modoLocal" [error]="store.error()"
       textoNuevo="Nueva ruta" (nuevo)="nuevo()" (reintentar)="store.recargar()" />
 
@@ -24,8 +24,8 @@
         </div>
       }
       <app-ruta-formulario idFormulario="form-ruta" [modo]="modo()" [ruta]="seleccionado()" [colegios]="colegios()"
-        [estudiantes]="estudiantesJornada()" [estudiantesColegio]="estudiantesColegio()"
-        (filtroEstudiantesCambiado)="filtroEstudiantes.set($event)" (guardar)="guardar($event)" />
+        [colegiosJornada]="colegiosJornada()" [estudiantesColegios]="estudiantesColegios()" [ocupados]="ocupados()"
+        (colegiosCambiados)="filtroColegios.set($event)" (guardar)="guardar($event)" />
     </div>
   }
   @if (modalAbierto()) {

@@ -33,6 +33,7 @@ import {
   ordenarParadas,
   puedeReordenar,
   reordenarParadas,
+  reordenarSegunRuta,
   resumirRecorrido,
 } from './recorrido';
 import { CLAVE_AVISOS_AUSENCIA, aParada, avisoAplica, escribirAvisos, leerAvisos } from './avisos-ausencia';
@@ -80,7 +81,10 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
             .flatMap((a): RutaAsignada[] => {
               const ruta = rutas.get(a.rutaId);
               if (!ruta || ruta.estado !== 'ACTIVO') return [];
-              const colegio = colegios.get(ruta.colegioId);
+              const deLaRuta = ruta.colegioIds.flatMap((id) => {
+                const c = colegios.get(id);
+                return c ? [{ colegioId: c.id, nombre: c.razonSocial, direccion: c.direccion }] : [];
+              });
               const rol = a.conductorId === empleadoId ? 'CONDUCTOR' : 'MONITORA';
               const otro = empleados.get(rol === 'CONDUCTOR' ? a.monitoraId : a.conductorId);
               return [
@@ -90,8 +94,9 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                   ruta: etiquetaRuta(ruta),
                   jornada: ruta.jornada,
                   sector: ruta.sector,
-                  colegio: colegio?.razonSocial ?? '',
-                  direccionColegio: colegio?.direccion ?? '',
+                  colegio: deLaRuta.map((c) => c.nombre).join(' · '),
+                  direccionColegio: deLaRuta.length === 1 ? deLaRuta[0].direccion : '',
+                  colegios: deLaRuta,
                   vehiculo: vehiculos.get(a.vehiculoId)?.placa ?? '',
                   rol,
                   companero: otro
@@ -169,8 +174,10 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
             estudiantes: this.estudiantes.listar(FILTROS_ESTUDIANTE_VACIOS, SIN_PAGINAR),
             acudientes: this.acudientes.listar(FILTROS_ACUDIENTE_VACIOS, SIN_PAGINAR),
             empleados: this.empleados.listar(FILTROS_EMPLEADO_VACIOS, SIN_PAGINAR),
+            colegios: this.colegios.listar(FILTROS_COLEGIO_VACIOS, SIN_PAGINAR),
           }).pipe(
-            switchMap(({ asignacion, ruta, estudiantes, acudientes, empleados }) => {
+            switchMap(({ asignacion, ruta, estudiantes, acudientes, empleados, colegios }) => {
+              const colegioPorId = new Map(colegios.items.map((c) => [c.id, c]));
               const estudiantePorId = new Map(estudiantes.items.map((e) => [e.id, e]));
               const acudientePorId = new Map(acudientes.items.map((a) => [a.id, a]));
               const empleadoPorId = new Map(empleados.items.map((e) => [e.id, e]));
@@ -193,6 +200,9 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                   horaAbordo: null,
                   horaEntrega: null,
                   motivoAusencia: '',
+                  colegioId: e.colegioId,
+                  colegio: colegioPorId.get(e.colegioId)?.razonSocial ?? '',
+                  direccionColegio: colegioPorId.get(e.colegioId)?.direccion ?? '',
                 };
               });
               // Quien en la recogida de hoy quedó "No asiste hoy" no está en el colegio: la entrega lo trae ausente.
@@ -218,7 +228,10 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
                 ruta: asignada.ruta,
                 jornada: asignada.jornada,
                 colegio: asignada.colegio,
-                direccionColegio: asignada.direccionColegio,
+                direccionColegio: asignada.direccionColegio || (paradas[0]?.direccionColegio ?? ''),
+                colegios: paradas
+                  .map((p) => ({ colegioId: p.colegioId ?? '', nombre: p.colegio ?? '', direccion: p.direccionColegio ?? '' }))
+                  .filter((c, i, lista) => lista.findIndex((x) => x.colegioId === c.colegioId) === i),
                 vehiculo: asignada.vehiculo,
                 conductorId: asignacion.conductorId,
                 conductor: conductor ? nombreCompleto(conductor) : '',
@@ -313,6 +326,23 @@ export class RecorridosLocal extends RecorridosRepositorio implements FuenteLoca
         throw new ErrorCrud((error as Error).message, 'DUPLICADO');
       }
     });
+  }
+
+  /**
+   * El administrador cambió el orden de recogida de la ruta (lo llama `RutasLocal`): los recorridos EN CURSO
+   * reordenan lo que les falta, como `ServicioRecorridos.AplicarOrdenDeRutaAsync`. El personal lo ve en `observar`.
+   */
+  aplicarOrdenDeRuta(rutaId: string, orden: string[], nombre: string): void {
+    const ahora = new Date().toISOString();
+    let cambio = false;
+    const registros = this.leer().map((r) => {
+      if (r.rutaId !== rutaId || r.estado !== 'EN_CURSO') return r;
+      const paradas = reordenarSegunRuta(r, orden);
+      if (!paradas) return r;
+      cambio = true;
+      return { ...r, paradas, ordenActualizado: { empleadoId: '', nombre, hora: ahora }, fechaActualizacion: ahora };
+    });
+    if (cambio) this.escribir(registros);
   }
 
   /**

@@ -43,7 +43,12 @@ import { Ruta } from '../ruta';
                     </div>
                   </div>
                 </td>
-                <td class="hidden @3xl:table-cell text-base-content/90">{{ nombresColegio().get(ruta.colegioId) ?? '—' }}</td>
+                <td class="hidden @3xl:table-cell text-base-content/90" [title]="colegiosDe(ruta)">
+                  {{ nombresColegio().get(ruta.colegioIds[0]) ?? '—' }}
+                  @if (ruta.colegioIds.length > 1) {
+                    <span class="badge badge-sm bg-base-300 ml-1">+{{ ruta.colegioIds.length - 1 }}</span>
+                  }
+                </td>
                 <td class="hidden @3xl:table-cell">{{ ruta.jornada }}</td>
                 <td class="whitespace-nowrap"><i class="fa-solid fa-children text-xs text-base-content/70"></i> {{ ruta.estudianteIds.length }}</td>
                 <td class="hidden @6xl:table-cell">
@@ -75,6 +80,11 @@ import { Ruta } from '../ruta';
 export class RutasTabla {
   readonly rutas = input.required<Ruta[]>();
   readonly nombresColegio = input<ReadonlyMap<string, string>>(new Map());
+
+  /** Todos los colegios de la ruta (tooltip de la columna). */
+  protected colegiosDe(ruta: Ruta): string {
+    return ruta.colegioIds.map((id) => this.nombresColegio().get(id) ?? '').filter(Boolean).join(', ');
+  }
   /** rutaId → "placa · conductor" de la asignación activa. */
   readonly asignaciones = input<ReadonlyMap<string, string>>(new Map());
   readonly cargando = input(false);

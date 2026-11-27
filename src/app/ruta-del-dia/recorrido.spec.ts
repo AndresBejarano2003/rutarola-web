@@ -3,7 +3,21 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/core/auth';
 import { repositoriosDePrueba } from 'src/app/shared/pruebas/pruebas';
 import { fechaIso } from 'src/app/shared/fechas/fechas';
-import { Parada, cambiarEstado, motivoNoFinalizar, moverEnLista, nombreAusencia, puedeReordenar, reordenarParadas, reportaUbicacion, siguientePaso } from './recorrido';
+import {
+  Parada,
+  cambiarEstado,
+  colegiosPorRecoger,
+  llegadasListas,
+  motivoNoFinalizar,
+  moverEnLista,
+  nombreAusencia,
+  puedeReordenar,
+  reordenarParadas,
+  reordenarSegunRuta,
+  reportaUbicacion,
+  siguientePaso,
+} from './recorrido';
+import { RutasRepositorio } from 'src/app/operacion/rutas/rutas-repositorio';
 import { RecorridosRepositorio } from './recorridos-repositorio';
 
 const parada = (id: string, estado: Parada['estado'] = 'PENDIENTE'): Parada => ({
@@ -13,7 +27,7 @@ const parada = (id: string, estado: Parada['estado'] = 'PENDIENTE'): Parada => (
 describe('Reglas del recorrido', () => {
   it('recogida: recoger en orden y luego entregar a todos en el colegio', () => {
     expect(siguientePaso({ trayecto: 'RECOGIDA', paradas: [parada('a', 'A_BORDO'), parada('b')] })).toMatchObject({ tipo: 'RECOGER', parada: { estudianteId: 'b' } });
-    expect(siguientePaso({ trayecto: 'RECOGIDA', paradas: [parada('a', 'A_BORDO'), parada('b', 'AUSENTE')] })).toEqual({ tipo: 'LLEGADA_COLEGIO', aBordo: 1 });
+    expect(siguientePaso({ trayecto: 'RECOGIDA', paradas: [parada('a', 'A_BORDO'), parada('b', 'AUSENTE')] })).toMatchObject({ tipo: 'LLEGADA_COLEGIO', aBordo: 1 });
     expect(siguientePaso({ trayecto: 'RECOGIDA', paradas: [parada('a', 'ENTREGADO')] })).toEqual({ tipo: 'FINALIZAR' });
   });
 
@@ -34,6 +48,44 @@ describe('Reglas del recorrido', () => {
     expect(cambiarEstado(abordo, 'ENTREGADO', 'T2')).toMatchObject({ horaAbordo: 'T1', horaEntrega: 'T2' });
     expect(() => cambiarEstado(parada('a'), 'ENTREGADO', 'T')).toThrow('no se puede pasar');
     expect(() => cambiarEstado(parada('a', 'AUSENTE'), 'A_BORDO', 'T')).toThrow();
+  });
+});
+
+describe('Ruta con varios colegios', () => {
+  const colegios = [
+    { colegioId: 'A', nombre: 'Colegio A', direccion: 'Calle 1' },
+    { colegioId: 'B', nombre: 'Colegio B', direccion: 'Calle 2' },
+  ];
+  const de = (id: string, colegioId: string, estado: Parada['estado'] = 'PENDIENTE'): Parada => ({ ...parada(id, estado), colegioId });
+
+  it('recogida: un colegio completo se entrega mientras sigue la recogida de los otros', () => {
+    const r = { trayecto: 'RECOGIDA' as const, colegios, paradas: [de('a1', 'A', 'A_BORDO'), de('b1', 'B', 'A_BORDO'), de('a2', 'A')] };
+    expect(siguientePaso(r)).toMatchObject({ tipo: 'RECOGER', parada: { estudianteId: 'a2' } });
+    expect(llegadasListas(r).map((g) => g.colegio.colegioId)).toEqual(['B']);
+    // Recogidos todos: un botón de llegada por colegio con estudiantes a bordo.
+    const fin = { ...r, paradas: [de('a1', 'A', 'A_BORDO'), de('b1', 'B', 'ENTREGADO'), de('a2', 'A', 'A_BORDO')] };
+    expect(siguientePaso(fin)).toMatchObject({ tipo: 'LLEGADA_COLEGIO', aBordo: 2, grupos: [{ colegio: { colegioId: 'A' } }] });
+  });
+
+  it('entrega: cada colegio espera hasta iniciar su salida y luego se suma a la entrega', () => {
+    const r = { trayecto: 'ENTREGA' as const, colegios, paradas: [de('a2', 'A'), de('b1', 'B'), de('a1', 'A')] };
+    expect(siguientePaso(r)).toMatchObject({ tipo: 'SALIDA_COLEGIOS', grupos: [{ colegio: { colegioId: 'A' } }, { colegio: { colegioId: 'B' } }] });
+    // Salió el A: se entregan los suyos y el B sigue por recoger.
+    const conA = { ...r, paradas: [de('a2', 'A', 'A_BORDO'), de('b1', 'B'), de('a1', 'A', 'A_BORDO')] };
+    expect(siguientePaso(conA)).toMatchObject({ tipo: 'ENTREGAR', parada: { estudianteId: 'a2' } });
+    expect(colegiosPorRecoger(conA).map((g) => g.colegio.colegioId)).toEqual(['B']);
+    // Salió también el B: se une a la entrega en el orden de la ruta (al revés).
+    const ambos = { ...r, paradas: [de('a2', 'A', 'ENTREGADO'), de('b1', 'B', 'A_BORDO'), de('a1', 'A', 'A_BORDO')] };
+    expect(siguientePaso(ambos)).toMatchObject({ tipo: 'ENTREGAR', parada: { estudianteId: 'b1' } });
+    expect(colegiosPorRecoger(ambos)).toEqual([]);
+  });
+
+  it('el orden nuevo de la ruta reordena solo lo que falta (al revés en la entrega)', () => {
+    const recogida = { trayecto: 'RECOGIDA' as const, paradas: [parada('a', 'A_BORDO'), parada('b'), parada('c')] };
+    expect(reordenarSegunRuta(recogida, ['c', 'a', 'b'])?.map((p) => p.estudianteId)).toEqual(['a', 'c', 'b']);
+    expect(reordenarSegunRuta(recogida, ['a', 'b', 'c'])).toBeNull();
+    const entrega = { trayecto: 'ENTREGA' as const, paradas: [parada('c', 'A_BORDO'), parada('b', 'A_BORDO'), parada('a', 'A_BORDO')] };
+    expect(reordenarSegunRuta(entrega, ['b', 'a', 'c'])?.map((p) => p.estudianteId)).toEqual(['c', 'a', 'b']);
   });
 });
 
@@ -134,6 +186,20 @@ describe('RecorridosLocal', () => {
     expect(entrega.paradas.map((p) => p.estudianteId)).toEqual(['est-2', 'est-1']);
     const [hoy] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
     expect(hoy.recorridos.map((x) => [x.trayecto, x.estado])).toEqual([['RECOGIDA', 'FINALIZADO'], ['ENTREGA', 'EN_CURSO']]);
+  });
+
+  it('si el administrador cambia el orden de la ruta, el recorrido en curso lo toma en lo que falta', async () => {
+    entrar('emp-1');
+    const [ruta] = await firstValueFrom(repo.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(repo.iniciar(ruta.asignacionId, 'RECOGIDA'));
+    expect(r.colegios?.length).toBe(1);
+    expect(r.paradas[0].colegioId).toBe('col-5');
+    const rutas = TestBed.inject(RutasRepositorio);
+    const datos = await firstValueFrom(rutas.obtener(ruta.rutaId));
+    await firstValueFrom(rutas.actualizar(ruta.rutaId, { ...datos, estudianteIds: ['est-2', 'est-1'] }));
+    const ahora = await firstValueFrom(repo.obtener(r.id));
+    expect(ahora.paradas.map((p) => p.estudianteId)).toEqual(['est-2', 'est-1']);
+    expect(ahora.ordenActualizado).toMatchObject({ empleadoId: '' });
   });
 
   it('quien no asiste hoy en la recogida llega ausente a la entrega; quien va por su cuenta, no', async () => {

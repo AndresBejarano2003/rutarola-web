@@ -15,31 +15,177 @@
       <input type="text" formControlName="nombre" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('nombre')" placeholder="Ej. Norte" />
     </label>
-    <div app-campo etiqueta="Colegio" requerido [error]="error('colegioId')">
-      <app-selector-busqueda formControlName="colegioId" [opciones]="colegios()" etiqueta="Colegio"
-        [invalido]="!!error('colegioId')" />
-    </div>
     <div app-campo etiqueta="Jornada" requerido [error]="error('jornada')">
       <app-selector-busqueda formControlName="jornada" [opciones]="catalogos.jornadas" etiqueta="Jornada" [invalido]="!!error('jornada')" />
     </div>
-    <label app-campo class="md:col-span-2" etiqueta="Sector / barrios que recorre" requerido [error]="error('sector')">
+    <label app-campo etiqueta="Sector / barrios que recorre" requerido [error]="error('sector')">
       <input type="text" formControlName="sector" class="input input-bordered bg-base-100 border-neutral w-full"
         [class.input-error]="error('sector')" placeholder="Ej. Cedritos, Usaquén, Santa Bárbara" />
     </label>
 
-    <app-titulo-seccion>Estudiantes de la ruta ({{ form.controls.estudianteIds.value.length }})</app-titulo-seccion>
-    <div class="md:col-span-2">
-      @if (form.controls.colegioId.value && form.controls.jornada.value) {
-        <p class="text-xs text-base-content/70 mb-2">
-          <i class="fa-solid fa-filter text-info" aria-hidden="true"></i>
-          Solo aparecen los estudiantes del colegio en la jornada {{ form.controls.jornada.value }}.
-        </p>
-        <app-lista-seleccion formControlName="estudianteIds" [opciones]="opcionesEstudiantes()" etiqueta="Estudiante"
-          placeholder="Buscar estudiante del colegio..." textoVacio="La ruta aún no tiene estudiantes." />
+    <!-- Colegios y sus estudiantes -->
+    <app-titulo-seccion>Colegios y estudiantes ({{ colegioIds().length }} · {{ estudianteIds().length }})</app-titulo-seccion>
+    <div class="md:col-span-2 space-y-3">
+      @if (!jornada()) {
+        <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+          Elige primero la jornada: solo aparecen los colegios que tienen cursos en ella.</p>
       } @else {
-        <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-info text-info"></i> Elige primero el colegio y la jornada para agregar sus estudiantes.</p>
+        @if (!soloLectura()) {
+          <div class="flex flex-wrap items-end gap-2">
+            <div class="flex flex-col flex-1 min-w-56">
+              <span class="label-text text-base-content/90 mb-1">Agregar colegio de la jornada {{ jornada() }}</span>
+              <app-selector-busqueda [opciones]="colegiosDisponibles()" etiqueta="Colegio" placeholder="Buscar colegio..."
+                [invalido]="!!error('colegioIds')" [ngModel]="colegioPorAgregar()" [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="colegioPorAgregar.set($event)" />
+            </div>
+            <button type="button" class="btn btn-secondary" [disabled]="!colegioPorAgregar()" (click)="agregarColegio()">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar colegio
+            </button>
+          </div>
+          <p class="text-xs text-base-content/70">
+            Se cargan todos sus estudiantes de la jornada (menos los que ya van en otra ruta activa); quita los que no van.
+          </p>
+          @if (error('colegioIds'); as e) {
+            <p class="text-sm text-error">{{ e }}</p>
+          }
+        }
+
+        @for (b of bloques(); track b.colegioId) {
+          <div class="rounded-box border border-base-300 bg-base-100/40">
+            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-base-300">
+              <div class="min-w-0">
+                <p class="font-semibold truncate"><i class="fa-solid fa-school text-info" aria-hidden="true"></i> {{ b.nombre }}</p>
+                <p class="text-xs text-base-content/70">{{ b.estudiantes.length === 1 ? '1 estudiante' : b.estudiantes.length + ' estudiantes' }}</p>
+              </div>
+              @if (!soloLectura()) {
+                <div class="flex flex-wrap gap-1">
+                  @if (marcadosDe(b).length) {
+                    <button type="button" class="btn btn-sm btn-soft btn-error" (click)="quitar(marcadosDe(b))">
+                      <i class="fa-solid fa-user-minus" aria-hidden="true"></i> Quitar seleccionados ({{ marcadosDe(b).length }})
+                    </button>
+                  }
+                  <button type="button" class="btn btn-sm btn-ghost text-error" (click)="quitarColegio(b)" [attr.aria-label]="'Quitar ' + b.nombre + ' de la ruta'">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i> Quitar colegio
+                  </button>
+                </div>
+              }
+            </div>
+            @if (b.cargando) {
+              <div class="p-3 space-y-2" aria-busy="true">
+                <div class="skeleton h-4 w-2/3"></div>
+                <div class="skeleton h-4 w-1/2"></div>
+              </div>
+            } @else {
+              @if (b.estudiantes.length) {
+                <div class="@container overflow-x-auto">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr class="bg-base-300 text-base-content/80 text-xs uppercase tracking-wide">
+                        @if (!soloLectura()) {
+                          <th class="w-10">
+                            <input type="checkbox" class="checkbox checkbox-sm" [checked]="todosMarcados(b)"
+                              (change)="alternarTodos(b, $any($event.target).checked)" [attr.aria-label]="'Seleccionar todos los de ' + b.nombre" />
+                          </th>
+                        }
+                        <th>Estudiante</th>
+                        <th class="w-24 text-right">Orden</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (e of b.estudiantes; track e.id) {
+                        <tr class="border-base-300 hover:bg-base-300/50">
+                          @if (!soloLectura()) {
+                            <td>
+                              <input type="checkbox" class="checkbox checkbox-sm" [checked]="marcados().has(e.id)"
+                                (change)="alternar(e.id, $any($event.target).checked)" [attr.aria-label]="'Seleccionar a ' + e.nombre" />
+                            </td>
+                          }
+                          <td class="whitespace-normal">{{ e.nombre }}</td>
+                          <td class="text-right text-base-content/70">{{ estudianteIds().indexOf(e.id) + 1 }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="px-3 py-2 text-sm text-base-content/70">Sin estudiantes de este colegio en la ruta.</p>
+              }
+              @if (!soloLectura() && b.disponibles.length) {
+                <div class="flex flex-col px-3 py-2 border-t border-base-300">
+                  <span class="label-text text-base-content/90 mb-1">Agregar otro estudiante de {{ b.nombre }}</span>
+                  <app-selector-busqueda [opciones]="b.disponibles" etiqueta="Estudiante" placeholder="Buscar estudiante..."
+                    [ngModel]="''" [ngModelOptions]="{ standalone: true }" (ngModelChange)="agregarEstudiante($event)" />
+                </div>
+              }
+            }
+          </div>
+        } @empty {
+          <p class="text-sm text-base-content/70"><i class="fa-solid fa-circle-info text-info" aria-hidden="true"></i>
+            La ruta aún no tiene colegios.</p>
+        }
       }
     </div>
+
+    <!-- Orden de recogida -->
+    @if (estudianteIds().length) {
+      <app-titulo-seccion>Orden de recogida</app-titulo-seccion>
+      <div class="md:col-span-2 space-y-2">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <p class="text-xs text-base-content/70 flex-1 min-w-56">
+            <i class="fa-solid fa-route text-info" aria-hidden="true"></i>
+            Así arranca cada recorrido (la entrega va al revés). Si lo cambias con una ruta en curso, el conductor y la monitora
+            ven el nuevo orden al instante en lo que les falta por recoger o entregar.
+          </p>
+          @if (!soloLectura() && colegioIds().length > 1) {
+            <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral" (click)="agruparPorColegio()">
+              <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Agrupar por colegio
+            </button>
+          }
+        </div>
+        @if (sinColegio().length) {
+          <p role="alert" class="text-sm text-warning">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            {{ sinColegio().length === 1 ? '1 estudiante no es' : sinColegio().length + ' estudiantes no son' }} de los colegios de la ruta
+            ({{ sinColegio()[0].nombre }}…): quítalos o agrega su colegio.
+          </p>
+        }
+        <ol class="divide-y divide-base-300 rounded-box border border-base-300">
+          @for (e of orden(); track e.id; let i = $index, primero = $first, ultimo = $last) {
+            <li class="flex items-center gap-2 px-3 py-1.5">
+              @if (soloLectura()) {
+                <span class="w-7 h-7 rounded-full bg-base-300 grid place-items-center text-sm font-semibold shrink-0">{{ i + 1 }}</span>
+              } @else {
+                <input type="number" min="1" [max]="orden().length" class="input input-sm bg-base-100 border-neutral w-16 shrink-0 text-center"
+                  [value]="i + 1" (change)="moverA(i, $any($event.target).valueAsNumber)" [attr.aria-label]="'Posición de ' + e.nombre" />
+              }
+              <div class="min-w-0 flex-1">
+                <p class="truncate">{{ e.nombre }}</p>
+                @if (colegioIds().length > 1 && e.colegio) {
+                  <p class="text-xs text-base-content/70 truncate">{{ e.colegio }}</p>
+                }
+              </div>
+              @if (!soloLectura()) {
+                <div class="flex shrink-0">
+                  <button type="button" class="btn btn-ghost btn-square btn-sm" [disabled]="primero" (click)="mover(i, -1)"
+                    [attr.aria-label]="'Subir a ' + e.nombre" title="Subir">
+                    <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-square btn-sm" [disabled]="ultimo" (click)="mover(i, 1)"
+                    [attr.aria-label]="'Bajar a ' + e.nombre" title="Bajar">
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-square btn-sm text-error" (click)="quitar([e.id])"
+                    [attr.aria-label]="'Quitar a ' + e.nombre" title="Quitar">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            </li>
+          }
+        </ol>
+        <p class="sr-only" role="status">{{ anuncio() }}</p>
+      </div>
+    }
 
     <app-titulo-seccion>Estado</app-titulo-seccion>
     <div app-campo etiqueta="Estado" requerido [error]="error('estado')">
