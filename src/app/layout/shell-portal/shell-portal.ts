@@ -5,6 +5,9 @@ import { PortalEstado } from 'src/app/portal/portal-estado';
 import { ContenedorNotificaciones } from 'src/app/shared/notificaciones/contenedor-notificaciones';
 import { Avatar } from 'src/app/shared/foto/avatar';
 import { inicialesDe } from 'src/app/shared/foto/foto';
+import { CuentasUnidasEstado } from 'src/app/autenticacion/cuenta/cuentas-unidas/cuentas-unidas-estado';
+import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
+import { mensajeDeError } from 'src/app/shared/crud/crud';
 
 /** Secciones del portal (barra inferior en celular, pestañas en pantallas grandes). */
 export const SECCIONES_PORTAL = [
@@ -26,6 +29,8 @@ export default class ShellPortal implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly estado = inject(PortalEstado);
+  protected readonly cuentas = inject(CuentasUnidasEstado);
+  private readonly avisos = inject(NotificacionesService);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly inicialesDe = inicialesDe;
@@ -34,6 +39,16 @@ export default class ShellPortal implements OnInit {
   ngOnInit(): void {
     void this.estado.cargar();
     this.estado.escuchar(this.destroyRef);
+    void this.cuentas.cargar();
+  }
+
+  /** Cambia a la cuenta de otra empresa unida (recarga el portal con la sesión de esa empresa). */
+  protected async cambiarEmpresa(idUsuario: string): Promise<void> {
+    try {
+      await this.cuentas.entrar(idUsuario);
+    } catch (e) {
+      this.avisos.error(mensajeDeError(e));
+    }
   }
 
   protected salir(): void {

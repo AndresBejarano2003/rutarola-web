@@ -33,6 +33,8 @@ export const DIA_LIMITE_PAGO = 'finanzas.dia_limite_pago';
 export const DIAS_ALERTA_VENCIMIENTO = 'alertas.dias_vencimiento';
 /** Sí/No (1/0): los acudientes ven en el portal la ubicación en vivo del vehículo. */
 export const ACUDIENTES_VEN_UBICACION = 'gps.acudientes_ven_ubicacion';
+/** Sí/No (1/0): los acudientes pueden unir su cuenta con la de otra empresa de transporte (Mi cuenta). */
+export const ACUDIENTES_UNEN_CUENTAS = 'portal.acudientes_unen_cuentas';
 
 /** Un parámetro con mínimo 0 y máximo 1 es un interruptor Sí/No. */
 export function esInterruptor(p: Parametro): boolean {
@@ -63,6 +65,14 @@ export const PARAMETROS_PREDETERMINADOS: Parametro[] = [
     minimo: 0,
     maximo: 1,
   },
+  {
+    clave: ACUDIENTES_UNEN_CUENTAS,
+    descripcion:
+      'Los acudientes pueden unir su cuenta de esta empresa con la de otra empresa de transporte que use RutaRola, para ver a todos sus estudiantes con un solo usuario. Cada empresa sigue viendo solo sus propios datos.',
+    valor: '1',
+    minimo: 0,
+    maximo: 1,
+  },
 ];
 
 /** Nombre corto de cada parámetro en el formulario. */
@@ -70,4 +80,5 @@ export const NOMBRES_PARAMETRO: Partial<Record<string, string>> = {
   [DIA_LIMITE_PAGO]: 'Día límite de pago',
   [DIAS_ALERTA_VENCIMIENTO]: 'Días de alerta de vencimiento',
   [ACUDIENTES_VEN_UBICACION]: 'Los acudientes ven la ubicación en vivo de la ruta',
+  [ACUDIENTES_UNEN_CUENTAS]: 'Los acudientes pueden unir cuentas de varias empresas',
 };

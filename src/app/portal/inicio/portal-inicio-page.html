@@ -50,6 +50,35 @@
       </a>
     </div>
 
+    <!-- Otras empresas (cuentas unidas) -->
+    @if (cuentas.otras().length) {
+      <section class="card bg-base-200 border border-base-300" aria-labelledby="titulo-otras-empresas">
+        <div class="card-body p-4 sm:p-5 gap-3">
+          <h2 id="titulo-otras-empresas" class="text-sm text-info font-semibold uppercase tracking-wide">También en otras empresas</h2>
+          <ul class="flex flex-col gap-2">
+            @for (c of cuentas.otras(); track c.idUsuario) {
+              <li class="flex flex-wrap items-center gap-3">
+                <i class="fa-solid fa-bus text-info" aria-hidden="true"></i>
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium truncate">{{ c.empresa }}</p>
+                  <p class="text-sm text-base-content/70 truncate">{{ c.disponible ? (c.estudiantes.join(', ') || 'Sin estudiantes activos') : c.motivo }}</p>
+                </div>
+                <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral"
+                  [disabled]="!c.disponible || !!cuentas.entrando()" (click)="cambiarEmpresa(c.idUsuario)">
+                  @if (cuentas.entrando() === c.idUsuario) {
+                    <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+                  } @else {
+                    <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                  }
+                  Ver
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+    }
+
     <!-- Hoy en la ruta -->
     <section class="card bg-base-200 border border-base-300">
       <div class="card-body p-4 sm:p-5 gap-3">

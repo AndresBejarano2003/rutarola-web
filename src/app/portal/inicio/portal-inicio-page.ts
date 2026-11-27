@@ -9,6 +9,9 @@ import { PortalEstado } from '../portal-estado';
 import { AvisarAusencia } from '../avisar-ausencia/avisar-ausencia';
 import { MapaRuta } from '../mapa-ruta/mapa-ruta';
 import { Avatar } from 'src/app/shared/foto/avatar';
+import { CuentasUnidasEstado } from 'src/app/autenticacion/cuenta/cuentas-unidas/cuentas-unidas-estado';
+import { NotificacionesService } from 'src/app/shared/notificaciones/notificaciones';
+import { mensajeDeError } from 'src/app/shared/crud/crud';
 
 /** Inicio del portal: cómo va la cuenta, dónde están hoy los estudiantes y los últimos pagos. */
 @Component({
@@ -20,6 +23,9 @@ import { Avatar } from 'src/app/shared/foto/avatar';
 export default class PortalInicioPage {
   protected readonly estado = inject(PortalEstado);
   protected readonly datos = this.estado.datos;
+  /** Otras empresas de transporte donde el acudiente unió su cuenta (Mi cuenta › Mis empresas de transporte). */
+  protected readonly cuentas = inject(CuentasUnidasEstado);
+  private readonly avisos = inject(NotificacionesService);
   protected readonly nombrePeriodo = nombrePeriodo;
   protected readonly fechaCorta = fechaCorta;
   protected readonly trayectos: Trayecto[] = ['RECOGIDA', 'ENTREGA'];
@@ -45,5 +51,13 @@ export default class PortalInicioPage {
 
   protected medio(id: MedioPago): string {
     return MEDIOS_PAGO.find((m) => m.id === id)?.nombre ?? id;
+  }
+
+  protected async cambiarEmpresa(idUsuario: string): Promise<void> {
+    try {
+      await this.cuentas.entrar(idUsuario);
+    } catch (e) {
+      this.avisos.error(mensajeDeError(e));
+    }
   }
 }

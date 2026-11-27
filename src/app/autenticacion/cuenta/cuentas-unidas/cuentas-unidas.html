@@ -1,0 +1,111 @@
+<section class="card bg-base-200 border border-base-300 shadow-xl lg:col-span-2" aria-labelledby="titulo-cuentas-unidas">
+  <div class="card-body gap-4">
+    <div>
+      <h2 id="titulo-cuentas-unidas" class="card-title">Mis empresas de transporte</h2>
+      <p class="text-sm text-base-content/70">
+        ¿Tus estudiantes van con varias empresas que usan RutaRola? Une la cuenta que te dio cada una y cambia de empresa
+        sin volver a escribir la contraseña. Cada empresa sigue viendo solo sus propios datos.
+      </p>
+    </div>
+
+    @if (estado.cargando() && !estado.cuentas().length) {
+      <div class="skeleton h-16 w-full"></div>
+    } @else {
+      <ul class="flex flex-col gap-2">
+        @for (c of estado.cuentas(); track c.idUsuario) {
+          <li class="rounded-box border border-base-300 bg-base-100 p-3 flex flex-wrap items-center gap-3">
+            <div class="rounded-full bg-info/15 text-info size-10 shrink-0 grid place-items-center">
+              <i class="fa-solid fa-bus" aria-hidden="true"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold flex flex-wrap items-center gap-2">
+                <span class="truncate">{{ c.empresa }}</span>
+                @if (c.actual) {
+                  <span class="badge badge-soft badge-success badge-sm">Estás aquí</span>
+                }
+              </p>
+              <p class="text-sm text-base-content/70 truncate">
+                Usuario <span class="font-mono">{{ c.usuario }}</span>
+                @if (c.estudiantes.length) {
+                  · {{ c.estudiantes.join(', ') }}
+                }
+              </p>
+              @if (!c.disponible) {
+                <p class="text-sm text-warning">{{ c.motivo }}</p>
+              }
+            </div>
+            @if (estado.cuentas().length > 1) {
+              <div class="flex flex-wrap gap-2">
+                @if (!c.actual) {
+                  <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral"
+                    [disabled]="!c.disponible || !!estado.entrando()" (click)="entrar(c)">
+                    @if (estado.entrando() === c.idUsuario) {
+                      <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+                    } @else {
+                      <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                    }
+                    Entrar
+                  </button>
+                }
+                <button type="button" class="btn btn-sm btn-ghost text-error" (click)="porSeparar.set(c)"
+                  [attr.aria-label]="'Separar la cuenta de ' + c.empresa">
+                  <i class="fa-solid fa-link-slash" aria-hidden="true"></i> Separar
+                </button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (formularioAbierto()) {
+      <form class="rounded-box border border-base-300 p-4 flex flex-col gap-4" [formGroup]="form" (ngSubmit)="unir()" novalidate>
+        <h3 class="text-sm text-info font-semibold uppercase tracking-wide">Unir otra cuenta</h3>
+        <p class="text-sm text-base-content/70">Escribe el usuario y la contraseña que te dio la OTRA empresa de transporte.</p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label app-campo etiqueta="Usuario de la otra cuenta" requerido [error]="error('usuario')">
+            <input type="text" formControlName="usuario" autocomplete="off" autocapitalize="none" spellcheck="false"
+              class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!error('usuario')" />
+          </label>
+          <label app-campo etiqueta="Contraseña de la otra cuenta" requerido [error]="error('contrasena')">
+            <input type="password" formControlName="contrasena" autocomplete="off"
+              class="input input-bordered bg-base-100 border-neutral w-full" [class.input-error]="!!error('contrasena')" />
+          </label>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2">
+          <button type="button" class="btn btn-ghost" [disabled]="uniendo()" (click)="formularioAbierto.set(false); form.reset()">Cancelar</button>
+          <button type="submit" class="btn bg-base-300 border-neutral hover:bg-neutral" [disabled]="uniendo()">
+            @if (uniendo()) {
+              <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+            } @else {
+              <i class="fa-solid fa-link" aria-hidden="true"></i>
+            }
+            Unir cuenta
+          </button>
+        </div>
+      </form>
+    } @else {
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        @if (estado.modoLocal) {
+          <p class="text-sm text-base-content/70">Modo local: hay una sola empresa, así que no hay cuentas que unir.</p>
+        }
+        <button type="button" class="btn btn-sm bg-base-300 border-neutral hover:bg-neutral ms-auto" (click)="formularioAbierto.set(true)">
+          <i class="fa-solid fa-link" aria-hidden="true"></i> Unir otra cuenta
+        </button>
+      </div>
+    }
+  </div>
+</section>
+
+<app-dialogo-confirmacion
+  [abierto]="!!porSeparar()"
+  (abiertoChange)="!$event && porSeparar.set(null)"
+  titulo="Separar cuenta"
+  [mensaje]="
+    porSeparar()?.actual
+      ? 'Tu cuenta de esta empresa dejará de estar unida a las demás. Podrás volver a unirlas cuando quieras.'
+      : 'La cuenta de ' + (porSeparar()?.empresa ?? '') + ' dejará de estar unida a esta. Podrás volver a unirlas cuando quieras.'
+  "
+  textoConfirmar="Separar"
+  [procesando]="separando()"
+  (confirmar)="confirmarSeparar()" />

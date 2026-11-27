@@ -103,5 +103,9 @@
     </form>
   </section>
 
+  @if (sesion()?.rol === 'ACUDIENTE') {
+    <app-cuentas-unidas class="contents" />
+  }
+
   <app-instalar-app />
 </div>

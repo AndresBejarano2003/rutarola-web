@@ -12,6 +12,7 @@ import { NotificacionesService } from 'src/app/shared/notificaciones/notificacio
 import { AutenticacionRepositorio, PerfilUsuario } from '../autenticacion-repositorio';
 import { CampoFoto } from 'src/app/shared/foto/campo-foto';
 import { inicialesDe } from 'src/app/shared/foto/foto';
+import { CuentasUnidas } from './cuentas-unidas/cuentas-unidas';
 
 /**
  * "Mi cuenta" de cualquier tipo de usuario (administrador, conductor/monitora, acudiente, plataforma): sus
@@ -22,7 +23,7 @@ import { inicialesDe } from 'src/app/shared/foto/foto';
 @Component({
   selector: 'app-cuenta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, Campo, CampoFoto, InstalarApp],
+  imports: [ReactiveFormsModule, Campo, CampoFoto, InstalarApp, CuentasUnidas],
   templateUrl: './cuenta-page.html',
 })
 export default class CuentaPage implements OnInit {

@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
+import { CuentasUnidasEstado } from '../autenticacion/cuenta/cuentas-unidas/cuentas-unidas-estado';
 import { PortalEstado } from './portal-estado';
 
 /** Portal del acudiente (layout `shell-portal`, solo lectura). */
 export default [
   {
     path: '',
-    providers: [PortalEstado],
+    providers: [PortalEstado, CuentasUnidasEstado],
     loadComponent: () => import('../layout/shell-portal/shell-portal'),
     children: [
       { path: '', loadComponent: () => import('./inicio/portal-inicio-page'), data: { breadcrumb: ['Inicio'] } },

@@ -8,7 +8,7 @@ import { FILTROS_EMPLEADO_VACIOS } from 'src/app/personas/empleados/empleado';
 import { EmpleadosRepositorio } from 'src/app/personas/empleados/empleados-repositorio';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
 import { FuenteLocal, SIN_PAGINAR } from 'src/app/shared/crud/repositorio-local';
-import { AutenticacionRepositorio, DatosPerfil, PerfilUsuario, SolicitudRegistro } from './autenticacion-repositorio';
+import { AutenticacionRepositorio, CuentaUnida, DatosPerfil, PerfilUsuario, SolicitudRegistro } from './autenticacion-repositorio';
 import { ADMIN_LOCAL, contrasenaDe, guardarCredencial, normalizarUsuario } from './credenciales-local';
 
 export const MENSAJE_CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos.';
@@ -25,6 +25,8 @@ function perfilAdmin(): PerfilAdmin {
     return base;
   }
 }
+
+const MENSAJE_SOLO_API = 'Unir cuentas de varias empresas de transporte necesita el servidor: en modo local hay una sola empresa.';
 
 /**
  * Login TEMPORAL mientras no existe el API. El usuario es único en todo el sistema y define el rol:
@@ -128,6 +130,29 @@ export class AutenticacionLocal extends AutenticacionRepositorio implements Fuen
       throw new ErrorCrud('No hay espacio en este navegador para guardar la foto.', 'SIN_ESPACIO');
     }
     return { nombre, correo, imagen: perfil.foto };
+  }
+
+  /** Modo local = una sola empresa: solo existe la cuenta propia. */
+  cuentasUnidas(): Observable<CuentaUnida[]> {
+    return defer(() => {
+      const s = this.sesionActual();
+      return of([{
+        idUsuario: s.usuario, usuario: s.usuario, nombre: s.nombre, idEmpresa: s.empresa?.id ?? 'local', empresa: s.empresa?.nombre ?? 'Modo local',
+        actual: true, disponible: true, motivo: '', estudiantes: [],
+      }]);
+    });
+  }
+
+  unirCuenta(_usuario: string, _contrasena: string): Observable<CuentaUnida[]> {
+    return throwError(() => new ErrorCrud(MENSAJE_SOLO_API, 'VALIDACION'));
+  }
+
+  separarCuenta(_idUsuario: string): Observable<CuentaUnida[]> {
+    return throwError(() => new ErrorCrud(MENSAJE_SOLO_API, 'VALIDACION'));
+  }
+
+  entrarACuenta(_idUsuario: string): Observable<Sesion> {
+    return throwError(() => new ErrorCrud(MENSAJE_SOLO_API, 'VALIDACION'));
   }
 
   private sesionActual(): Sesion {

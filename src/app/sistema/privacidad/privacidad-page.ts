@@ -6,7 +6,7 @@ export const RESPONSABLE_DATOS = {
   nombre: 'Andrés Felipe Bejarano Acero',
   correo: 'andresf.bejarano@gmail.com',
   ciudad: 'Bogotá D.C., Colombia',
-  vigencia: '25 de noviembre de 2026',
+  vigencia: '26 de noviembre de 2026',
 } as const;
 
 /**

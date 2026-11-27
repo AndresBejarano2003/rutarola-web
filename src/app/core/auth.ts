@@ -105,6 +105,14 @@ export class AuthService {
     this._sesion.set(sesion);
   }
 
+  /** Sesión de otra cuenta unida (otra empresa): queda donde estaba la actual ("Recordarme" o solo la pestaña). */
+  cambiarSesion(sesion: Sesion): void {
+    const almacen = almacenDeSesion() ?? sessionStorage;
+    borrarSesion();
+    guardar(almacen, sesion);
+    this._sesion.set(sesion);
+  }
+
   /** Tokens nuevos tras `/auth/refresh`: se guardan donde ya estaba la sesión ("Recordarme" o solo la pestaña). */
   actualizarTokens(tokens: TokensSesion): void {
     const actual = this._sesion();

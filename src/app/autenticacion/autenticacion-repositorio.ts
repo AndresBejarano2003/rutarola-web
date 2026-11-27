@@ -26,6 +26,31 @@ export abstract class AutenticacionRepositorio {
    * cambia también su nombre; conductores, monitoras y acudientes, su teléfono (obligatorio), correo y foto.
    */
   abstract actualizarPerfil(datos: DatosPerfil): Observable<Pick<Sesion, 'nombre' | 'correo' | 'imagen'>>;
+  /** Cuentas de acudiente unidas a la de la sesión (en otras empresas de transporte), la actual incluida. */
+  abstract cuentasUnidas(): Observable<CuentaUnida[]>;
+  /** Une la cuenta de OTRA empresa escribiendo su usuario y contraseña. Devuelve el grupo actualizado. */
+  abstract unirCuenta(usuario: string, contrasena: string): Observable<CuentaUnida[]>;
+  /** Saca una cuenta del grupo (la propia u otra). */
+  abstract separarCuenta(idUsuario: string): Observable<CuentaUnida[]>;
+  /** Entra a otra cuenta unida sin contraseña: sesión de esa empresa (la actual se cierra en el servidor). */
+  abstract entrarACuenta(idUsuario: string): Observable<Sesion>;
+}
+
+/** `GET /auth/cuentas`: una cuenta de acudiente del grupo. */
+export interface CuentaUnida {
+  idUsuario: string;
+  usuario: string;
+  nombre: string;
+  idEmpresa: string;
+  empresa: string;
+  /** Es la de la sesión. */
+  actual: boolean;
+  /** Se puede entrar (cuenta y empresa activas y la empresa permite unir cuentas). */
+  disponible: boolean;
+  /** Por qué no está disponible. */
+  motivo: string;
+  /** Nombres de sus estudiantes activos en esa empresa. */
+  estudiantes: string[];
 }
 
 /** `GET /auth/perfil`. `editaNombre`: solo administradores (el de las personas es el de su documento). */

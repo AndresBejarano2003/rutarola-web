@@ -84,6 +84,14 @@ export interface RecorridoHoy {
   horaInicio: string | null;
 }
 
+/**
+ * El estudiante va en camino en ese trayecto (el acudiente ve la ubicación): a bordo, o pendiente en la RECOGIDA (el
+ * vehículo va por él). Igual que `AcudientesEnCaminoAsync` del API.
+ */
+export function vaEnCamino(r: RecorridoHoy): boolean {
+  return r.enCurso && (r.estado === 'A_BORDO' || (r.estado === 'PENDIENTE' && r.trayecto === 'RECOGIDA'));
+}
+
 export interface TransporteEstudiante {
   ruta: string;
   jornada: string;

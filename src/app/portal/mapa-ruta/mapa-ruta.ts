@@ -5,7 +5,7 @@ import { GpsRepositorio } from 'src/app/ruta-del-dia/gps/gps-repositorio';
 import { TRAYECTOS } from 'src/app/ruta-del-dia/recorrido';
 import { Mapa, MarcadorMapa } from 'src/app/shared/mapa/mapa';
 import { Modal } from 'src/app/shared/modal/modal';
-import { EstudiantePortal } from '../portal';
+import { EstudiantePortal, vaEnCamino } from '../portal';
 import { PortalEstado } from '../portal-estado';
 
 /**
@@ -66,13 +66,12 @@ export class MapaRuta {
   private suscripcion: Subscription | null = null;
 
   /**
-   * El trayecto en curso mientras ESTE estudiante va en camino (por recoger o a bordo). Entregado (en el colegio o en la
-   * casa) o ausente, el resto del recorrido —p. ej. hacia otro colegio— ya no le incumbe: el mapa se cierra y el
+   * El trayecto en curso mientras ESTE estudiante va en camino (`vaEnCamino`: a bordo, o por recoger en la recogida).
+   * Cada estudiante tiene su propio mapa: con dos hermanos en la misma ruta, solo lo ve el que va en camino. Entregado,
+   * ausente o, en la entrega, aún sin subir (p. ej. su colegio no ha iniciado la entrega), el mapa se cierra y el
    * servidor deja de enviarle la ubicación.
    */
-  protected readonly enCurso = computed(
-    () => this.estudiante().hoy.find((r) => r.enCurso && (r.estado === 'PENDIENTE' || r.estado === 'A_BORDO')) ?? null,
-  );
+  protected readonly enCurso = computed(() => this.estudiante().hoy.find(vaEnCamino) ?? null);
   protected readonly subtitulo = computed(() => {
     const r = this.enCurso();
     const t = TRAYECTOS.find((x) => x.id === r?.trayecto)?.nombre ?? '';

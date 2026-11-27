@@ -10,6 +10,7 @@ import PortalEstudiantesPage from './estudiantes/portal-estudiantes-page';
 import PortalInicioPage from './inicio/portal-inicio-page';
 import PortalPagosPage from './pagos/portal-pagos-page';
 import { PortalEstado } from './portal-estado';
+import { CuentasUnidasEstado } from '../autenticacion/cuenta/cuentas-unidas/cuentas-unidas-estado';
 import { PortalRepositorio } from './portal-repositorio';
 import { ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
 import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
@@ -26,7 +27,7 @@ describe('Portal del acudiente', () => {
     sessionStorage.clear();
     simularDialogos();
     vi.useFakeTimers({ now: new Date('2026-11-05T07:00:00'), toFake: ['Date'] });
-    TestBed.configureTestingModule({ providers: [provideRouter([]), PortalEstado, ...repositoriosDePrueba()] });
+    TestBed.configureTestingModule({ providers: [provideRouter([]), PortalEstado, CuentasUnidasEstado, ...repositoriosDePrueba()] });
   });
 
   afterEach(() => vi.useRealTimers());
@@ -117,6 +118,31 @@ describe('Portal del acudiente', () => {
     entrar('ACUDIENTE', 'acu-1');
     await estado.cargar();
     expect(await veces()).toBe(0);
+  });
+
+  it('en la entrega el mapa solo aparece para el estudiante que ya va a bordo', async () => {
+    entrar('CONDUCTOR', 'emp-1');
+    const recorridos = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(recorridos.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(recorridos.iniciar(ruta.asignacionId, 'ENTREGA'));
+
+    entrar('ACUDIENTE', 'acu-1');
+    const estado = TestBed.inject(PortalEstado);
+    const veces = async () => {
+      await estado.cargar();
+      const fixture = TestBed.createComponent(PortalEstudiantesPage);
+      await estabilizar(fixture);
+      const n = ((fixture.nativeElement as HTMLElement).textContent ?? '').split('Ver en el mapa').length - 1;
+      fixture.destroy();
+      return n;
+    };
+    // Aún en el colegio: ninguno va en camino.
+    expect(await veces()).toBe(0);
+
+    entrar('CONDUCTOR', 'emp-1');
+    await firstValueFrom(recorridos.marcar(r.id, ['est-1'], 'A_BORDO'));
+    entrar('ACUDIENTE', 'acu-1');
+    expect(await veces()).toBe(1);
   });
 
   it('las pantallas muestran estudiantes, estado de cuenta y cotizaciones', async () => {

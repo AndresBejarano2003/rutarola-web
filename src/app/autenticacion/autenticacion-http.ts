@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Credenciales, ROLES_USUARIO, RolUsuario, Sesion, TokensSesion } from 'src/app/core/auth';
 import { ErrorCrud } from 'src/app/shared/crud/crud';
-import { AutenticacionRepositorio, DatosPerfil, PerfilUsuario, SolicitudRegistro } from './autenticacion-repositorio';
+import { AutenticacionRepositorio, CuentaUnida, DatosPerfil, PerfilUsuario, SolicitudRegistro } from './autenticacion-repositorio';
 
 /** Respuesta de `POST /auth/login`. */
 export interface RespuestaLogin {
@@ -31,6 +31,11 @@ export interface RespuestaLogin {
  *
  * `GET {apiUrl}/auth/perfil` → `PerfilUsuario`; `PUT {apiUrl}/auth/perfil {nombre, correo, telefono, foto}` →
  * la sesión actualizada (400 foto no válida; 409 correo en uso; 422 falta el teléfono o el nombre).
+ *
+ * Cuentas unidas (solo acudientes; 403 otros roles): `GET /auth/cuentas` → `CuentaUnida[]`; `POST /auth/cuentas
+ * {usuario, contrasena}` → el grupo (422 credenciales incorrectas, misma empresa, inactiva o alguna empresa no lo
+ * permite — `portal.acudientes_unen_cuentas`; 409 ya unida; limitado por IP); `DELETE /auth/cuentas/{idUsuario}` →
+ * el grupo; `POST /auth/cuentas/{idUsuario}/sesion` → `{sesion, tokens}` de esa empresa (cierra la actual).
  */
 @Injectable()
 export class AutenticacionHttp extends AutenticacionRepositorio {
@@ -58,6 +63,22 @@ export class AutenticacionHttp extends AutenticacionRepositorio {
 
   cambiarContrasena(actual: string, nueva: string): Observable<void> {
     return this.http.put<void>(`${environment.apiUrl}/auth/contrasena`, { actual, nueva });
+  }
+
+  cuentasUnidas(): Observable<CuentaUnida[]> {
+    return this.http.get<CuentaUnida[]>(`${environment.apiUrl}/auth/cuentas`);
+  }
+
+  unirCuenta(usuario: string, contrasena: string): Observable<CuentaUnida[]> {
+    return this.http.post<CuentaUnida[]>(`${environment.apiUrl}/auth/cuentas`, { usuario: usuario.trim(), contrasena });
+  }
+
+  separarCuenta(idUsuario: string): Observable<CuentaUnida[]> {
+    return this.http.delete<CuentaUnida[]>(`${environment.apiUrl}/auth/cuentas/${encodeURIComponent(idUsuario)}`);
+  }
+
+  entrarACuenta(idUsuario: string): Observable<Sesion> {
+    return this.http.post<RespuestaLogin>(`${environment.apiUrl}/auth/cuentas/${encodeURIComponent(idUsuario)}/sesion`, null).pipe(map(aSesion));
   }
 }
 

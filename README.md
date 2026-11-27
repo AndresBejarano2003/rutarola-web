@@ -354,7 +354,8 @@ lo obtiene de forma diferida con `Injector.get()` dentro del método, no con `in
 - **Configuración (`inicio/configuracion`):** el administrador edita los datos de contacto de su empresa (el NIT
   y el estado los cambia la plataforma) y los parámetros: **día límite de pago** (1–31, por defecto 5; para
   facturas sin programación), **días de alerta de vencimiento** (1–120, por defecto 30) y el interruptor **"Los
-  acudientes ven la ubicación en vivo de la ruta"** (`gps.acudientes_ven_ubicacion`, 1 = sí por defecto; un
+  acudientes ven la ubicación en vivo de la ruta"** (`gps.acudientes_ven_ubicacion`, 1 = sí por defecto), **"Los acudientes pueden unir cuentas de varias
+  empresas"** (`portal.acudientes_unen_cuentas`, 1 = sí; ver Portal › Cuentas unidas) (un
   parámetro de 0 a 1 se muestra como interruptor Sí/No). Un solo "Guardar cambios"; con el API los aplica el
   servidor en reportes, portal, tablero, notificaciones y conductores. Pestañas (`?seccion=documentos|apariencia`):
   - **Documentos PDF** (`formato-documentos/`): logo (PNG/JPG/WebP/SVG reducido a 600 × 240 px, ≤ 300 KB),
@@ -648,9 +649,20 @@ sale de la sesión/token, nunca de un parámetro: solo ve SUS estudiantes, factu
   ruta va en camino, a bordo desde…, entregado…, no asistió. Se actualiza solo (`PortalRepositorio.observarCambios`:
   el servidor avisa al acudiente de cada cambio del recorrido de sus estudiantes; local: evento `storage`).
 - **Ver en el mapa** (`portal/mapa-ruta`): solo mientras el recorrido de SU estudiante está EN CURSO **y ese estudiante
-  va en camino** (PENDIENTE o A_BORDO); muestra el vehículo en vivo. Cuando lo entregan (en el colegio o en la casa), lo
+  va en camino** (`vaEnCamino`: A_BORDO, o PENDIENTE en la RECOGIDA porque la ruta va por él; en la ENTREGA solo desde
+  que sube); muestra el vehículo en vivo. Cada estudiante tiene su propio mapa: con dos en la misma ruta, el de cada uno
+  se cierra cuando lo entregan a ÉL. Cuando lo entregan (en el colegio o en la casa), lo
   marcan ausente o termina el recorrido, el botón desaparece y el modal se cierra: el resto del recorrido —p. ej. hacia
   otro colegio— no le incumbe, y el API deja de entregarle la ubicación (204 en `gps/ultima`, sin `posicion` en el hub).
+- **Cuentas unidas (acudiente con estudiantes en varias empresas):** cada empresa le sigue dando su propio
+  acudiente y usuario; él los une en **Mi cuenta › Mis empresas de transporte** (`autenticacion/cuenta/cuentas-unidas/`)
+  escribiendo el usuario y la contraseña de la OTRA cuenta, y luego cambia de empresa sin contraseña desde el selector
+  bajo su nombre en el encabezado del portal o desde "También en otras empresas" del Inicio (`CuentasUnidasEstado`,
+  provisto en `portal.routes.ts`; al entrar guarda la sesión de esa empresa con `AuthService.cambiarSesion` y recarga
+  el portal). Puede separarlas cuando quiera. Cada empresa sigue viendo solo sus datos: de las otras cuentas solo se
+  muestran el nombre de la empresa y los de sus propios estudiantes. La empresa lo permite o no con **"Los acudientes
+  pueden unir cuentas de varias empresas"** (`portal.acudientes_unen_cuentas`, 1 por defecto). Solo con el API (modo
+  local = una empresa). Endpoints en `autenticacion-http.ts`.
 
 ### Inicio (`inicio/dashboard/`)
 
