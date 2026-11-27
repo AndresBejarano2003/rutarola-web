@@ -12,7 +12,7 @@ import PortalPagosPage from './pagos/portal-pagos-page';
 import { PortalEstado } from './portal-estado';
 import { CuentasUnidasEstado } from '../autenticacion/cuenta/cuentas-unidas/cuentas-unidas-estado';
 import { PortalRepositorio } from './portal-repositorio';
-import { ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
+import { ACUDIENTES_VEN_ANTES_DE_RECOGER, ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
 import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
 
 describe('Portal del acudiente', () => {
@@ -138,6 +138,32 @@ describe('Portal del acudiente', () => {
     };
     // Aún en el colegio: ninguno va en camino.
     expect(await veces()).toBe(0);
+
+    entrar('CONDUCTOR', 'emp-1');
+    await firstValueFrom(recorridos.marcar(r.id, ['est-1'], 'A_BORDO'));
+    entrar('ACUDIENTE', 'acu-1');
+    expect(await veces()).toBe(1);
+  });
+
+  it('si la empresa no lo permite, en la recogida el mapa aparece solo cuando el estudiante sube', async () => {
+    await firstValueFrom(TestBed.inject(ConfiguracionRepositorio).guardarParametro(ACUDIENTES_VEN_ANTES_DE_RECOGER, '0'));
+    entrar('CONDUCTOR', 'emp-1');
+    const recorridos = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(recorridos.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(recorridos.iniciar(ruta.asignacionId, 'RECOGIDA'));
+
+    entrar('ACUDIENTE', 'acu-1');
+    const estado = TestBed.inject(PortalEstado);
+    const veces = async () => {
+      await estado.cargar();
+      const fixture = TestBed.createComponent(PortalEstudiantesPage);
+      await estabilizar(fixture);
+      const n = ((fixture.nativeElement as HTMLElement).textContent ?? '').split('Ver en el mapa').length - 1;
+      fixture.destroy();
+      return n;
+    };
+    expect(await veces()).toBe(0);
+    expect(estado.datos()?.ubicacionAntesDeRecoger).toBe(false);
 
     entrar('CONDUCTOR', 'emp-1');
     await firstValueFrom(recorridos.marcar(r.id, ['est-1'], 'A_BORDO'));

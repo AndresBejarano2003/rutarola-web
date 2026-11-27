@@ -47,7 +47,7 @@ import { fechaIso } from 'src/app/shared/fechas/fechas';
 import { calcularEstadoCuenta } from './estado-cuenta';
 import { EstudiantePortal, PortalAcudiente, RecorridoHoy } from './portal';
 import { PortalRepositorio } from './portal-repositorio';
-import { ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
+import { ACUDIENTES_VEN_ANTES_DE_RECOGER, ACUDIENTES_VEN_UBICACION } from 'src/app/inicio/configuracion/configuracion';
 import { ConfiguracionRepositorio } from 'src/app/inicio/configuracion/configuracion-repositorio';
 
 /** Arma el portal cruzando los datos locales de todos los módulos (lo que hará `GET /portal`). */
@@ -151,6 +151,7 @@ export class PortalLocal extends PortalRepositorio implements FuenteLocal {
             estudiantes: estudiantes.sort((x, y) => x.estado.localeCompare(y.estado) || x.nombre.localeCompare(y.nombre)),
             ...cuenta,
             ubicacionEnVivo: d.parametros.find((p) => p.clave === ACUDIENTES_VEN_UBICACION)?.valor !== '0',
+            ubicacionAntesDeRecoger: d.parametros.find((p) => p.clave === ACUDIENTES_VEN_ANTES_DE_RECOGER)?.valor !== '0',
             cotizaciones: d.cotizaciones.items
               .filter((c) => c.acudienteId === acudienteId)
               .sort((x, y) => y.fecha.localeCompare(x.fecha))

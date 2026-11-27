@@ -66,12 +66,15 @@ export class MapaRuta {
   private suscripcion: Subscription | null = null;
 
   /**
-   * El trayecto en curso mientras ESTE estudiante va en camino (`vaEnCamino`: a bordo, o por recoger en la recogida).
+   * El trayecto en curso mientras ESTE estudiante va en camino (`vaEnCamino`: a bordo, o por recoger en la recogida si la empresa lo permite — `ubicacionAntesDeRecoger`).
    * Cada estudiante tiene su propio mapa: con dos hermanos en la misma ruta, solo lo ve el que va en camino. Entregado,
    * ausente o, en la entrega, aún sin subir (p. ej. su colegio no ha iniciado la entrega), el mapa se cierra y el
    * servidor deja de enviarle la ubicación.
    */
-  protected readonly enCurso = computed(() => this.estudiante().hoy.find(vaEnCamino) ?? null);
+  protected readonly enCurso = computed(() => {
+    const antes = this.portal?.datos()?.ubicacionAntesDeRecoger ?? true;
+    return this.estudiante().hoy.find((r) => vaEnCamino(r, antes)) ?? null;
+  });
   protected readonly subtitulo = computed(() => {
     const r = this.enCurso();
     const t = TRAYECTOS.find((x) => x.id === r?.trayecto)?.nombre ?? '';

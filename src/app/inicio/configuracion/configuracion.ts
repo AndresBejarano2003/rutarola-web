@@ -33,6 +33,8 @@ export const DIA_LIMITE_PAGO = 'finanzas.dia_limite_pago';
 export const DIAS_ALERTA_VENCIMIENTO = 'alertas.dias_vencimiento';
 /** Sí/No (1/0): los acudientes ven en el portal la ubicación en vivo del vehículo. */
 export const ACUDIENTES_VEN_UBICACION = 'gps.acudientes_ven_ubicacion';
+/** Sí/No: con la ubicación compartida, en la recogida el acudiente la ve también antes de que suba su estudiante. */
+export const ACUDIENTES_VEN_ANTES_DE_RECOGER = 'gps.acudientes_ven_antes_de_recoger';
 /** Sí/No (1/0): los acudientes pueden unir su cuenta con la de otra empresa de transporte (Mi cuenta). */
 export const ACUDIENTES_UNEN_CUENTAS = 'portal.acudientes_unen_cuentas';
 
@@ -66,6 +68,14 @@ export const PARAMETROS_PREDETERMINADOS: Parametro[] = [
     maximo: 1,
   },
   {
+    clave: ACUDIENTES_VEN_ANTES_DE_RECOGER,
+    descripcion:
+      'Si los acudientes ven la ubicación: en la recogida también la ven mientras la ruta va por su estudiante a la casa. Si se desactiva, solo la ven desde que su estudiante sube al vehículo.',
+    valor: '1',
+    minimo: 0,
+    maximo: 1,
+  },
+  {
     clave: ACUDIENTES_UNEN_CUENTAS,
     descripcion:
       'Los acudientes pueden unir su cuenta de esta empresa con la de otra empresa de transporte que use RutaRola, para ver a todos sus estudiantes con un solo usuario. Cada empresa sigue viendo solo sus propios datos.',
@@ -80,5 +90,6 @@ export const NOMBRES_PARAMETRO: Partial<Record<string, string>> = {
   [DIA_LIMITE_PAGO]: 'Día límite de pago',
   [DIAS_ALERTA_VENCIMIENTO]: 'Días de alerta de vencimiento',
   [ACUDIENTES_VEN_UBICACION]: 'Los acudientes ven la ubicación en vivo de la ruta',
+  [ACUDIENTES_VEN_ANTES_DE_RECOGER]: 'Los acudientes ven la ubicación antes de recoger a su estudiante',
   [ACUDIENTES_UNEN_CUENTAS]: 'Los acudientes pueden unir cuentas de varias empresas',
 };

@@ -86,10 +86,11 @@ export interface RecorridoHoy {
 
 /**
  * El estudiante va en camino en ese trayecto (el acudiente ve la ubicación): a bordo, o pendiente en la RECOGIDA (el
- * vehículo va por él). Igual que `AcudientesEnCaminoAsync` del API.
+ * vehículo va por él) si la empresa lo permite (`antesDeRecoger` = `gps.acudientes_ven_antes_de_recoger`). Igual que
+ * `AcudientesEnCaminoAsync` del API.
  */
-export function vaEnCamino(r: RecorridoHoy): boolean {
-  return r.enCurso && (r.estado === 'A_BORDO' || (r.estado === 'PENDIENTE' && r.trayecto === 'RECOGIDA'));
+export function vaEnCamino(r: RecorridoHoy, antesDeRecoger = true): boolean {
+  return r.enCurso && (r.estado === 'A_BORDO' || (antesDeRecoger && r.estado === 'PENDIENTE' && r.trayecto === 'RECOGIDA'));
 }
 
 export interface TransporteEstudiante {
@@ -177,6 +178,11 @@ export interface PortalAcudiente {
    * no hay "Ver en el mapa": solo el estado del estudiante y la hora en que inició el recorrido.
    */
   ubicacionEnVivo: boolean;
+  /**
+   * En la RECOGIDA también la ve mientras la ruta va por su estudiante a la casa (`gps.acudientes_ven_antes_de_recoger`,
+   * por defecto sí). Si es `false`, solo desde que su estudiante sube al vehículo.
+   */
+  ubicacionAntesDeRecoger: boolean;
 }
 
 export const RESUMEN_VACIO: ResumenCuenta = { vencido: 0, cuotasVencidas: 0, porPagar: 0, proximoPago: null, pagadoAnio: 0, pagosAnio: 0 };
