@@ -91,6 +91,34 @@ describe('Portal del acudiente', () => {
     expect(el.textContent).toContain('la ruta va en camino (inició a las');
   });
 
+  it('el mapa solo se ofrece mientras el estudiante va en camino, aunque el recorrido siga hacia otro colegio', async () => {
+    entrar('CONDUCTOR', 'emp-1');
+    const recorridos = TestBed.inject(RecorridosRepositorio);
+    const [ruta] = await firstValueFrom(recorridos.rutasDelDia(fechaIso()));
+    const r = await firstValueFrom(recorridos.iniciar(ruta.asignacionId, 'RECOGIDA'));
+    await firstValueFrom(recorridos.marcar(r.id, ['est-1'], 'A_BORDO'));
+    await firstValueFrom(recorridos.marcar(r.id, ['est-1'], 'ENTREGADO'));
+
+    entrar('ACUDIENTE', 'acu-1');
+    const estado = TestBed.inject(PortalEstado);
+    await estado.cargar();
+    const veces = async () => {
+      const fixture = TestBed.createComponent(PortalEstudiantesPage);
+      await estabilizar(fixture);
+      const n = ((fixture.nativeElement as HTMLElement).textContent ?? '').split('Ver en el mapa').length - 1;
+      fixture.destroy();
+      return n;
+    };
+    // Juan ya está en el colegio; Valentina sigue por recoger: solo ella tiene mapa.
+    expect(await veces()).toBe(1);
+
+    entrar('CONDUCTOR', 'emp-1');
+    await firstValueFrom(recorridos.marcar(r.id, ['est-2'], 'AUSENTE'));
+    entrar('ACUDIENTE', 'acu-1');
+    await estado.cargar();
+    expect(await veces()).toBe(0);
+  });
+
   it('las pantallas muestran estudiantes, estado de cuenta y cotizaciones', async () => {
     entrar('ACUDIENTE', 'acu-1');
     await TestBed.inject(PortalEstado).cargar();

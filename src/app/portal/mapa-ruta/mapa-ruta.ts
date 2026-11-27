@@ -65,7 +65,14 @@ export class MapaRuta {
   private readonly ahora = signal(Date.now());
   private suscripcion: Subscription | null = null;
 
-  protected readonly enCurso = computed(() => this.estudiante().hoy.find((r) => r.enCurso) ?? null);
+  /**
+   * El trayecto en curso mientras ESTE estudiante va en camino (por recoger o a bordo). Entregado (en el colegio o en la
+   * casa) o ausente, el resto del recorrido —p. ej. hacia otro colegio— ya no le incumbe: el mapa se cierra y el
+   * servidor deja de enviarle la ubicación.
+   */
+  protected readonly enCurso = computed(
+    () => this.estudiante().hoy.find((r) => r.enCurso && (r.estado === 'PENDIENTE' || r.estado === 'A_BORDO')) ?? null,
+  );
   protected readonly subtitulo = computed(() => {
     const r = this.enCurso();
     const t = TRAYECTOS.find((x) => x.id === r?.trayecto)?.nombre ?? '';

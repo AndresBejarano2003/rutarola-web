@@ -647,9 +647,10 @@ sale de la sesión/token, nunca de un parámetro: solo ve SUS estudiantes, factu
 - **Hoy en la ruta:** estado del recorrido de hoy por trayecto (`situacionRecorrido`): aún no inicia, la
   ruta va en camino, a bordo desde…, entregado…, no asistió. Se actualiza solo (`PortalRepositorio.observarCambios`:
   el servidor avisa al acudiente de cada cambio del recorrido de sus estudiantes; local: evento `storage`).
-- **Ver en el mapa** (`portal/mapa-ruta`): solo mientras el recorrido de SU estudiante está EN CURSO; muestra el
-  vehículo en vivo y al terminar el recorrido el botón desaparece y el modal se cierra (el API deja de entregar la
-  ubicación).
+- **Ver en el mapa** (`portal/mapa-ruta`): solo mientras el recorrido de SU estudiante está EN CURSO **y ese estudiante
+  va en camino** (PENDIENTE o A_BORDO); muestra el vehículo en vivo. Cuando lo entregan (en el colegio o en la casa), lo
+  marcan ausente o termina el recorrido, el botón desaparece y el modal se cierra: el resto del recorrido —p. ej. hacia
+  otro colegio— no le incumbe, y el API deja de entregarle la ubicación (204 en `gps/ultima`, sin `posicion` en el hub).
 
 ### Inicio (`inicio/dashboard/`)
 
